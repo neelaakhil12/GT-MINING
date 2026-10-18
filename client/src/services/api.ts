@@ -1,3 +1,5 @@
+import { handleMockApi } from './mockDb';
+
 const API_BASE = '/api';
 
 export const getToken = (): string | null => {
@@ -10,6 +12,7 @@ export const setToken = (token: string): void => {
 
 export const removeToken = (): void => {
   localStorage.removeItem('gt_token');
+  localStorage.removeItem('gt_active_user_id');
 };
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -23,25 +26,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  const data = await response.json().catch(() => ({
-    success: false,
-    message: 'Failed to parse server response.',
-  }));
+    const contentType = response.headers.get('content-type') || '';
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      // If token expired, clear it
-      removeToken();
+    // If server returned HTML (Vercel 404 page) or endpoint is unavailable -> Fall back to persistent in-browser database!
+    if (!response.ok || !contentType.includes('application/json')) {
+      console.warn(`[GT Network] Backend not available (${response.status}), activating in-browser node database for: ${endpoint}`);
+      return handleMockApi(endpoint, options) as T;
     }
-    throw new Error(data.message || `Request failed with status ${response.status}`);
-  }
 
-  return data;
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    // Network failure, offline, or CORS on Vercel -> Fall back to persistent in-browser database!
+    console.warn(`[GT Network] Network fetch failed, activating in-browser node database for: ${endpoint}`);
+    return handleMockApi(endpoint, options) as T;
+  }
 }
 
 export const api = {
