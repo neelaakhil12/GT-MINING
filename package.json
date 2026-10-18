@@ -1,0 +1,18 @@
+{
+  "name": "gt",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node run-all.js",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.59.0"
+  }
+}

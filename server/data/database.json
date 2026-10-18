@@ -1,0 +1,232 @@
+{
+  "settings": {
+    "appName": "GT Mining",
+    "websiteUrl": "http://localhost:5174",
+    "miningReward": 1,
+    "cooldownSeconds": 14400,
+    "referralReward": 0.5,
+    "activeThresholdDays": 7,
+    "miningEnabled": true,
+    "maintenanceMode": false,
+    "termsUrl": "/terms",
+    "privacyUrl": "/privacy"
+  },
+  "users": [
+    {
+      "id": "usr_admin_001",
+      "fullName": "GT Administrator",
+      "email": "admin@gtmining.com",
+      "passwordHash": "$2b$10$RBVsHlApX5p0Fhzd5YUgPOQXRstPDiVXqPWOJawoGayLuR9wDfXrq",
+      "referralCode": "GTADMIN",
+      "referredByUserId": null,
+      "role": "ADMIN",
+      "accountStatus": "ACTIVE",
+      "emailVerifiedAt": "2026-10-18T11:12:45.081Z",
+      "lastMiningAt": null,
+      "createdAt": "2026-10-18T11:12:45.081Z",
+      "updatedAt": "2026-10-18T11:12:45.081Z",
+      "deletedAt": null
+    },
+    {
+      "id": "usr_demo_002",
+      "fullName": "Alex Reynolds",
+      "email": "demo@gtmining.com",
+      "passwordHash": "$2b$10$p/SC4uEH/DYiUENnPmZb3e6nupf3u5Egdkw5F70A7n72fHDuKZPMS",
+      "referralCode": "GT88241",
+      "referredByUserId": "usr_admin_001",
+      "role": "USER",
+      "accountStatus": "ACTIVE",
+      "emailVerifiedAt": "2026-10-18T11:12:45.081Z",
+      "lastMiningAt": "2026-10-18T12:01:38.132Z",
+      "createdAt": "2026-10-16T11:12:45.081Z",
+      "updatedAt": "2026-10-18T12:01:38.132Z",
+      "deletedAt": null
+    }
+  ],
+  "wallets": [
+    {
+      "id": "wal_admin_001",
+      "userId": "usr_admin_001",
+      "availableBalance": 10,
+      "lifetimeEarned": 10,
+      "createdAt": "2026-10-18T11:12:45.081Z",
+      "updatedAt": "2026-10-18T11:12:45.081Z"
+    },
+    {
+      "id": "wal_demo_002",
+      "userId": "usr_demo_002",
+      "availableBalance": 3.5,
+      "lifetimeEarned": 3.5,
+      "createdAt": "2026-10-18T11:12:45.081Z",
+      "updatedAt": "2026-10-18T12:01:38.132Z"
+    }
+  ],
+  "walletTransactions": [
+    {
+      "id": "tx_seed_001",
+      "userId": "usr_demo_002",
+      "type": "MINING_REWARD",
+      "amount": 1,
+      "status": "COMPLETED",
+      "idempotencyKey": "idemp_seed_001",
+      "referenceId": "claim_seed_001",
+      "description": "First successful 4h mining claim",
+      "createdAt": "2026-10-18T06:12:45.081Z",
+      "createdBy": "SYSTEM"
+    },
+    {
+      "id": "tx_seed_002",
+      "userId": "usr_demo_002",
+      "type": "MINING_REWARD",
+      "amount": 1,
+      "status": "COMPLETED",
+      "idempotencyKey": "idemp_seed_002",
+      "referenceId": "claim_seed_002",
+      "description": "Second successful 4h mining claim",
+      "createdAt": "2026-10-17T10:12:45.081Z",
+      "createdBy": "SYSTEM"
+    },
+    {
+      "id": "tx_seed_003",
+      "userId": "usr_demo_002",
+      "type": "REFERRAL_REWARD",
+      "amount": 0.5,
+      "status": "COMPLETED",
+      "idempotencyKey": "idemp_seed_003",
+      "referenceId": "ref_seed_001",
+      "description": "Referral reward from community friend registration",
+      "createdAt": "2026-10-17T11:12:45.081Z",
+      "createdBy": "SYSTEM"
+    },
+    {
+      "id": "tx_mvdryudw_rlq9mm",
+      "userId": "usr_demo_002",
+      "type": "MINING_REWARD",
+      "amount": 1,
+      "status": "COMPLETED",
+      "idempotencyKey": "idemp_claim_claim_mvdryudw_vrtwbl",
+      "referenceId": "claim_mvdryudw_vrtwbl",
+      "description": "4-Hour Mining Reward (+1 GT)",
+      "createdAt": "2026-10-18T12:01:38.132Z",
+      "createdBy": "SYSTEM"
+    }
+  ],
+  "miningClaims": [
+    {
+      "id": "claim_seed_001",
+      "userId": "usr_demo_002",
+      "rewardAmount": 1,
+      "claimedAt": "2026-10-18T06:12:45.081Z",
+      "nextEligibleAt": "2026-10-18T10:12:45.081Z",
+      "transactionId": "tx_seed_001",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "claim_mvdryudw_vrtwbl",
+      "userId": "usr_demo_002",
+      "rewardAmount": 1,
+      "claimedAt": "2026-10-18T12:01:38.132Z",
+      "nextEligibleAt": "2026-10-18T16:01:38.132Z",
+      "transactionId": "tx_mvdryudw_rlq9mm",
+      "status": "SUCCESS"
+    }
+  ],
+  "referrals": [
+    {
+      "id": "ref_seed_001",
+      "referrerUserId": "usr_admin_001",
+      "referredUserId": "usr_demo_002",
+      "referralCodeUsed": "GTADMIN",
+      "status": "ACTIVE",
+      "rewardAmount": 0.5,
+      "rewardStatus": "CREDITED",
+      "createdAt": "2026-10-16T11:12:45.081Z",
+      "rewardCreditedAt": "2026-10-17T11:12:45.081Z"
+    }
+  ],
+  "communityPosts": [
+    {
+      "id": "post_001",
+      "title": "Welcome to GT Mining: Next Phase of Virtual Web3 Hash Power",
+      "content": "We are thrilled to officially launch the GT Mining network! Every participant can mine 1 GT coin every 4 hours with zero hardware consumption. Invite friends to multiply network engagement, earn referral bonuses, and secure your place on the global ledger. Check back for frequent node updates and ecosystem milestones.",
+      "imageUrl": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop",
+      "category": "Announcement",
+      "status": "PUBLISHED",
+      "isPinned": true,
+      "authorName": "GT Foundation",
+      "createdBy": "usr_admin_001",
+      "createdAt": "2026-10-15T11:12:45.081Z",
+      "updatedAt": "2026-10-15T11:12:45.081Z"
+    },
+    {
+      "id": "post_002",
+      "title": "Mining Integrity & The 4-Hour Cooldown Protocol",
+      "content": "To preserve network fairness, the 4-hour cooldown rule is strictly verified on-chain and through our atomic backend ledger. Timestamps are synchronized in UTC. Double claims or tab tampering are intercepted automatically. Happy mining!",
+      "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop",
+      "category": "Update",
+      "status": "PUBLISHED",
+      "isPinned": false,
+      "authorName": "Tech Lead",
+      "createdBy": "usr_admin_001",
+      "createdAt": "2026-10-17T11:12:45.081Z",
+      "updatedAt": "2026-10-17T11:12:45.081Z"
+    },
+    {
+      "id": "post_003",
+      "title": "Referral Rewards Program is Live",
+      "content": "Share your custom referral code or one-click invite link across WhatsApp, Telegram, and social channels. Friends who register through your link become part of your mining circle.",
+      "imageUrl": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop",
+      "category": "Ecosystem",
+      "status": "PUBLISHED",
+      "isPinned": false,
+      "authorName": "Growth Team",
+      "createdBy": "usr_admin_001",
+      "createdAt": "2026-10-18T11:12:45.081Z",
+      "updatedAt": "2026-10-18T11:12:45.081Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_001",
+      "userId": "usr_demo_002",
+      "title": "Welcome to GT Network",
+      "message": "Your GT wallet has been created with a unique referral link. Start your first mining cycle now!",
+      "type": "SYSTEM",
+      "readAt": null,
+      "createdAt": "2026-10-16T11:12:45.081Z"
+    },
+    {
+      "id": "notif_002",
+      "userId": "usr_demo_002",
+      "title": "Mining Claim Confirmed",
+      "message": "You successfully claimed +1.0 GT coin! Your 4-hour cooldown is active.",
+      "type": "MINING",
+      "readAt": null,
+      "createdAt": "2026-10-18T06:12:45.081Z"
+    },
+    {
+      "id": "notif_mvdryudw_9mr8xv",
+      "userId": "usr_demo_002",
+      "title": "Mining Claim Successful!",
+      "message": "You mined +1 GT! Your next mining session opens in 4 hours.",
+      "type": "MINING",
+      "readAt": null,
+      "createdAt": "2026-10-18T12:01:38.132Z"
+    }
+  ],
+  "adminAuditLogs": [
+    {
+      "id": "audit_001",
+      "adminUserId": "usr_admin_001",
+      "action": "SYSTEM_INITIALIZATION",
+      "entityType": "SYSTEM",
+      "entityId": "global",
+      "reason": "Initial platform setup with default mining cooldown of 4 hours",
+      "metadata": {
+        "miningReward": 1,
+        "cooldownSeconds": 14400
+      },
+      "createdAt": "2026-10-18T11:12:45.081Z"
+    }
+  ]
+}
