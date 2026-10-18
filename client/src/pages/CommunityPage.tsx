@@ -17,10 +17,49 @@ import { useToast } from '../context/ToastContext';
 import { CommunityPost } from '../types';
 import { GlassCard } from '../components/GlassCard';
 
+const hardcodedNodePosts: CommunityPost[] = [
+  {
+    id: 'post_001',
+    title: 'Welcome to GT Mining: Next Phase of Virtual Web3 Hash Power',
+    content: 'We are thrilled to officially launch the GT Mining network! Every participant can mine 1 GT coin every 4 hours with zero hardware consumption. Invite friends to multiply network engagement, earn referral bonuses, and secure your place on the global ledger. Check back for frequent node updates and ecosystem milestones.',
+    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
+    category: 'Announcement',
+    status: 'PUBLISHED',
+    isPinned: true,
+    authorName: 'GT Foundation',
+    createdAt: '2026-10-15T11:12:45.081Z',
+    updatedAt: '2026-10-15T11:12:45.081Z',
+  },
+  {
+    id: 'post_002',
+    title: 'Mining Integrity & The 4-Hour Cooldown Protocol',
+    content: 'To preserve network fairness, the 4-hour cooldown rule is strictly verified on-chain and through our atomic backend ledger. Timestamps are synchronized in UTC. Double claims or tab tampering are intercepted automatically. Happy mining!',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
+    category: 'Update',
+    status: 'PUBLISHED',
+    isPinned: false,
+    authorName: 'Tech Lead',
+    createdAt: '2026-10-17T11:12:45.081Z',
+    updatedAt: '2026-10-17T11:12:45.081Z',
+  },
+  {
+    id: 'post_003',
+    title: 'Referral Rewards Program is Live',
+    content: 'Share your custom referral code or one-click invite link across WhatsApp, Telegram, and social channels. Friends who register through your link become part of your mining circle.',
+    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
+    category: 'Ecosystem',
+    status: 'PUBLISHED',
+    isPinned: false,
+    authorName: 'Growth Team',
+    createdAt: '2026-10-18T11:12:45.081Z',
+    updatedAt: '2026-10-18T11:12:45.081Z',
+  },
+];
+
 export const CommunityPage: React.FC = () => {
   const { showToast } = useToast();
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<CommunityPost[]>(hardcodedNodePosts);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
@@ -37,11 +76,11 @@ export const CommunityPage: React.FC = () => {
         selectedCategory === 'All' ? undefined : selectedCategory,
         searchQuery.trim() || undefined
       );
-      if (res.success) {
-        setPosts(res.posts || []);
+      if (res.success && res.posts && res.posts.length > 0) {
+        setPosts(res.posts);
       }
     } catch (err: any) {
-      showToast('Failed to load community feed', 'error');
+      // Keep hardcodedNodePosts on fallback
     } finally {
       setLoading(false);
     }

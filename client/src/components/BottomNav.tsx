@@ -1,15 +1,15 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Cpu, Pickaxe, Wallet, User } from 'lucide-react';
+import { Home, Globe, Pickaxe, Users, User } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: Home, isGt: false },
-    { label: 'Node', path: '/community', icon: Cpu, isGt: false },
+    { label: 'Node', path: '/community', icon: Globe, isGt: false },
     { label: 'Mine', path: '/mining', icon: Pickaxe, isGt: true },
-    { label: 'Wallet', path: '/wallet', icon: Wallet, isGt: false },
+    { label: 'Referrals', path: '/referrals', icon: Users, isGt: false },
     { label: 'Profile', path: '/profile', icon: User, isGt: false },
   ];
 
