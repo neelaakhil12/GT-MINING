@@ -144,6 +144,64 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
     instancedTiles.instanceMatrix.needsUpdate = true;
     globeGroup.add(instancedTiles);
 
+    // 6.5 Inward/Outward Floating Breathing Energy Particles
+    const particleCount = 130;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleBaseDirs: { x: number; y: number; z: number; baseR: number; speed: number; phase: number }[] = [];
+
+    for (let i = 0; i < particleCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const sinPhi = Math.sin(phi);
+
+      const dx = sinPhi * Math.cos(theta);
+      const dy = sinPhi * Math.sin(theta);
+      const dz = Math.cos(phi);
+
+      const baseR = 2.0 + Math.random() * 1.3;
+      const speed = 0.0018 + Math.random() * 0.002;
+      const phase = Math.random() * Math.PI * 2;
+
+      particleBaseDirs.push({ x: dx, y: dy, z: dz, baseR, speed, phase });
+
+      particlePositions[i * 3] = dx * baseR;
+      particlePositions[i * 3 + 1] = dy * baseR;
+      particlePositions[i * 3 + 2] = dz * baseR;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+    // Canvas circular radial particle texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    const pGrad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    pGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    pGrad.addColorStop(0.3, 'rgba(134, 239, 172, 0.95)');
+    pGrad.addColorStop(0.7, 'rgba(34, 197, 94, 0.45)');
+    pGrad.addColorStop(1, 'rgba(34, 197, 94, 0)');
+    ctx.fillStyle = pGrad;
+    ctx.beginPath();
+    ctx.arc(32, 32, 32, 0, Math.PI * 2);
+    ctx.fill();
+
+    const particleTexture = new THREE.CanvasTexture(canvas);
+    const particleMat = new THREE.PointsMaterial({
+      size: 0.16,
+      map: particleTexture,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
     // Subtle tilt like earth axis
     globeGroup.rotation.x = 0.22;
     globeGroup.rotation.z = -0.08;
@@ -157,6 +215,20 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
 
       const now = performance.now();
       const spin = spinProgressRef.current;
+
+      // Breathe particles radially inward and outward
+      const posAttr = particleGeo.attributes.position as THREE.BufferAttribute;
+      const posArr = posAttr.array as Float32Array;
+
+      for (let i = 0; i < particleCount; i++) {
+        const p = particleBaseDirs[i];
+        const currentR = p.baseR + Math.sin(now * p.speed + p.phase) * 0.42;
+        posArr[i * 3] = p.x * currentR;
+        posArr[i * 3 + 1] = p.y * currentR;
+        posArr[i * 3 + 2] = p.z * currentR;
+      }
+      posAttr.needsUpdate = true;
+      particles.rotation.y += 0.0025;
 
       if (spin.active) {
         const elapsed = now - spin.startTime;
@@ -184,6 +256,7 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
 
       // Gentle floating bob
       globeGroup.position.y = Math.sin(now * 0.0018) * 0.08;
+      particles.position.y = globeGroup.position.y;
 
       renderer.render(scene, camera);
     };
@@ -210,6 +283,9 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
       innerMat.dispose();
       tileGeo.dispose();
       tileMat.dispose();
+      particleGeo.dispose();
+      particleMat.dispose();
+      particleTexture.dispose();
       if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }

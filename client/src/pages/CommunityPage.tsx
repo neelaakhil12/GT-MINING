@@ -10,12 +10,36 @@ import {
   ChevronUp,
   Sparkles,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Heart,
+  Share2,
+  Send,
+  MessageCircle,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { CommunityPost } from '../types';
 import { GlassCard } from '../components/GlassCard';
+
+interface PostComment {
+  id: string;
+  author: string;
+  text: string;
+  time: string;
+}
+
+const initialComments: Record<string, PostComment[]> = {
+  post_001: [
+    { id: 'c1', author: 'SatoshiMiner', text: 'Huge milestone! Glad to be one of the genesis miners.', time: '2 hours ago' },
+    { id: 'c2', author: 'CryptoNova', text: 'The 4-hour cycle is so smooth and seamless on mobile.', time: '4 hours ago' },
+  ],
+  post_002: [
+    { id: 'c3', author: 'NodeValidator_9', text: 'Great security measures against duplicate claims.', time: '1 day ago' },
+  ],
+  post_003: [
+    { id: 'c4', author: 'Elena_R', text: 'Already invited 4 of my friends! +2.0 GT earned.', time: '5 hours ago' },
+  ],
+};
 
 const hardcodedNodePosts: CommunityPost[] = [
   {
@@ -64,6 +88,34 @@ export const CommunityPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
 
+  // Interactive Social Actions (Like, Comment, Share)
+  const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('gt_liked_posts');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [likesCount, setLikesCount] = useState<Record<string, number>>({
+    post_001: 42,
+    post_002: 29,
+    post_003: 56,
+  });
+
+  const [comments, setComments] = useState<Record<string, PostComment[]>>(() => {
+    try {
+      const saved = localStorage.getItem('gt_post_comments');
+      return saved ? JSON.parse(saved) : initialComments;
+    } catch {
+      return initialComments;
+    }
+  });
+
+  const [openCommentPostId, setOpenCommentPostId] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState<Record<string, string>>({});
+
   const categories = ['All', 'Announcement', 'Update', 'Ecosystem', 'Guide'];
 
   useEffect(() => {
@@ -88,6 +140,66 @@ export const CommunityPage: React.FC = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedPostIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleToggleLike = (postId: string) => {
+    const isLiked = !likedPostIds[postId];
+    const updated = { ...likedPostIds, [postId]: isLiked };
+    setLikedPostIds(updated);
+    try {
+      localStorage.setItem('gt_liked_posts', JSON.stringify(updated));
+    } catch {}
+
+    setLikesCount(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || 0) + (isLiked ? 1 : -1),
+    }));
+
+    if (isLiked) {
+      showToast('Liked post! ❤️', 'success');
+    }
+  };
+
+  const handleShare = async (post: CommunityPost) => {
+    const shareUrl = `${window.location.origin}/community#${post.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: `Check out this GT Node update: ${post.title}`,
+          url: shareUrl,
+        });
+        return;
+      } catch {}
+    }
+
+    navigator.clipboard.writeText(shareUrl);
+    showToast('Post link copied to clipboard!', 'success');
+  };
+
+  const handleAddComment = (postId: string) => {
+    const text = (commentInput[postId] || '').trim();
+    if (!text) return;
+
+    const newComment: PostComment = {
+      id: `c_${Date.now()}`,
+      author: 'You (Miner)',
+      text,
+      time: 'Just now',
+    };
+
+    const updated = {
+      ...comments,
+      [postId]: [...(comments[postId] || []), newComment],
+    };
+    setComments(updated);
+    setCommentInput(prev => ({ ...prev, [postId]: '' }));
+
+    try {
+      localStorage.setItem('gt_post_comments', JSON.stringify(updated));
+    } catch {}
+
+    showToast('Comment posted to Node feed!', 'success');
   };
 
   return (
@@ -158,6 +270,10 @@ export const CommunityPage: React.FC = () => {
           {posts.map((post) => {
             const isExpanded = expandedPostIds[post.id];
             const isLong = post.content.length > 280;
+            const isLiked = !!likedPostIds[post.id];
+            const currentLikes = likesCount[post.id] ?? 24;
+            const postCommentsList = comments[post.id] || [];
+            const isCommentsOpen = openCommentPostId === post.id;
 
             return (
               <GlassCard
@@ -218,7 +334,7 @@ export const CommunityPage: React.FC = () => {
                   {isLong && (
                     <button
                       onClick={() => toggleExpand(post.id)}
-                      className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-1"
+                      className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-1 cursor-pointer"
                     >
                       <span>{isExpanded ? 'Show less' : 'Read more'}</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -226,8 +342,87 @@ export const CommunityPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Interactive Twitter-style Engagement Bar */}
+                <div className="flex items-center justify-between border-t border-b border-black/5 py-2.5 text-xs text-[#1E5E36]">
+                  {/* Like Button */}
+                  <button
+                    onClick={() => handleToggleLike(post.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+                      isLiked
+                        ? 'text-rose-600 bg-rose-50'
+                        : 'hover:text-rose-600 hover:bg-rose-50/50'
+                    }`}
+                  >
+                    <Heart
+                      className={`w-4 h-4 transition-transform active:scale-125 ${
+                        isLiked ? 'fill-rose-500 text-rose-500' : ''
+                      }`}
+                    />
+                    <span>{currentLikes}</span>
+                  </button>
+
+                  {/* Comment Button */}
+                  <button
+                    onClick={() => setOpenCommentPostId(isCommentsOpen ? null : post.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+                      isCommentsOpen
+                        ? 'text-[#16A34A] bg-[#22C55E]/15'
+                        : 'hover:text-[#16A34A] hover:bg-[#22C55E]/10'
+                    }`}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{postCommentsList.length}</span>
+                  </button>
+
+                  {/* Share Button */}
+                  <button
+                    onClick={() => handleShare(post)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold hover:text-[#16A34A] hover:bg-[#22C55E]/10 cursor-pointer"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
+                </div>
+
+                {/* Inline Comment Section Drawer */}
+                {isCommentsOpen && (
+                  <div className="space-y-3 pt-1 animate-fadeIn">
+                    {/* Existing Comments */}
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {postCommentsList.map(c => (
+                        <div key={c.id} className="p-2.5 rounded-xl bg-white/70 border border-white/90 text-xs space-y-1">
+                          <div className="flex items-center justify-between font-bold text-[#0A341B]">
+                            <span>{c.author}</span>
+                            <span className="text-[10px] text-[#1E5E36]/70 font-normal">{c.time}</span>
+                          </div>
+                          <p className="text-[#1E5E36]">{c.text}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* New Comment Input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={commentInput[post.id] || ''}
+                        onChange={(e) => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                        placeholder="Write a comment..."
+                        className="flex-1 px-3.5 py-2 rounded-xl bg-white/90 border border-white text-xs text-[#0A341B] placeholder-[#1E5E36]/60 focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post.id)}
+                        className="p-2 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                        title="Send comment"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Post Footer Timestamp */}
-                <div className="flex items-center justify-between text-[11px] text-[#1E5E36] pt-2 border-t border-black/5 font-medium">
+                <div className="flex items-center justify-between text-[11px] text-[#1E5E36] pt-1 font-medium">
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-[#16A34A]" />
                     <span>{new Date(post.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>

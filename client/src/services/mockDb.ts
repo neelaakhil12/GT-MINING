@@ -341,25 +341,37 @@ export const handleMockApi = (endpoint: string, options: RequestInit = {}): any 
 
   // Referrals: Summary
   if (endpoint === '/referrals/summary') {
+    const summaryData = {
+      referralCode: currentUser.referralCode || 'GT78492',
+      referralLink: `${window.location.origin}/signup?ref=${currentUser.referralCode || 'GT78492'}`,
+      totalReferrals: 8,
+      activeFriends: 6,
+      inactiveFriends: 2,
+      totalReferralRewardsEarned: 4.0,
+      activeThresholdDays: 7,
+    };
     return {
       success: true,
-      referralCode: currentUser.referralCode,
-      referralLink: `${window.location.origin}/signup?ref=${currentUser.referralCode}`,
-      totalReferrals: 3,
-      activeFriends: 2,
-      inactiveFriends: 1,
-      totalEarnedFromReferrals: 1.5,
+      stats: summaryData,
+      ...summaryData,
     };
   }
 
   if (endpoint === '/referrals/history') {
+    const list = [
+      { id: 'ref_01', friendName: 'Alex Morgan', friendEmail: 'a.morgan@mining.io', registeredAt: new Date(Date.now() - 43200000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_02', friendName: 'Elena Rostova', friendEmail: 'e.rostova@chainmail.com', registeredAt: new Date(Date.now() - 86400000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_03', friendName: 'Marcus Vance', friendEmail: 'marcus.v@crypto.net', registeredAt: new Date(Date.now() - 172800000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_04', friendName: 'Sofia Chen', friendEmail: 'sofia.chen@web3.org', registeredAt: new Date(Date.now() - 259200000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_05', friendName: 'Priya Sharma', friendEmail: 'priya.s@node.tech', registeredAt: new Date(Date.now() - 345600000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_06', friendName: 'David Miller', friendEmail: 'd.miller@ledger.com', registeredAt: new Date(Date.now() - 432000000).toISOString(), isActive: true, rewardAmount: 0.5, rewardStatus: 'CREDITED' },
+      { id: 'ref_07', friendName: 'Liam Connor', friendEmail: 'l.connor@proton.me', registeredAt: new Date(Date.now() - 604800000).toISOString(), isActive: false, rewardAmount: 0.5, rewardStatus: 'PENDING' },
+      { id: 'ref_08', friendName: 'Chloe Dubois', friendEmail: 'chloe.d@meta.fr', registeredAt: new Date(Date.now() - 777600000).toISOString(), isActive: false, rewardAmount: 0.5, rewardStatus: 'PENDING' },
+    ];
     return {
       success: true,
-      referrals: [
-        { id: 'ref_1', friendName: 'Marcus Vance', friendEmail: 'm.vance@example.com', registeredAt: new Date(Date.now() - 86400000).toISOString(), isActive: true, rewardAmount: 0.5 },
-        { id: 'ref_2', friendName: 'Elena Rostova', friendEmail: 'elena.r@example.com', registeredAt: new Date(Date.now() - 172800000).toISOString(), isActive: true, rewardAmount: 0.5 },
-        { id: 'ref_3', friendName: 'Dmitri S.', friendEmail: 'dmitri@example.com', registeredAt: new Date(Date.now() - 345600000).toISOString(), isActive: false, rewardAmount: 0.5 },
-      ],
+      history: list,
+      referrals: list,
     };
   }
 

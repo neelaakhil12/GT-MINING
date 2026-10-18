@@ -209,20 +209,22 @@ export const MiningPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Mine GT CTA Button - Positioned DIRECTLY under the crystal as requested */}
+        {/* Main Mine GT CTA Button - Positioned DIRECTLY under the crystal with streaming border beam */}
         <div className="max-w-xs sm:max-w-sm mx-auto relative z-10 pt-0">
-          <button
-            onClick={handleClaim}
-            disabled={claiming}
-            className="w-full py-2.5 sm:py-3.5 px-6 rounded-2xl font-black text-sm sm:text-base transition-all duration-300 flex items-center justify-center gap-2.5 transform active:scale-95 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] cursor-pointer"
-          >
-            <Pickaxe className={`w-4.5 h-4.5 ${claiming ? 'animate-spin' : 'animate-bounce'}`} />
-            <span>
-              {claiming
-                ? 'Mining Virtual GT Block...'
-                : 'Mine GT (+1.0 GT)'}
-            </span>
-          </button>
+          <div className="border-beam-card !rounded-2xl p-[2px] w-full">
+            <button
+              onClick={handleClaim}
+              disabled={claiming}
+              className="relative z-10 w-full py-2.5 sm:py-3.5 px-6 rounded-[14px] font-black text-sm sm:text-base transition-all duration-300 flex items-center justify-center gap-2.5 transform active:scale-95 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] cursor-pointer"
+            >
+              <Pickaxe className={`w-4.5 h-4.5 ${claiming ? 'animate-spin' : 'animate-bounce'}`} />
+              <span>
+                {claiming
+                  ? 'Mining Virtual GT Block...'
+                  : 'Mine GT (+1.0 GT)'}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Live Wallet Balance */}

@@ -91,75 +91,83 @@ export const DashboardPage: React.FC = () => {
       {/* 1. Dynamic Image Slides Carousel, Market Rates, and Action Cards matching video */}
       <HomeBanners />
       
-      {/* 2. Four Platform Statistics Cards (Cleaned: Non-referral data as requested) */}
+      {/* 2. Four Platform Statistics Cards with Streaming Green Border Beam matching video reference */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         {/* Wallet Balance */}
-        <GlassCard interactive className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1E5E36]">Wallet Balance</span>
-            <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A]">
-              <Coins className="w-4 h-4" />
+        <div className="border-beam-card group cursor-pointer">
+          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E5E36]">Wallet Balance</span>
+              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
+                <Coins className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-[#15803D] tracking-tight">
+              {(data?.wallet?.availableBalance ?? wallet?.availableBalance ?? 0).toFixed(2)} GT
+            </p>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
+              <span>Verified ledger balance</span>
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-[#15803D]">
-            {(data?.wallet?.availableBalance ?? wallet?.availableBalance ?? 0).toFixed(2)} GT
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
-            <span>Verified ledger balance</span>
-          </div>
-        </GlassCard>
+        </div>
 
         {/* Lifetime Mined */}
-        <GlassCard interactive className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1E5E36]">Lifetime Mined</span>
-            <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A]">
-              <TrendingUp className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-1 group cursor-pointer">
+          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E5E36]">Lifetime Mined</span>
+              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
+              {(data?.statistics?.totalGtEarned ?? wallet?.lifetimeEarned ?? 0).toFixed(2)} GT
+            </p>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
+              <span className="text-xs">▲</span>
+              <span>Cumulative Epoch Yield</span>
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-[#0A341B]">
-            {(data?.statistics?.totalGtEarned ?? wallet?.lifetimeEarned ?? 0).toFixed(2)} GT
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-            <span className="text-xs">▲</span>
-            <span>Cumulative Epoch Yield</span>
-          </div>
-        </GlassCard>
+        </div>
 
         {/* Mining Epoch Rate */}
-        <GlassCard interactive className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1E5E36]">Mining Epoch Rate</span>
-            <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A]">
-              <Pickaxe className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-2 group cursor-pointer">
+          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E5E36]">Mining Epoch Rate</span>
+              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
+                <Pickaxe className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-[#15803D] tracking-tight">
+              +1.00 GT
+            </p>
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1E5E36]">
+              <span>Per 4-hour cycle interval</span>
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-[#15803D]">
-            +1.00 GT
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1E5E36]">
-            <span>Per 4-hour cycle interval</span>
-          </div>
-        </GlassCard>
+        </div>
 
         {/* Network Node Status */}
-        <GlassCard interactive className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1E5E36]">Network Status</span>
-            <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A]">
-              <Globe className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-3 group cursor-pointer">
+          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E5E36]">Network Status</span>
+              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
+                <Globe className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
+              Node Online
+            </p>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
+              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping" />
+              <span>Epoch Synchronized</span>
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-[#0A341B]">
-            Node Online
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping" />
-            <span>Epoch Synchronized</span>
-          </div>
-        </GlassCard>
+        </div>
       </div>
 
       {/* 3. Mining Status Card */}
