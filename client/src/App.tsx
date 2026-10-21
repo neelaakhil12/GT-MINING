@@ -62,10 +62,16 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
+        {!isPublicStandalone && <Navbar />}
 
-        {/* Main Content Area - Expansive width to fill desktop view, padded for fixed header and mobile bottom nav */}
-        <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-8 lg:px-12 pt-24 sm:pt-28 pb-28 sm:pb-16">
+        {/* Main Content Area - Fullscreen for onboarding/auth, padded for dashboard */}
+        <main
+          className={`flex-1 w-full mx-auto ${
+            isPublicStandalone
+              ? 'p-0 max-w-full flex items-center justify-center'
+              : 'max-w-screen-2xl px-4 sm:px-8 lg:px-12 pt-24 sm:pt-28 pb-28 sm:pb-16'
+          }`}
+        >
           {children}
         </main>
 
