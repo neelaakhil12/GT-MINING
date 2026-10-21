@@ -345,7 +345,7 @@ export const ReferralsPage: React.FC = () => {
           <span className="text-[11px] font-black tracking-wider uppercase text-[#0A341B]">
             DIRECT TRANSMISSION
           </span>
-          <span className="text-[10px] font-medium text-neutral-400">
+          <span className="text-[10px] font-bold text-[#15803D]">
             Verified Endpoints
           </span>
         </div>
@@ -444,7 +444,7 @@ export const ReferralsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-black text-[#0A341B]">Available to Claim</div>
-              <div className="text-[11px] text-neutral-400 font-medium">
+              <div className="text-[11px] text-[#15803D] font-medium">
                 Cryptographic proof ready
               </div>
             </div>
@@ -480,11 +480,11 @@ export const ReferralsPage: React.FC = () => {
             <h3 className="text-xs font-black uppercase tracking-wider text-[#0A341B]">
               REFERRAL FRIENDS
             </h3>
-            <p className="text-[11px] text-neutral-400 font-medium">
+            <p className="text-[11px] text-[#15803D] font-medium">
               Live on-chain records
             </p>
           </div>
-          <div className="px-3 py-1 rounded-full text-xs font-bold text-neutral-600 bg-white border border-neutral-200/80 shadow-xs">
+          <div className="px-3 py-1 rounded-full text-xs font-bold text-[#15803D] bg-white border border-[#22C55E]/30 shadow-xs">
             Showing 4 of 28
           </div>
         </div>
