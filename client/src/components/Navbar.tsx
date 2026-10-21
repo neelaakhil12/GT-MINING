@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Home,
   Pickaxe,
@@ -7,29 +7,13 @@ import {
   Users,
   Globe,
   ShieldAlert,
-  LogOut,
   User as UserIcon,
-  Menu,
-  X,
-  Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
-  const { user, isAdmin, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Close menus on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const navLinks = [
     { label: 'Home', path: '/dashboard', icon: Home },
@@ -114,7 +98,7 @@ export const Navbar: React.FC = () => {
           </nav>
         )}
 
-        {/* Right Side: Quick Mine (desktop only to prevent mobile congestion), Profile Icon (Circle), Logout */}
+        {/* Right Side: Quick Mine (desktop only to prevent mobile congestion) & Profile Icon (Circle Type) */}
         {user ? (
           <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
             
@@ -140,25 +124,6 @@ export const Navbar: React.FC = () => {
             >
               <UserIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-
-            {/* Quick Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/70 hover:bg-[#FEE2E2] text-[#DC2626] border border-white shadow-sm transition-all flex items-center justify-center group shrink-0"
-              title="Log Out"
-              aria-label="Log Out"
-            >
-              <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            </button>
-
-            {/* Mobile Hamburger Toggle for header buttons */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-[#1E5E36] hover:bg-white/60 transition-colors shrink-0"
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
           </div>
         ) : (
           <div className="flex items-center gap-3">
@@ -177,57 +142,6 @@ export const Navbar: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Mobile Header Dropdown Menu (when opened) */}
-      {user && mobileMenuOpen && (
-        <div className="lg:hidden border-t border-white/80 bg-white/95 backdrop-blur-2xl px-4 py-3 space-y-1.5 shadow-lg animate-in slide-in-from-top-2">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md'
-                      : 'text-[#1E5E36] hover:bg-white'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-white/20 text-current">
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
-          
-          <div className="pt-2 border-t border-black/5 flex items-center justify-between px-2">
-            <Link
-              to="/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 text-xs font-bold text-[#16A34A]"
-            >
-              <UserIcon className="w-4 h-4" />
-              <span>Profile & Settings</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#DC2626]"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Log Out</span>
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

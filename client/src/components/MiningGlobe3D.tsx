@@ -6,6 +6,16 @@ interface MiningGlobe3DProps {
   className?: string;
 }
 
+interface TileData {
+  normal: THREE.Vector3;
+  baseRadius: number;
+  phase: number;
+  speed: number;
+  amplitude: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
   spinning = false,
   className = '',
@@ -19,18 +29,18 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
   }>({
     active: false,
     startTime: 0,
-    duration: 2800,
-    totalRotations: 15 * Math.PI * 2, // 15 full cycles
+    duration: 2600,
+    totalRotations: 14 * Math.PI * 2,
   });
 
-  // Trigger spin when spinning prop changes to true
+  // Trigger fast spin when claim starts
   useEffect(() => {
     if (spinning) {
       spinProgressRef.current = {
         active: true,
         startTime: performance.now(),
-        duration: 2800,
-        totalRotations: 15 * Math.PI * 2,
+        duration: 2600,
+        totalRotations: 14 * Math.PI * 2,
       };
     }
   }, [spinning]);
@@ -40,75 +50,80 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
     if (!container) return;
 
     // Dimensions
-    const width = container.clientWidth || 300;
-    const height = container.clientHeight || 280;
+    const width = container.clientWidth || 240;
+    const height = container.clientHeight || 200;
 
     // 1. Scene
     const scene = new THREE.Scene();
 
-    // 2. Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 6.8);
+    // 2. Camera - positioned closer so globe appears larger and prominent
+    const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 100);
+    camera.position.set(0, 0, 5.7);
 
-    // 3. Renderer with transparent background
+    // 3. Transparent WebGL Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
 
-    // 4. Balanced Studio Lighting for vibrant medium-range green
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.7);
+    // 4. Studio Lighting tailored for thick, rich, vibrant emerald green
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
     scene.add(ambientLight);
 
-    // Crisp white key light for clean specular highlights
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.4);
-    dirLight1.position.set(5, 6, 4);
+    // Crisp white key light creating the prominent top-right highlight
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.85);
+    dirLight1.position.set(4.5, 5.5, 4.0);
     scene.add(dirLight1);
 
-    // Soft mint-emerald rim light
-    const dirLight2 = new THREE.DirectionalLight(0x86efac, 1.8);
-    dirLight2.position.set(-5, -4, 3);
+    // Rich emerald fill light
+    const dirLight2 = new THREE.DirectionalLight(0x4ade80, 2.0);
+    dirLight2.position.set(-4.5, -3.0, 3.0);
     scene.add(dirLight2);
 
-    // Luminous inner core light
-    const pointLight = new THREE.PointLight(0x34d399, 2.2, 10);
-    pointLight.position.set(0, 0, 0);
-    scene.add(pointLight);
+    // Bottom green rim light
+    const dirLight3 = new THREE.DirectionalLight(0x16a34a, 1.5);
+    dirLight3.position.set(0, -4.0, -3.0);
+    scene.add(dirLight3);
 
-    // 5. Main Globe Group
+    // 5. Globe Group
     const globeGroup = new THREE.Group();
     scene.add(globeGroup);
 
-    // Inner Core Sphere: Medium balanced emerald green volume
-    const innerGeo = new THREE.SphereGeometry(1.65, 32, 32);
+    // Subtle axis tilt
+    globeGroup.rotation.x = 0.18;
+    globeGroup.rotation.z = -0.06;
+
+    // Core Sphere: Thick, rich emerald green with glossy specular clearcoat
+    const innerGeo = new THREE.SphereGeometry(1.62, 48, 48);
     const innerMat = new THREE.MeshPhysicalMaterial({
-      color: 0x22c55e,
-      emissive: 0x065f46,
-      emissiveIntensity: 0.08,
-      roughness: 0.25,
+      color: 0x15803d, // Thick rich emerald green
+      emissive: 0x054f2c,
+      emissiveIntensity: 0.18,
+      roughness: 0.28,
       metalness: 0.08,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.15,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.14,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.96,
     });
     const innerSphere = new THREE.Mesh(innerGeo, innerMat);
     globeGroup.add(innerSphere);
 
-    // 6. Segmented Floating Cube Tiles: Medium-range luminous emerald jade
-    const tileCount = 260;
-    const tileGeo = new THREE.BoxGeometry(0.24, 0.24, 0.08);
+    // 6. Segmented Floating Flat Cube Tiles (Wafers) - Thick vibrant green
+    const tileCount = 230;
+    // Flat square tiles
+    const tileGeo = new THREE.BoxGeometry(0.25, 0.25, 0.045);
     const tileMat = new THREE.MeshPhysicalMaterial({
-      color: 0x34d399,
+      color: 0x22c55e, // Thick vibrant emerald green
       emissive: 0x059669,
-      emissiveIntensity: 0.1,
-      roughness: 0.2,
+      emissiveIntensity: 0.2,
+      roughness: 0.22,
       metalness: 0.1,
-      clearcoat: 0.8,
+      clearcoat: 0.9,
       clearcoatRoughness: 0.1,
-      reflectivity: 0.7,
+      reflectivity: 0.8,
     });
 
     const instancedTiles = new THREE.InstancedMesh(tileGeo, tileMat, tileCount);
@@ -116,99 +131,60 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
 
     const dummy = new THREE.Object3D();
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
+    const tileData: TileData[] = [];
 
-    // Fibonacci sphere distribution for uniform coverage with layered radius variations
+    // Fibonacci sphere distribution with layered expansion (inner mosaic + floating shell)
     for (let i = 0; i < tileCount; i++) {
       const theta = (2 * Math.PI * i) / goldenRatio;
       const phi = Math.acos(1 - (2 * (i + 0.5)) / tileCount);
 
-      // Layered expansion: some tiles close to core, some floating outward
-      const radiusLayer = 1.75 + Math.sin(i * 1.7) * 0.35 + (i % 3 === 0 ? 0.3 : 0);
+      const sinPhi = Math.sin(phi);
+      const normal = new THREE.Vector3(
+        sinPhi * Math.cos(theta),
+        sinPhi * Math.sin(theta),
+        Math.cos(phi)
+      ).normalize();
 
-      const x = radiusLayer * Math.sin(phi) * Math.cos(theta);
-      const y = radiusLayer * Math.sin(phi) * Math.sin(theta);
-      const z = radiusLayer * Math.cos(phi);
+      // Multi-layer radius:
+      // ~45% close to surface (mosaic shell)
+      // ~40% floating mid-layer
+      // ~15% exploded outer tiles like video
+      let baseRadius = 1.66;
+      if (i % 5 === 0) {
+        baseRadius = 2.15 + (i % 3) * 0.12; // Outer floating tiles
+      } else if (i % 2 === 0) {
+        baseRadius = 1.88 + (i % 4) * 0.08; // Mid-layer floating tiles
+      } else {
+        baseRadius = 1.66 + Math.sin(i * 3.1) * 0.04; // Surface layer
+      }
 
-      dummy.position.set(x, y, z);
-      // Align tile facing directly outward from origin
-      dummy.lookAt(0, 0, 0);
-      dummy.scale.set(
-        0.85 + Math.sin(i) * 0.25,
-        0.85 + Math.cos(i) * 0.25,
-        1.0
-      );
+      tileData.push({
+        normal,
+        baseRadius,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.0035 + Math.random() * 0.0035,
+        amplitude: baseRadius > 1.8 ? 0.16 + Math.random() * 0.12 : 0.05,
+        scaleX: 0.9 + Math.sin(i * 1.5) * 0.2,
+        scaleY: 0.9 + Math.cos(i * 1.5) * 0.2,
+      });
+
+      // Initial placement
+      const pos = normal.clone().multiplyScalar(baseRadius);
+      dummy.position.copy(pos);
+      dummy.lookAt(pos.clone().add(normal));
+      dummy.scale.set(tileData[i].scaleX, tileData[i].scaleY, 1.0);
       dummy.updateMatrix();
-
       instancedTiles.setMatrixAt(i, dummy.matrix);
     }
+
     instancedTiles.instanceMatrix.needsUpdate = true;
     globeGroup.add(instancedTiles);
 
-    // 6.5 Inward/Outward Floating Breathing Energy Particles
-    const particleCount = 130;
-    const particleGeo = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleBaseDirs: { x: number; y: number; z: number; baseR: number; speed: number; phase: number }[] = [];
-
-    for (let i = 0; i < particleCount; i++) {
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      const sinPhi = Math.sin(phi);
-
-      const dx = sinPhi * Math.cos(theta);
-      const dy = sinPhi * Math.sin(theta);
-      const dz = Math.cos(phi);
-
-      const baseR = 2.0 + Math.random() * 1.3;
-      const speed = 0.0018 + Math.random() * 0.002;
-      const phase = Math.random() * Math.PI * 2;
-
-      particleBaseDirs.push({ x: dx, y: dy, z: dz, baseR, speed, phase });
-
-      particlePositions[i * 3] = dx * baseR;
-      particlePositions[i * 3 + 1] = dy * baseR;
-      particlePositions[i * 3 + 2] = dz * baseR;
-    }
-
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-
-    // Canvas circular radial particle texture
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d')!;
-    const pGrad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    pGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    pGrad.addColorStop(0.3, 'rgba(134, 239, 172, 0.95)');
-    pGrad.addColorStop(0.7, 'rgba(34, 197, 94, 0.45)');
-    pGrad.addColorStop(1, 'rgba(34, 197, 94, 0)');
-    ctx.fillStyle = pGrad;
-    ctx.beginPath();
-    ctx.arc(32, 32, 32, 0, Math.PI * 2);
-    ctx.fill();
-
-    const particleTexture = new THREE.CanvasTexture(canvas);
-    const particleMat = new THREE.PointsMaterial({
-      size: 0.16,
-      map: particleTexture,
-      transparent: true,
-      opacity: 0.85,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-
-    const particles = new THREE.Points(particleGeo, particleMat);
-    scene.add(particles);
-
-    // Subtle tilt like earth axis
-    globeGroup.rotation.x = 0.22;
-    globeGroup.rotation.z = -0.08;
-
-    // 7. Animation Loop
+    // 7. Animation Loop with Organic Radial Breathing
     let animationFrameId: number;
     let baseAngle = 0;
+    const tempPos = new THREE.Vector3();
+    const targetLook = new THREE.Vector3();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -216,31 +192,33 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
       const now = performance.now();
       const spin = spinProgressRef.current;
 
-      // Breathe particles radially inward and outward
-      const posAttr = particleGeo.attributes.position as THREE.BufferAttribute;
-      const posArr = posAttr.array as Float32Array;
+      // Update breathing motion for each tile (oscillate radially)
+      for (let i = 0; i < tileCount; i++) {
+        const d = tileData[i];
+        const r = d.baseRadius + Math.sin(now * d.speed + d.phase) * d.amplitude;
 
-      for (let i = 0; i < particleCount; i++) {
-        const p = particleBaseDirs[i];
-        const currentR = p.baseR + Math.sin(now * p.speed + p.phase) * 0.42;
-        posArr[i * 3] = p.x * currentR;
-        posArr[i * 3 + 1] = p.y * currentR;
-        posArr[i * 3 + 2] = p.z * currentR;
+        tempPos.copy(d.normal).multiplyScalar(r);
+        dummy.position.copy(tempPos);
+
+        targetLook.copy(tempPos).add(d.normal);
+        dummy.lookAt(targetLook);
+        dummy.scale.set(d.scaleX, d.scaleY, 1.0);
+        dummy.updateMatrix();
+
+        instancedTiles.setMatrixAt(i, dummy.matrix);
       }
-      posAttr.needsUpdate = true;
-      particles.rotation.y += 0.0025;
+      instancedTiles.instanceMatrix.needsUpdate = true;
 
       if (spin.active) {
         const elapsed = now - spin.startTime;
         const t = Math.min(1, elapsed / spin.duration);
 
-        // Quintic ease in-out for rapid high-speed spin
+        // Smooth quintic ease for rapid mining spin
         const ease = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-
         globeGroup.rotation.y = baseAngle + ease * spin.totalRotations;
 
-        // Dynamic scale pulse during rapid spin
-        const pulse = Math.sin(t * Math.PI) * 0.18;
+        // Dynamic scale pulse during fast spin
+        const pulse = Math.sin(t * Math.PI) * 0.15;
         globeGroup.scale.set(1 + pulse, 1 + pulse, 1 + pulse);
 
         if (t >= 1) {
@@ -249,14 +227,13 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
           globeGroup.scale.set(1, 1, 1);
         }
       } else {
-        // Normal gentle idle spin
-        globeGroup.rotation.y += 0.009;
+        // Idle smooth rotation - Faster & lively movement
+        globeGroup.rotation.y += 0.017;
         baseAngle = globeGroup.rotation.y;
       }
 
-      // Gentle floating bob
-      globeGroup.position.y = Math.sin(now * 0.0018) * 0.08;
-      particles.position.y = globeGroup.position.y;
+      // Gentle floating elevation bob
+      globeGroup.position.y = Math.sin(now * 0.0022) * 0.08;
 
       renderer.render(scene, camera);
     };
@@ -266,8 +243,8 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
     // 8. Handle Resize
     const handleResize = () => {
       if (!container) return;
-      const newW = container.clientWidth || 300;
-      const newH = container.clientHeight || 280;
+      const newW = container.clientWidth || 240;
+      const newH = container.clientHeight || 200;
       camera.aspect = newW / newH;
       camera.updateProjectionMatrix();
       renderer.setSize(newW, newH);
@@ -283,9 +260,6 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
       innerMat.dispose();
       tileGeo.dispose();
       tileMat.dispose();
-      particleGeo.dispose();
-      particleMat.dispose();
-      particleTexture.dispose();
       if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
@@ -293,9 +267,9 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-[220px] sm:h-[280px] flex items-center justify-center select-none overflow-hidden">
-      {/* Ambient emerald glow aura */}
-      <div className="absolute inset-8 rounded-full bg-gradient-to-tr from-[#16A34A]/30 via-[#22C55E]/25 to-transparent blur-3xl pointer-events-none" />
+    <div className="relative w-full h-[210px] sm:h-[250px] flex items-center justify-center select-none">
+      {/* Soft ambient mint aura */}
+      <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-[#34D399]/25 via-[#6EE7B7]/20 to-transparent blur-2xl pointer-events-none" />
       <div
         ref={mountRef}
         className={`relative z-10 w-full h-full flex items-center justify-center ${className}`}

@@ -6,8 +6,6 @@ import {
   Pickaxe,
   Clock,
   ArrowRight,
-  Sparkles,
-  ExternalLink,
   Globe,
   Zap,
   CheckCircle2
@@ -85,86 +83,106 @@ export const DashboardPage: React.FC = () => {
 
   const isEligible = data?.mining?.isEligible ?? true;
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   return (
-    <div className="space-y-8 pb-28 sm:pb-16">
+    <div className="space-y-6 pb-28 sm:pb-16">
       
+      {/* 0. Dashboard Greeting Header matching client reference */}
+      <div className="space-y-1">
+        <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#15803D]">
+          GT NETWORK / DASHBOARD
+        </span>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#0A341B] tracking-tight">
+          {getGreeting()}!
+        </h1>
+        <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
+          Build the human network today.
+        </p>
+      </div>
+
       {/* 1. Dynamic Image Slides Carousel, Market Rates, and Action Cards matching video */}
       <HomeBanners />
       
-      {/* 2. Four Platform Statistics Cards with Streaming Green Border Beam matching video reference */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* 2. Four Platform Statistics Cards with Streaming Green Border Beam - All 4 Equal Size */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 auto-rows-fr items-stretch">
         
         {/* Wallet Balance */}
-        <div className="border-beam-card group cursor-pointer">
-          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#1E5E36]">Wallet Balance</span>
-              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
-                <Coins className="w-4 h-4" />
+        <div className="border-beam-card group cursor-pointer h-full">
+          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Wallet Balance</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
+                <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-[#15803D] tracking-tight">
+            <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#15803D] tracking-tight truncate">
               {(data?.wallet?.availableBalance ?? wallet?.availableBalance ?? 0).toFixed(2)} GT
             </p>
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />
-              <span>Verified ledger balance</span>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
+              <span className="truncate">Verified ledger</span>
             </div>
           </div>
         </div>
 
         {/* Lifetime Mined */}
-        <div className="border-beam-card border-beam-card-delay-1 group cursor-pointer">
-          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#1E5E36]">Lifetime Mined</span>
-              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-1 group cursor-pointer h-full">
+          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Lifetime Mined</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
+            <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#0A341B] tracking-tight truncate">
               {(data?.statistics?.totalGtEarned ?? wallet?.lifetimeEarned ?? 0).toFixed(2)} GT
             </p>
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-              <span className="text-xs">▲</span>
-              <span>Cumulative Epoch Yield</span>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
+              <span className="text-xs shrink-0">▲</span>
+              <span className="truncate">Cumulative Yield</span>
             </div>
           </div>
         </div>
 
         {/* Mining Epoch Rate */}
-        <div className="border-beam-card border-beam-card-delay-2 group cursor-pointer">
-          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#1E5E36]">Mining Epoch Rate</span>
-              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
-                <Pickaxe className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-2 group cursor-pointer h-full">
+          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Mining Rate</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
+                <Pickaxe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-[#15803D] tracking-tight">
+            <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#15803D] tracking-tight truncate">
               +1.00 GT
             </p>
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1E5E36]">
-              <span>Per 4-hour cycle interval</span>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[#1E5E36] truncate">
+              <span className="truncate">Per 4-hour cycle</span>
             </div>
           </div>
         </div>
 
         {/* Network Node Status */}
-        <div className="border-beam-card border-beam-card-delay-3 group cursor-pointer">
-          <div className="border-beam-inner p-5 sm:p-6 space-y-2 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#1E5E36]">Network Status</span>
-              <div className="w-8 h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] group-hover:scale-110 transition-transform">
-                <Globe className="w-4 h-4" />
+        <div className="border-beam-card border-beam-card-delay-3 group cursor-pointer h-full">
+          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Node Status</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
+                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
-              Node Online
+            <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#0A341B] tracking-tight truncate">
+              Online
             </p>
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#15803D]">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping" />
-              <span>Epoch Synchronized</span>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
+              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping shrink-0" />
+              <span className="truncate">Epoch Synced</span>
             </div>
           </div>
         </div>
@@ -211,51 +229,6 @@ export const DashboardPage: React.FC = () => {
           <ArrowRight className="w-4 h-4" />
         </Link>
       </GlassCard>
-
-      {/* 4. Latest Community Announcements */}
-      {data?.latestNews && data.latestNews.length > 0 && (
-        <GlassCard className="space-y-4">
-          <div className="flex items-center justify-between border-b border-black/5 pb-3">
-            <h3 className="text-lg font-bold text-[#0A341B] flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#16A34A]" />
-              <span>Latest Community Announcements</span>
-            </h3>
-            <Link to="/community" className="text-xs text-[#15803D] hover:underline flex items-center gap-1 font-bold">
-              <span>All News</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data.latestNews.map((post) => (
-              <div
-                key={post.id}
-                className="p-4 rounded-2xl bg-white/70 border border-white/90 space-y-2 flex flex-col justify-between shadow-sm"
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="font-black text-[#15803D] uppercase tracking-wider">
-                      {post.category}
-                    </span>
-                    <span className="text-[#1E5E36]">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-[#0A341B] line-clamp-1">{post.title}</h4>
-                  <p className="text-xs text-[#1E5E36] line-clamp-2">{post.content}</p>
-                </div>
-                <Link
-                  to="/community"
-                  className="text-[11px] font-bold text-[#15803D] hover:underline flex items-center gap-1 pt-2"
-                >
-                  <span>Read update</span>
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      )}
     </div>
   );
 };

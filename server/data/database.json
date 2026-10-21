@@ -37,9 +37,9 @@
       "role": "USER",
       "accountStatus": "ACTIVE",
       "emailVerifiedAt": "2026-10-18T11:12:45.081Z",
-      "lastMiningAt": "2026-10-18T12:01:38.132Z",
+      "lastMiningAt": "2026-10-21T13:34:38.998Z",
       "createdAt": "2026-10-16T11:12:45.081Z",
-      "updatedAt": "2026-10-18T12:01:38.132Z",
+      "updatedAt": "2026-10-21T13:34:38.998Z",
       "deletedAt": null
     }
   ],
@@ -55,10 +55,10 @@
     {
       "id": "wal_demo_002",
       "userId": "usr_demo_002",
-      "availableBalance": 3.5,
-      "lifetimeEarned": 3.5,
+      "availableBalance": 4.5,
+      "lifetimeEarned": 4.5,
       "createdAt": "2026-10-18T11:12:45.081Z",
-      "updatedAt": "2026-10-18T12:01:38.132Z"
+      "updatedAt": "2026-10-21T13:34:38.998Z"
     }
   ],
   "walletTransactions": [
@@ -109,6 +109,18 @@
       "description": "4-Hour Mining Reward (+1 GT)",
       "createdAt": "2026-10-18T12:01:38.132Z",
       "createdBy": "SYSTEM"
+    },
+    {
+      "id": "tx_mvi5m0lz_s9k3wy",
+      "userId": "usr_demo_002",
+      "type": "MINING_REWARD",
+      "amount": 1,
+      "status": "COMPLETED",
+      "idempotencyKey": "idemp_claim_claim_mvi5m0lz_9pehjb",
+      "referenceId": "claim_mvi5m0lz_9pehjb",
+      "description": "4-Hour Mining Reward (+1 GT)",
+      "createdAt": "2026-10-21T13:34:38.998Z",
+      "createdBy": "SYSTEM"
     }
   ],
   "miningClaims": [
@@ -128,6 +140,15 @@
       "claimedAt": "2026-10-18T12:01:38.132Z",
       "nextEligibleAt": "2026-10-18T16:01:38.132Z",
       "transactionId": "tx_mvdryudw_rlq9mm",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "claim_mvi5m0lz_9pehjb",
+      "userId": "usr_demo_002",
+      "rewardAmount": 1,
+      "claimedAt": "2026-10-21T13:34:38.998Z",
+      "nextEligibleAt": "2026-10-21T17:34:38.998Z",
+      "transactionId": "tx_mvi5m0lz_s9k3wy",
       "status": "SUCCESS"
     }
   ],
@@ -212,6 +233,15 @@
       "type": "MINING",
       "readAt": null,
       "createdAt": "2026-10-18T12:01:38.132Z"
+    },
+    {
+      "id": "notif_mvi5m0lz_fd0ij5",
+      "userId": "usr_demo_002",
+      "title": "Mining Claim Successful!",
+      "message": "You mined +1 GT! Your next mining session opens in 4 hours.",
+      "type": "MINING",
+      "readAt": null,
+      "createdAt": "2026-10-21T13:34:38.998Z"
     }
   ],
   "adminAuditLogs": [

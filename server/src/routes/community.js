@@ -11,8 +11,27 @@ router.get('/posts', (req, res) => {
 
     let posts = db.communityPosts.filter(p => p.status === 'PUBLISHED');
 
-    if (category && category !== 'All') {
+    if (category && category.toLowerCase() === 'latest') {
+      // Latest: Sort strictly newest first by updatedAt or createdAt
+      posts.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+        return timeB - timeA;
+      });
+    } else if (category && category !== 'All') {
       posts = posts.filter(p => p.category?.toLowerCase() === category.toLowerCase());
+      posts.sort((a, b) => {
+        if (b.isPinned && !a.isPinned) return 1;
+        if (!b.isPinned && a.isPinned) return -1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    } else {
+      // All: Sort pinned first, then newest first
+      posts.sort((a, b) => {
+        if (b.isPinned && !a.isPinned) return 1;
+        if (!b.isPinned && a.isPinned) return -1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
     }
 
     if (search && search.trim()) {
@@ -23,13 +42,6 @@ router.get('/posts', (req, res) => {
         p.category?.toLowerCase().includes(q)
       );
     }
-
-    // Sort: pinned posts first, then newest first
-    posts.sort((a, b) => {
-      if (b.isPinned && !a.isPinned) return 1;
-      if (!b.isPinned && a.isPinned) return -1;
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
 
     return res.json({
       success: true,

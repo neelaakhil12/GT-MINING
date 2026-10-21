@@ -152,17 +152,6 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
-
-          <button
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            className="px-4 py-2 rounded-2xl text-xs font-bold text-[#DC2626] bg-[#FEE2E2]/80 border border-[#FCA5A5] hover:bg-[#FEE2E2] transition-all flex items-center gap-2 self-start sm:self-auto shadow-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Log Out</span>
-          </button>
         </div>
 
         {/* Account Details Metadata */}
@@ -324,6 +313,30 @@ export const ProfilePage: React.FC = () => {
         >
           <Trash2 className="w-4 h-4" />
           <span>Delete Account Permanently</span>
+        </button>
+      </div>
+
+      {/* Account Session Logout Section (At the end of Profile Page) */}
+      <div className="rounded-3xl border border-white/80 bg-white/70 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm backdrop-blur-xl">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-[#0A341B]">
+            <LogOut className="w-5 h-5 text-[#DC2626]" />
+            <h3 className="text-sm font-black text-[#0A341B]">Session & Security</h3>
+          </div>
+          <p className="text-xs text-[#1E5E36] font-medium">
+            Safely log out of your active GT Pioneer session on this device.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+          className="px-6 py-3 rounded-2xl text-xs font-black text-[#DC2626] bg-[#FEE2E2]/90 border border-[#FCA5A5] hover:bg-[#FEE2E2] hover:shadow-md transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer self-start sm:self-auto"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Log Out of Account</span>
         </button>
       </div>
 

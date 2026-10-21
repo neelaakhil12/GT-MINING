@@ -2,13 +2,10 @@ import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Pickaxe,
+  Play,
   Clock,
   Coins,
-  History,
-  ShieldCheck,
-  CheckCircle2,
   RefreshCw,
-  Coins as CoinIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -168,186 +165,152 @@ export const MiningPage: React.FC = () => {
     );
   }
 
+  const cycleTotalMs = 14400 * 1000;
+  const diffMs = status?.nextEligibleAt ? Math.max(0, new Date(status.nextEligibleAt).getTime() - Date.now()) : 0;
+  const progressPct = isEligible ? 100 : Math.min(100, Math.max(0, ((cycleTotalMs - diffMs) / cycleTotalMs) * 100));
+
+  const sessionStartedTime = status?.lastMiningAt 
+    ? new Date(status.lastMiningAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    : '05:16:58 PM';
+
+  const estimatedSettlementTime = status?.nextEligibleAt
+    ? new Date(status.nextEligibleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    : '09:16:58 PM';
+
   return (
-    <div className="space-y-6 pb-28 sm:pb-16 w-full max-w-6xl mx-auto">
+    <div className="space-y-4 pb-28 sm:pb-16 w-full max-w-lg mx-auto select-none">
       
-      {/* Mining Centerpiece Card */}
-      <GlassCard glow className="relative overflow-hidden text-center p-4 sm:p-10 space-y-4 sm:space-y-6">
-        
-        {/* Top Badges matching video reference */}
-        <div className="flex items-center justify-between gap-3 relative z-10 border-b border-black/5 pb-3 sm:pb-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 border border-white text-xs font-bold text-[#1E5E36] shadow-sm">
-            <span className={`w-2 h-2 rounded-full ${isEligible ? 'bg-[#22C55E] animate-ping' : 'bg-[#15803D]'}`} />
-            <span>{isEligible ? 'Mining Session Ready' : 'Cycle Completed'}</span>
+      {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 */}
+      <div className="flex items-center justify-between px-2 pt-1">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+          <span className="font-black text-sm tracking-wider text-[#0A341B]">GT NETWORK</span>
+        </div>
+        <div className="px-3 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#15803D] text-[11px] font-bold tracking-wider">
+          ECO LAYER-2
+        </div>
+      </div>
+
+      {/* 2. Globe Centerpiece Card (No button inside, clean 3D globe with glassy badges) */}
+      <div className="relative rounded-[28px] overflow-hidden bg-white/70 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(22,101,52,0.06)] p-3.5 sm:p-5">
+        {/* Top Badges in Glassy Mode - Translucent so animation flows underneath */}
+        <div className="flex items-center justify-between w-full relative z-20 px-0.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-[10px] sm:text-[11px] font-bold text-[#0A341B] shadow-[0_2px_8px_rgba(0,0,0,0.03)] whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.7)] shrink-0" />
+            <span>Mining Active</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="px-3.5 py-1.5 rounded-full bg-white/85 border border-white text-xs font-bold text-[#15803D] shadow-sm">
-              <span>Rate: +1.00 GT / 4h</span>
-            </div>
-
-            <button
-              onClick={fetchMiningData}
-              className="p-1.5 rounded-xl bg-white/80 hover:bg-white text-[#16A34A] transition-colors shadow-sm border border-white"
-              title="Sync Node"
-              aria-label="Sync Node"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-[10px] sm:text-[11px] font-bold text-[#15803D] shadow-[0_2px_8px_rgba(0,0,0,0.03)] whitespace-nowrap">
+            <span>Rate: +24.00 GT / 4h</span>
           </div>
         </div>
 
-        {/* 3D Segmented Mint-Green Cube Globe matching exact video reference */}
-        <div className="py-1 flex justify-center relative z-10">
-          <div className="relative w-full max-w-[280px] sm:max-w-[320px] cursor-pointer" onClick={handleClaim}>
+        {/* 3D Segmented Mint-Green Cube Globe - Enriched and enlarged */}
+        <div className="-mt-2 sm:-mt-3 flex justify-center relative z-10 cursor-pointer" onClick={handleClaim}>
+          <div className="relative w-full max-w-[280px] sm:max-w-[340px]">
             <MiningGlobe3D spinning={isFastSpinning} />
-            {isEligible && (
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white text-[9px] sm:text-[10px] font-black shadow-[0_6px_16px_rgba(34,197,94,0.5)] uppercase tracking-wider animate-bounce whitespace-nowrap">
-                Tap Globe to Mine!
-              </div>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Main Mine GT CTA Button - Positioned DIRECTLY under the crystal with streaming border beam */}
-        <div className="max-w-xs sm:max-w-sm mx-auto relative z-10 pt-0">
-          <div className="border-beam-card !rounded-2xl p-[2px] w-full">
-            <button
-              onClick={handleClaim}
-              disabled={claiming}
-              className="relative z-10 w-full py-2.5 sm:py-3.5 px-6 rounded-[14px] font-black text-sm sm:text-base transition-all duration-300 flex items-center justify-center gap-2.5 transform active:scale-95 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] cursor-pointer"
-            >
-              <Pickaxe className={`w-4.5 h-4.5 ${claiming ? 'animate-spin' : 'animate-bounce'}`} />
-              <span>
-                {claiming
-                  ? 'Mining Virtual GT Block...'
-                  : 'Mine GT (+1.0 GT)'}
-              </span>
-            </button>
-          </div>
+      {/* 3. TOTAL GT BALANCE Card matching reference screenshot */}
+      <div className="rounded-[28px] bg-white/70 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(22,101,52,0.06)] p-5 space-y-3">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <span className="text-[#1E5E36] tracking-wider uppercase font-black text-[11px]">TOTAL GT BALANCE</span>
+          <span className="text-[#16A34A] font-semibold text-xs">Confirmed</span>
         </div>
 
-        {/* Live Wallet Balance */}
-        <div className="space-y-0.5 relative z-10">
-          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1E5E36]">
-            Verified Available Balance
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <Coins className="w-4.5 h-4.5 text-[#16A34A]" />
-            <span className="text-xl sm:text-2xl font-black text-[#0A341B]">
-              {(wallet?.availableBalance ?? status?.availableBalance ?? 0).toFixed(4)} GT
+        <div className="text-3xl sm:text-4xl font-black text-[#0A341B] tracking-tight">
+          {(wallet?.availableBalance ?? status?.availableBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span className="text-[#15803D] text-lg sm:text-xl font-bold ml-1.5">GT</span>
+        </div>
+
+        <div className="border-b border-black/5 pt-1" />
+
+        <div className="grid grid-cols-2 gap-4 pt-1">
+          <div>
+            <span className="text-xs text-[#1E5E36] font-medium block">Available Balance</span>
+            <span className="text-sm sm:text-base font-black text-[#0A341B] block mt-0.5">
+              {(wallet?.availableBalance ?? status?.availableBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} GT
+            </span>
+          </div>
+          <div>
+            <span className="text-xs text-[#1E5E36] font-medium block">Mining Rewards Earned</span>
+            <span className="text-sm sm:text-base font-black text-[#15803D] block mt-0.5">
+              +{(wallet?.lifetimeEarned ?? status?.lifetimeEarned ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} GT
             </span>
           </div>
         </div>
+      </div>
 
-        {/* 4-Hour Countdown Clock - Reduced size for sleek mobile visibility */}
-        <div className="max-w-xs sm:max-w-sm mx-auto p-2.5 sm:p-4 rounded-2xl bg-white/80 border border-white space-y-0.5 relative z-10 shadow-[0_4px_14px_rgba(22,101,52,0.06)]">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-bold text-[#1E5E36]">
-            <Clock className="w-3.5 h-3.5 text-[#16A34A]" />
-            <span>Remaining Cooldown Time</span>
-          </div>
-          
-          <div className="text-xl sm:text-2xl font-mono font-black text-[#0A341B] tracking-wider">
+      {/* 4. MINING SESSION Card matching reference screenshot */}
+      <div className="rounded-[28px] bg-white/70 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(22,101,52,0.06)] p-5 space-y-3.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-black text-[#0A341B] tracking-wider uppercase">MINING SESSION</span>
+          <div className="px-3 py-1 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#15803D] font-mono font-black text-sm tracking-wider">
             {countdown}
           </div>
-
-          <p className="text-[9px] sm:text-[10px] text-[#1E5E36]">
-            Every 4 hours cooldown cycle • Next claim: {status?.nextEligibleAt ? new Date(status.nextEligibleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ready'}
-          </p>
         </div>
 
-        {/* Timestamps Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 max-w-md mx-auto text-left text-[11px] sm:text-xs text-[#1E5E36] relative z-10">
-          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/70 border border-white shadow-sm">
-            <span className="font-bold text-[#0A341B] block">Last Successful Claim:</span>
-            <span>{status?.lastMiningAt ? new Date(status.lastMiningAt).toLocaleString() : 'No claims yet'}</span>
-          </div>
-
-          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-white/70 border border-white shadow-sm">
-            <span className="font-bold text-[#0A341B] block">Reward Rate:</span>
-            <span className="text-[#15803D] font-bold">1.0 GT per 4 hours</span>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Rules Information Box */}
-      <GlassCard className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-[#0A341B]">
-          <ShieldCheck className="w-5 h-5 text-[#16A34A]" />
-          <span>Mining Protocol & Fair Allocation Rules</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#1E5E36]">
-          <div className="p-4 rounded-2xl bg-white/70 border border-white shadow-sm space-y-1">
-            <strong className="text-[#0A341B] block">4-Hour Cooldown Interval</strong>
-            <p>Every account is rate-limited to 1 claim every 14,400 seconds (4 hours) verified by server UTC time.</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-white/70 border border-white shadow-sm space-y-1">
-            <strong className="text-[#0A341B] block">Atomic Ledger Integrity</strong>
-            <p>Duplicate clicks, concurrent tabs, or modified device clocks are stopped by server-side idempotency locks.</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-white/70 border border-white shadow-sm space-y-1">
-            <strong className="text-[#0A341B] block">Persistent Countdown</strong>
-            <p>Closing the browser or switching devices does not alter or reset your timer.</p>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Mining Rewards History Table */}
-      <GlassCard className="space-y-4">
-        <div className="flex items-center justify-between border-b border-black/5 pb-4">
-          <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-[#16A34A]" />
-            <h3 className="text-lg font-bold text-[#0A341B]">Mining Rewards History</h3>
-          </div>
-          <span className="text-xs text-[#1E5E36] font-bold">{history.length} Total Claims</span>
+        {/* Progress Track */}
+        <div className="w-full h-2.5 rounded-full bg-black/5 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] transition-all duration-1000"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
 
-        {history.length === 0 ? (
-          <div className="py-12 text-center space-y-2">
-            <CoinIcon className="w-10 h-10 text-[#1E5E36]/30 mx-auto" />
-            <p className="text-sm font-bold text-[#0A341B]">No mining rewards claimed yet</p>
-            <p className="text-xs text-[#1E5E36]">Click "Mine GT" above to claim your first reward!</p>
+        {/* Sub-stats row */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[#1E5E36] font-medium">
+            Progress <strong className="font-black text-[#0A341B]">{progressPct.toFixed(1)}%</strong>
+          </span>
+          <span className="text-[#15803D] font-bold">Cycle Reward +24.00 GT</span>
+        </div>
+
+        <div className="border-t border-dashed border-black/10 pt-2" />
+
+        {/* Timestamps */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="text-[10px] font-bold text-[#1E5E36] tracking-wider uppercase block">SESSION STARTED</span>
+            <span className="text-xs sm:text-sm font-black text-[#0A341B] block mt-0.5">
+              {sessionStartedTime}
+            </span>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-white/60 text-[#1E5E36] uppercase font-bold">
-                <tr>
-                  <th className="p-3.5 rounded-l-2xl">Transaction ID</th>
-                  <th className="p-3.5">Claim Timestamp</th>
-                  <th className="p-3.5">Reward</th>
-                  <th className="p-3.5">Next Eligible</th>
-                  <th className="p-3.5 rounded-r-2xl text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5 text-[#0A341B]">
-                {history.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-white/60 transition-colors">
-                    <td className="p-3.5 font-mono text-[11px] text-[#1E5E36]">
-                      {claim.transactionId || claim.id}
-                    </td>
-                    <td className="p-3.5 text-[11px]">
-                      {new Date(claim.claimedAt).toLocaleString()}
-                    </td>
-                    <td className="p-3.5 font-bold font-mono text-[#15803D]">
-                      +{claim.rewardAmount} GT
-                    </td>
-                    <td className="p-3.5 text-[11px] text-[#1E5E36]">
-                      {new Date(claim.nextEligibleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="p-3.5 text-right">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Confirmed</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <span className="text-[10px] font-bold text-[#1E5E36] tracking-wider uppercase block">ESTIMATED SETTLEMENT</span>
+            <span className="text-xs sm:text-sm font-black text-[#0A341B] block mt-0.5">
+              {estimatedSettlementTime}
+            </span>
           </div>
-        )}
-      </GlassCard>
+        </div>
+      </div>
+
+      {/* 5. Mining Action Button - Always clickable and active to test animation */}
+      <div className="space-y-2 pt-1">
+        <button
+          onClick={handleClaim}
+          disabled={claiming}
+          className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] active:scale-95 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white cursor-pointer"
+        >
+          {claiming ? (
+            <>
+              <Pickaxe className="w-4 h-4 animate-spin" />
+              <span>Mining Virtual Block...</span>
+            </>
+          ) : (
+            <>
+              <Pickaxe className="w-4 h-4 animate-bounce" />
+              <span>Activate 4-Hour Mining (+1.0 GT)</span>
+            </>
+          )}
+        </button>
+        <p className="text-xs text-[#1E5E36] font-medium text-center">
+          Tap above to activate mining session and test live block animation
+        </p>
+      </div>
+
     </div>
   );
 };

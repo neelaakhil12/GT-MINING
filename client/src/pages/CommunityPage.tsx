@@ -116,23 +116,42 @@ export const CommunityPage: React.FC = () => {
   const [openCommentPostId, setOpenCommentPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState<Record<string, string>>({});
 
-  const categories = ['All', 'Announcement', 'Update', 'Ecosystem', 'Guide'];
+  const categories = ['All', 'Latest'];
 
   useEffect(() => {
     fetchPosts();
   }, [selectedCategory, searchQuery]);
 
   const fetchPosts = async () => {
+    setLoading(true);
     try {
       const res = await api.getCommunityPosts(
         selectedCategory === 'All' ? undefined : selectedCategory,
         searchQuery.trim() || undefined
       );
-      if (res.success && res.posts && res.posts.length > 0) {
-        setPosts(res.posts);
+      if (res.success && res.posts) {
+        let loaded = res.posts;
+        if (selectedCategory === 'Latest') {
+          loaded = [...loaded].sort((a, b) => {
+            const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+            const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+            return timeB - timeA;
+          });
+        }
+        setPosts(loaded);
       }
     } catch (err: any) {
-      // Keep hardcodedNodePosts on fallback
+      if (selectedCategory === 'Latest') {
+        setPosts(
+          [...hardcodedNodePosts].sort((a, b) => {
+            const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+            const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+            return timeB - timeA;
+          })
+        );
+      } else {
+        setPosts(hardcodedNodePosts);
+      }
     } finally {
       setLoading(false);
     }
@@ -222,15 +241,15 @@ export const CommunityPage: React.FC = () => {
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+        {/* Category Pills: Only All and Latest */}
+        <div className="flex items-center gap-2">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md'
+                  ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md scale-[1.02]'
                   : 'bg-white/80 border border-white text-[#1E5E36] hover:bg-white hover:text-[#0A341B] shadow-sm'
               }`}
             >
