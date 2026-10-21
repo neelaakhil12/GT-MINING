@@ -36,9 +36,17 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
 
   // Check if current route is landing or auth page
-  const isPublicStandalone = ['/', '/login', '/signup', '/forgot-password', '/admin/login', '/terms', '/privacy'].includes(
-    location.pathname
-  );
+  const isPublicStandalone = [
+    '/',
+    '/onboarding',
+    '/tour',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/admin/login',
+    '/terms',
+    '/privacy',
+  ].includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EAF8EE] text-[#0A341B] selection:bg-[#22C55E]/30 selection:text-[#0A341B] relative overflow-x-hidden">
@@ -89,8 +97,10 @@ export const App: React.FC = () => {
         <AuthProvider>
           <AppLayout>
             <Routes>
-              {/* Public Routes */}
+              {/* Public & Onboarding Routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/onboarding" element={<LandingPage />} />
+              <Route path="/tour" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

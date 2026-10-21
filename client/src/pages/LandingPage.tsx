@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Pickaxe,
   ArrowRight,
@@ -88,13 +88,20 @@ export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, login, signup, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  // If already authenticated, redirect immediately to dashboard
+  const isTourRequested =
+    searchParams.get('tour') === 'true' ||
+    location.pathname === '/onboarding' ||
+    location.pathname === '/tour';
+
+  // If already authenticated and NOT explicitly viewing tour, redirect to dashboard
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isTourRequested) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isTourRequested, navigate]);
 
   // Stages: 'splash' | 'onboarding' | 'auth'
   const [stage, setStage] = useState<'splash' | 'onboarding' | 'auth'>('splash');
