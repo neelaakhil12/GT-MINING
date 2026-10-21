@@ -3,23 +3,18 @@ import {
   Users,
   Copy,
   Check,
-  CheckCircle2,
   Share2,
   ArrowRight,
   Coins,
   Info,
-  Sparkles,
-  ShieldCheck,
   ChevronRight,
   Link2,
-  TrendingUp,
   MessageCircle,
   Send,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { api } from '../services/api';
 
 interface ReferralFriendRecord {
   id: string;
@@ -74,7 +69,7 @@ const dividendSlides = [
   {
     tag: 'PROTOCOL DIVIDEND',
     title: 'Autonomous 10% Yield Accrual',
-    desc: 'Instant smart ledger execution with zero platform transaction fees on peer output.',
+    desc: 'Instant smart ledger execution with zero platform transaction...',
   },
   {
     tag: 'TIER MULTIPLIER',
@@ -174,6 +169,22 @@ export const ReferralsPage: React.FC = () => {
     window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank');
   };
 
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join GT Mining Network',
+          text: `Mine virtual GT coins every 4 hours! Code: ${referralCode}`,
+          url: referralLink,
+        });
+      } catch (e) {
+        // Share dismissed
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
+
   return (
     <div className="space-y-6 pb-24 max-w-xl mx-auto px-1 sm:px-0">
 
@@ -215,67 +226,67 @@ export const ReferralsPage: React.FC = () => {
       {/* 2. GROW YOUR NETWORK & 2x2 STATS GRID */}
       <div className="space-y-3">
         <div className="px-1">
-          <h1 className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
+          <h1 className="text-2xl font-black text-[#0A341B] tracking-tight">
             Grow Your Network
           </h1>
-          <p className="text-xs text-[#1E5E36] font-medium">
+          <p className="text-xs text-[#15803D] font-medium">
             Your network. Your rewards.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3.5">
           {/* Card 1: TOTAL REFERRALS */}
-          <div className="rounded-[22px] p-4 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] space-y-1">
-            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-neutral-400">
+          <div className="rounded-[24px] p-5 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#15803D]">
               <span>TOTAL REFERRALS</span>
-              <Users className="w-3.5 h-3.5 text-neutral-400" />
+              <Users className="w-4 h-4 text-[#15803D]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#0A341B] pt-0.5">
+            <div className="text-3xl font-black text-[#0A341B] tracking-tight">
               28
             </div>
-            <div className="text-[11px] text-[#1E5E36]/80 font-medium">
+            <div className="text-xs text-[#15803D] font-medium">
               Registered peer nodes
             </div>
           </div>
 
           {/* Card 2: ACTIVE FRIENDS */}
-          <div className="rounded-[22px] p-4 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] space-y-1">
+          <div className="rounded-[24px] p-5 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#15803D]">
               <span>ACTIVE FRIENDS</span>
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#15803D] pt-0.5">
+            <div className="text-3xl font-black text-[#0A341B] tracking-tight">
               22
             </div>
-            <div className="text-[11px] text-[#15803D] font-medium">
+            <div className="text-xs text-[#15803D] font-medium">
               Confirmed mining cycle
             </div>
           </div>
 
           {/* Card 3: INACTIVE FRIENDS */}
-          <div className="rounded-[22px] p-4 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] space-y-1">
-            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-neutral-400">
+          <div className="rounded-[24px] p-5 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#15803D]">
               <span>INACTIVE FRIENDS</span>
-              <span className="w-2 h-2 rounded-full bg-neutral-300" />
+              <span className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-neutral-500 pt-0.5">
+            <div className="text-3xl font-black text-[#0A341B] tracking-tight">
               6
             </div>
-            <div className="text-[11px] text-neutral-400 font-medium">
+            <div className="text-xs text-[#15803D] font-medium">
               Standby allocation
             </div>
           </div>
 
           {/* Card 4: TOTAL GT EARNED */}
-          <div className="rounded-[22px] p-4 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.03)] space-y-1">
-            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-neutral-400">
+          <div className="rounded-[24px] p-5 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#15803D]">
               <span>TOTAL GT EARNED</span>
-              <Coins className="w-3.5 h-3.5 text-neutral-400" />
+              <Coins className="w-4 h-4 text-[#15803D]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#0A341B] pt-0.5">
+            <div className="text-3xl font-black text-[#0A341B] tracking-tight">
               324.50
             </div>
-            <div className="text-[11px] text-[#1E5E36]/80 font-medium">
+            <div className="text-xs text-[#15803D] font-medium">
               Accumulated net yield
             </div>
           </div>
@@ -283,7 +294,7 @@ export const ReferralsPage: React.FC = () => {
       </div>
 
       {/* 3. PERSONAL CONNECTION TOKEN */}
-      <div className="rounded-[24px] p-5 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-4">
+      <div className="rounded-[24px] p-5 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-black tracking-wider uppercase text-[#0A341B]">
             PERSONAL CONNECTION TOKEN
@@ -294,7 +305,7 @@ export const ReferralsPage: React.FC = () => {
         </div>
 
         {/* Link Box */}
-        <div className="p-2 sm:p-2.5 rounded-2xl bg-[#EBF7EF] border border-[#D5EEDB] flex items-center justify-between gap-2">
+        <div className="p-2 sm:p-2.5 rounded-2xl bg-[#F0FAF3] border border-[#DCF2E4] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 pl-2 overflow-hidden">
             <Link2 className="w-4 h-4 text-[#15803D] shrink-0" />
             <span className="font-mono text-xs text-[#0A341B] truncate select-all">
@@ -303,10 +314,10 @@ export const ReferralsPage: React.FC = () => {
           </div>
           <button
             onClick={handleCopyLink}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-[#15803D] hover:text-white text-xs font-bold text-[#15803D] transition-all flex items-center gap-1.5 shrink-0 shadow-sm"
+            className="w-9 h-9 rounded-xl bg-white hover:bg-neutral-100 border border-neutral-200/80 shadow-xs flex items-center justify-center text-neutral-700 transition-all shrink-0 active:scale-95"
+            aria-label="Copy Referral Link"
           >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-[#16A34A]" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+            {copiedLink ? <Check className="w-4 h-4 text-[#15803D]" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
 
@@ -328,60 +339,69 @@ export const ReferralsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. DIRECT TRANSMISSION (SOCIAL SHARING) */}
-      <div className="rounded-[24px] p-5 bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-3.5">
+      {/* 4. DIRECT TRANSMISSION (SOCIAL SHARING - CLEAN ICONS ONLY, NO NAMES, NO COLORS) */}
+      <div className="space-y-2.5 px-1">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-black tracking-wider uppercase text-[#0A341B]">
             DIRECT TRANSMISSION
           </span>
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-200">
+          <span className="text-[10px] font-medium text-neutral-400">
             Verified Endpoints
           </span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2.5">
           {/* WhatsApp */}
           <button
             onClick={shareWhatsApp}
-            className="py-2.5 px-2 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#15803D] flex flex-col items-center justify-center gap-1 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            aria-label="Share on WhatsApp"
           >
-            <MessageCircle className="w-4 h-4 text-[#16A34A]" />
-            <span className="text-[11px] font-bold">WhatsApp</span>
+            <MessageCircle className="w-5 h-5 stroke-[1.8]" />
           </button>
 
           {/* Telegram */}
           <button
             onClick={shareTelegram}
-            className="py-2.5 px-2 rounded-2xl bg-[#0284C7]/10 hover:bg-[#0284C7]/20 border border-[#0284C7]/30 text-[#0284C7] flex flex-col items-center justify-center gap-1 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            aria-label="Share on Telegram"
           >
-            <Send className="w-4 h-4 text-[#0284C7]" />
-            <span className="text-[11px] font-bold">Telegram</span>
+            <Send className="w-5 h-5 stroke-[1.8]" />
           </button>
 
-          {/* Twitter / X */}
+          {/* Twitter / 𝕏 */}
           <button
             onClick={shareTwitter}
-            className="py-2.5 px-2 rounded-2xl bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200 text-[#0A341B] flex flex-col items-center justify-center gap-1 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            aria-label="Share on Twitter"
           >
-            <span className="font-mono font-black text-sm leading-none">𝕏</span>
-            <span className="text-[11px] font-bold">Twitter</span>
+            <span className="font-mono font-black text-base leading-none">𝕏</span>
           </button>
 
           {/* Instagram */}
           <button
             onClick={() => setInstagramModal(true)}
-            className="py-2.5 px-2 rounded-2xl bg-[#E1306C]/10 hover:bg-[#E1306C]/20 border border-[#E1306C]/30 text-[#BE185D] flex flex-col items-center justify-center gap-1 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            aria-label="Share on Instagram"
           >
-            <svg className="w-4 h-4 fill-current text-[#BE185D]" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
               <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
             </svg>
-            <span className="text-[11px] font-bold">Instagram</span>
+          </button>
+
+          {/* Share */}
+          <button
+            onClick={handleNativeShare}
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            aria-label="Share Referral Link"
+          >
+            <Share2 className="w-5 h-5 stroke-[1.8]" />
           </button>
         </div>
       </div>
 
       {/* 5. PROTOCOL DIVIDEND - REWARDS & COMMISSION CARD */}
-      <div className="rounded-[26px] p-5 sm:p-6 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-4">
+      <div className="rounded-[26px] p-5 sm:p-6 bg-white border border-neutral-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20">
@@ -391,7 +411,7 @@ export const ReferralsPage: React.FC = () => {
               10% Mining Pro-Rata
             </span>
           </div>
-          <h3 className="text-lg font-black text-[#0A341B] pt-1">
+          <h3 className="text-xl font-black text-[#0A341B] pt-1">
             Rewards & Commission
           </h3>
         </div>
@@ -429,8 +449,8 @@ export const ReferralsPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xl font-black text-[#15803D] font-mono">
-                {claimableAmount.toFixed(2)} GT
+              <span className="text-2xl font-black text-[#0A341B] font-mono">
+                {claimableAmount.toFixed(2)} <span className="text-sm font-bold text-neutral-600">GT</span>
               </span>
               <button
                 onClick={handleClaimCommission}
@@ -445,8 +465,8 @@ export const ReferralsPage: React.FC = () => {
         </div>
 
         {/* Protocol Rule Callout */}
-        <div className="p-3 rounded-2xl bg-[#EAF8EE] border border-[#D5EEDB] flex items-start gap-2 text-[11px] text-[#1E5E36] font-medium leading-relaxed">
-          <Info className="w-3.5 h-3.5 text-[#15803D] shrink-0 mt-0.5" />
+        <div className="p-3.5 rounded-2xl bg-[#F0FAF3] border border-[#DCF2E4] flex items-start gap-2.5 text-xs text-[#1E5E36] font-medium leading-relaxed">
+          <Info className="w-4 h-4 text-[#15803D] shrink-0 mt-0.5" />
           <span>
             <strong>Protocol Rule:</strong> "If your referred friend mines 100 GT, you earn 10 GT in commission."
           </span>
@@ -464,7 +484,7 @@ export const ReferralsPage: React.FC = () => {
               Live on-chain records
             </p>
           </div>
-          <div className="px-3 py-1 rounded-full text-xs font-bold text-neutral-600 bg-white/90 border border-neutral-200/80 shadow-xs">
+          <div className="px-3 py-1 rounded-full text-xs font-bold text-neutral-600 bg-white border border-neutral-200/80 shadow-xs">
             Showing 4 of 28
           </div>
         </div>
@@ -474,11 +494,11 @@ export const ReferralsPage: React.FC = () => {
           {defaultFriendsList.map((friend) => (
             <div
               key={friend.id}
-              className="p-4 rounded-2xl bg-white/80 backdrop-blur-md border border-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between transition-all hover:bg-white"
+              className="p-4 rounded-2xl bg-white border border-neutral-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between transition-all hover:bg-neutral-50/50"
             >
               {/* Left Side: Avatar + Details */}
               <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-full bg-neutral-100/90 border border-neutral-200/70 flex items-center justify-center text-xs font-black text-neutral-700 shrink-0">
+                <div className="w-11 h-11 rounded-full bg-neutral-100 border border-neutral-200/70 flex items-center justify-center text-xs font-black text-neutral-700 shrink-0">
                   {friend.initials}
                 </div>
                 <div>
@@ -523,10 +543,10 @@ export const ReferralsPage: React.FC = () => {
       {/* Instagram Story Share Modal */}
       {instagramModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <div className="w-full max-w-sm bg-white/95 backdrop-blur-xl p-6 rounded-3xl space-y-4 border-2 border-white shadow-2xl">
+          <div className="w-full max-w-sm bg-white p-6 rounded-3xl space-y-4 border border-neutral-200 shadow-2xl">
             <h3 className="text-base font-black text-[#0A341B] flex items-center gap-2">
-              <svg className="w-5 h-5 fill-current text-[#BE185D]" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              <svg className="w-5 h-5 fill-current text-neutral-800" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.449-1.44z"/>
               </svg>
               <span>Share to Instagram</span>
             </h3>
@@ -539,7 +559,7 @@ export const ReferralsPage: React.FC = () => {
                 showToast('Referral link copied!', 'success');
                 setInstagramModal(false);
               }}
-              className="w-full py-2.5 rounded-2xl font-black text-xs bg-gradient-to-r from-[#16A34A] to-[#22C55E] text-white shadow-md active:scale-95 transition-transform"
+              className="w-full py-2.5 rounded-2xl font-black text-xs bg-[#0A341B] hover:bg-[#15803D] text-white shadow-md active:scale-95 transition-transform"
             >
               Copy Link & Close
             </button>
