@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Globe,
   Pin,
-  Search,
   Calendar,
   User,
   Tag,
@@ -85,7 +84,6 @@ export const CommunityPage: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPost[]>(hardcodedNodePosts);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
 
   // Interactive Social Actions (Like, Comment, Share)
@@ -120,14 +118,13 @@ export const CommunityPage: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory]);
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
       const res = await api.getCommunityPosts(
-        selectedCategory === 'All' ? undefined : selectedCategory,
-        searchQuery.trim() || undefined
+        selectedCategory === 'All' ? undefined : selectedCategory
       );
       if (res.success && res.posts) {
         let loaded = res.posts;
@@ -238,37 +235,21 @@ export const CommunityPage: React.FC = () => {
         </p>
       </GlassCard>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        
-        {/* Category Pills: Only All and Latest */}
-        <div className="flex items-center gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md scale-[1.02]'
-                  : 'bg-white/80 border border-white text-[#1E5E36] hover:bg-white hover:text-[#0A341B] shadow-sm'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search updates..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/90 border border-white text-xs font-medium text-[#0A341B] placeholder-[#1E5E36]/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
-          />
-        </div>
+      {/* Category Pills: Only All and Latest */}
+      <div className="flex items-center gap-2">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              selectedCategory === cat
+                ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md scale-[1.02]'
+                : 'bg-white/80 border border-white text-[#1E5E36] hover:bg-white hover:text-[#0A341B] shadow-sm'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Timeline Feed */}
@@ -282,7 +263,7 @@ export const CommunityPage: React.FC = () => {
         <div className="py-16 text-center space-y-3 glass-panel rounded-3xl border-2 border-white">
           <MessageSquare className="w-12 h-12 text-[#16A34A]/30 mx-auto" />
           <h3 className="text-base font-bold text-[#0A341B]">No announcements found</h3>
-          <p className="text-xs text-[#1E5E36]">Try adjusting your search or category filter.</p>
+          <p className="text-xs text-[#1E5E36]">No updates available in this category.</p>
         </div>
       ) : (
         <div className="space-y-6">

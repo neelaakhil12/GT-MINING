@@ -137,6 +137,29 @@ export const LandingPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [stage]);
 
+  // Swipe gesture detection for mobile onboarding
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX === null || touchEndX === null) return;
+    const diff = touchStartX - touchEndX;
+    if (diff > 50) {
+      handleNextSlide();
+    } else if (diff < -50 && currentSlide > 0) {
+      setCurrentSlide((prev) => prev - 1);
+    }
+  };
+
   const handleNextSlide = () => {
     if (currentSlide < onboardingSlides.length - 1) {
       setCurrentSlide((prev) => prev + 1);
@@ -312,12 +335,17 @@ export const LandingPage: React.FC = () => {
     const isLastSlide = currentSlide === onboardingSlides.length - 1;
 
     return (
-      <div className="min-h-screen w-full flex items-center justify-center py-4 sm:py-8 px-3 sm:px-6 relative">
-        {/* Onboarding Container (Centered Card on Desktop, Full Mobile Experience) */}
-        <div className="w-full max-w-lg bg-white/85 backdrop-blur-2xl rounded-[32px] border border-white/95 shadow-[0_20px_50px_rgba(22,101,52,0.15)] p-5 sm:p-7 flex flex-col justify-between space-y-5 relative overflow-hidden">
+      <div
+        className="min-h-[100dvh] w-full flex items-center justify-center p-0 sm:py-8 sm:px-6 relative select-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Onboarding Container: Full screen mobile view, Centered Card on Desktop */}
+        <div className="w-full h-[100dvh] sm:h-auto sm:max-w-lg bg-gradient-to-b from-[#EAF8EE]/95 via-white/95 to-[#EAF8EE]/95 sm:bg-white/85 sm:backdrop-blur-2xl rounded-none sm:rounded-[32px] border-0 sm:border sm:border-white/95 shadow-none sm:shadow-[0_20px_50px_rgba(22,101,52,0.15)] p-5 sm:p-7 flex flex-col justify-between space-y-4 sm:space-y-5 relative overflow-y-auto sm:overflow-hidden">
 
           {/* Top Bar: Brand, Counter & Skip Button */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-1 sm:pt-0 shrink-0">
             <div className="flex items-center gap-2">
               <img
                 src="/gt-header-logo.png"
@@ -336,7 +364,7 @@ export const LandingPage: React.FC = () => {
 
               <button
                 onClick={handleSkipToAuth}
-                className="text-xs font-bold text-neutral-500 hover:text-[#0A341B] transition-colors py-1 px-2 rounded-lg hover:bg-neutral-100/70"
+                className="text-xs font-bold text-neutral-500 hover:text-[#0A341B] transition-colors py-1 px-2.5 rounded-lg hover:bg-neutral-100/70 active:scale-95 cursor-pointer"
               >
                 Skip
               </button>
@@ -344,7 +372,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Feature Showcase Image */}
-          <div className="relative w-full aspect-square max-h-[300px] sm:max-h-[340px] rounded-[24px] overflow-hidden bg-neutral-900 border-2 border-white shadow-md group">
+          <div className="relative w-full flex-1 min-h-[220px] max-h-[46vh] sm:max-h-[340px] sm:aspect-square rounded-[22px] sm:rounded-[24px] overflow-hidden bg-neutral-900 border-2 border-white shadow-md group my-auto">
             <img
               src={slide.image}
               alt={slide.title}
@@ -361,27 +389,27 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Text Content */}
-          <div className="space-y-1.5 text-center px-1">
+          <div className="space-y-1.5 text-center px-1 shrink-0">
             <h2 className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight leading-snug">
               {slide.title}
             </h2>
             <p className="text-xs font-bold text-[#15803D]">
               {slide.subtitle}
             </p>
-            <p className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed pt-1 max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed pt-0.5 max-w-md mx-auto">
               {slide.description}
             </p>
           </div>
 
           {/* Bottom Navigation & Indicator Controls */}
-          <div className="space-y-4 pt-1">
+          <div className="space-y-3 sm:space-y-4 pt-1 pb-1 sm:pb-0 shrink-0">
             {/* 5 Dots Indicator */}
             <div className="flex items-center justify-center gap-1.5">
               {onboardingSlides.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
-                  className={`transition-all duration-300 rounded-full ${
+                  className={`transition-all duration-300 rounded-full cursor-pointer ${
                     currentSlide === idx
                       ? 'w-7 h-2 bg-[#15803D]'
                       : 'w-2 h-2 bg-neutral-300 hover:bg-neutral-400'
@@ -396,7 +424,7 @@ export const LandingPage: React.FC = () => {
               {currentSlide > 0 && (
                 <button
                   onClick={() => setCurrentSlide((prev) => prev - 1)}
-                  className="px-4 py-3 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-[#0A341B] text-xs font-bold transition-all active:scale-95"
+                  className="px-4 py-3 sm:py-3.5 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-[#0A341B] text-xs font-bold transition-all active:scale-95 cursor-pointer"
                 >
                   Back
                 </button>
@@ -404,7 +432,7 @@ export const LandingPage: React.FC = () => {
 
               <button
                 onClick={handleNextSlide}
-                className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(34,197,94,0.35)] active:scale-95"
+                className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(34,197,94,0.35)] active:scale-95 cursor-pointer"
               >
                 <span>{isLastSlide ? 'Get Started & Login' : 'Next'}</span>
                 <ChevronRight className="w-4 h-4" />
