@@ -23,64 +23,58 @@ import { useToast } from '../context/ToastContext';
 
 interface OnboardingSlide {
   id: number;
-  badge: string;
-  badgeIcon: React.ElementType;
   title: string;
   subtitle: string;
   description: string;
   image: string;
+  theme: 'dark' | 'light';
 }
 
 const onboardingSlides: OnboardingSlide[] = [
   {
     id: 1,
-    badge: '4-HOUR MINING ENGINE',
-    badgeIcon: Pickaxe,
-    title: 'Automated Cloud Mining Cycle',
-    subtitle: 'Mine virtual GT coins every 4 hours',
+    title: 'Automated 4-Hour Mining Engine',
+    subtitle: 'Zero hardware wear, zero battery drain',
     description:
-      'Activate your mining node with 1 tap. Zero hardware wear and zero battery drain on your mobile or desktop device.',
-    image: '/onboarding/slide1.jpg',
+      'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device.',
+    image: '/onboarding/story_1.jpg',
+    theme: 'dark',
   },
   {
     id: 2,
-    badge: 'PROTOCOL DIVIDENDS',
-    badgeIcon: Zap,
-    title: 'Autonomous 10% Yield Accrual',
-    subtitle: 'Earn pro-rata commissions from peers',
+    title: "Recognized by the world's largest stock exchange",
+    subtitle: 'The only blockchain company invited by the NYSE',
     description:
-      'Receive instant 10% lifetime mining commission whenever your referred friends and peer nodes complete their mining cycle.',
-    image: '/onboarding/slide2.jpg',
+      'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
+    image: '/onboarding/story_2.jpg',
+    theme: 'dark',
   },
   {
     id: 3,
-    badge: 'GLOBAL CONSENSUS',
-    badgeIcon: Globe,
-    title: 'Transparent Real-Time Ledgers',
-    subtitle: 'Live on-chain verifiable records',
+    title: 'Autonomous 10% Yield Accrual',
+    subtitle: 'Protocol dividend distribution',
     description:
-      'All transactions and reward claims are cryptographically synchronized with transparent ledger proofs and zero platform gas fees.',
-    image: '/onboarding/slide3.jpg',
+      'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
+    image: '/onboarding/story_3.jpg',
+    theme: 'dark',
   },
   {
     id: 4,
-    badge: 'NETWORK MULTIPLIERS',
-    badgeIcon: Gift,
-    title: 'Build Your Referral Circle',
-    subtitle: 'Tiered milestone reward crates',
+    title: 'Powered by Visa & Mastercard',
+    subtitle: 'Global payment cards',
     description:
-      'Share your personal cryptographic connection token across WhatsApp, Telegram, and 𝕏 to unlock exclusive VIP node bonuses.',
-    image: '/onboarding/slide4.jpg',
+      'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
+    image: '/onboarding/story_4.png',
+    theme: 'light',
   },
   {
     id: 5,
-    badge: 'LIQUIDITY & VAULT',
-    badgeIcon: Coins,
     title: 'Instant Direct Wallet Claims',
     subtitle: 'Non-custodial cryptographic access',
     description:
-      'Accumulate GT coin yields and claim your rewards directly to your personal wallet with instant cryptographic execution.',
-    image: '/onboarding/slide5.jpg',
+      'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
+    image: '/onboarding/story_5.jpg',
+    theme: 'dark',
   },
 ];
 
@@ -104,9 +98,15 @@ export const LandingPage: React.FC = () => {
   }, [isAuthenticated, isTourRequested, navigate]);
 
   // Stages: 'splash' | 'onboarding' | 'auth'
-  const [stage, setStage] = useState<'splash' | 'onboarding' | 'auth'>('splash');
+  const [stage, setStage] = useState<'splash' | 'onboarding' | 'auth'>(
+    isTourRequested ? 'onboarding' : 'splash'
+  );
   const [currentSlide, setCurrentSlide] = useState(0);
   const [splashProgress, setSplashProgress] = useState(0);
+
+  // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
+  const [slideProgress, setSlideProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
 
   // Auth form states
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
@@ -119,7 +119,7 @@ export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Splash Screen Timer & Progress Animation (1.8s)
+  // Splash Screen Timer & Progress Animation (1.5s)
   useEffect(() => {
     if (stage !== 'splash') return;
 
@@ -130,18 +130,43 @@ export const LandingPage: React.FC = () => {
           setStage('onboarding');
           return 100;
         }
-        return prev + 5;
+        return prev + 6;
       });
-    }, 85);
+    }, 80);
 
     return () => clearInterval(interval);
   }, [stage]);
+
+  // WhatsApp / Instagram Status auto-advance timer (~5.5s per slide)
+  useEffect(() => {
+    if (stage !== 'onboarding') return;
+    if (isHolding) return;
+
+    const interval = setInterval(() => {
+      setSlideProgress((prev) => {
+        if (prev >= 100) {
+          if (currentSlide < onboardingSlides.length - 1) {
+            setCurrentSlide((curr) => curr + 1);
+            return 0;
+          } else {
+            clearInterval(interval);
+            setStage('auth');
+            return 100;
+          }
+        }
+        return prev + 1;
+      });
+    }, 55);
+
+    return () => clearInterval(interval);
+  }, [stage, currentSlide, isHolding]);
 
   // Swipe gesture detection for mobile onboarding
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    setIsHolding(true);
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
   };
@@ -151,20 +176,31 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleTouchEnd = () => {
+    setIsHolding(false);
     if (touchStartX === null || touchEndX === null) return;
     const diff = touchStartX - touchEndX;
     if (diff > 50) {
       handleNextSlide();
-    } else if (diff < -50 && currentSlide > 0) {
-      setCurrentSlide((prev) => prev - 1);
+    } else if (diff < -50) {
+      handlePrevSlide();
     }
   };
 
   const handleNextSlide = () => {
     if (currentSlide < onboardingSlides.length - 1) {
       setCurrentSlide((prev) => prev + 1);
+      setSlideProgress(0);
     } else {
       setStage('auth');
+    }
+  };
+
+  const handlePrevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide((prev) => prev - 1);
+      setSlideProgress(0);
+    } else {
+      setSlideProgress(0);
     }
   };
 
@@ -331,113 +367,131 @@ export const LandingPage: React.FC = () => {
   // ==========================================
   if (stage === 'onboarding') {
     const slide = onboardingSlides[currentSlide];
-    const BadgeIcon = slide.badgeIcon;
-    const isLastSlide = currentSlide === onboardingSlides.length - 1;
 
     return (
       <div
-        className="min-h-[100dvh] w-full flex items-center justify-center p-0 sm:py-8 sm:px-6 relative select-none"
+        className="fixed inset-0 z-50 w-full h-[100dvh] flex items-center justify-center bg-black overflow-hidden select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Onboarding Container: Full screen mobile view, Centered Card on Desktop */}
-        <div className="w-full h-[100dvh] sm:h-auto sm:max-w-lg bg-gradient-to-b from-[#EAF8EE]/95 via-white/95 to-[#EAF8EE]/95 sm:bg-white/85 sm:backdrop-blur-2xl rounded-none sm:rounded-[32px] border-0 sm:border sm:border-white/95 shadow-none sm:shadow-[0_20px_50px_rgba(22,101,52,0.15)] p-5 sm:p-7 flex flex-col justify-between space-y-4 sm:space-y-5 relative overflow-y-auto sm:overflow-hidden">
-
-          {/* Top Bar: Brand, Counter & Skip Button */}
-          <div className="flex items-center justify-between pt-1 sm:pt-0 shrink-0">
-            <div className="flex items-center gap-2">
-              <img
-                src="/gt-header-logo.png"
-                alt="GT Logo"
-                className="w-7 h-7 object-contain drop-shadow-sm"
-              />
-              <span className="text-xs font-black tracking-wider text-[#0A341B]">
-                GT MINING
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] font-bold text-[#15803D] bg-[#15803D]/10 px-2.5 py-0.5 rounded-full">
-                {currentSlide + 1} of {onboardingSlides.length}
-              </span>
-
-              <button
-                onClick={handleSkipToAuth}
-                className="text-xs font-bold text-neutral-500 hover:text-[#0A341B] transition-colors py-1 px-2.5 rounded-lg hover:bg-neutral-100/70 active:scale-95 cursor-pointer"
-              >
-                Skip
-              </button>
-            </div>
-          </div>
-
-          {/* Feature Showcase Image */}
-          <div className="relative w-full flex-1 min-h-[220px] max-h-[46vh] sm:max-h-[340px] sm:aspect-square rounded-[22px] sm:rounded-[24px] overflow-hidden bg-neutral-900 border-2 border-white shadow-md group my-auto">
+        {/* Onboarding Container: Full screen mobile view, Centered Phone Frame on Desktop */}
+        <div className="relative w-full h-full sm:max-w-[430px] sm:h-[880px] sm:max-h-[92vh] sm:rounded-[44px] sm:border-[6px] sm:border-neutral-800/80 sm:shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col justify-between bg-black">
+          
+          {/* Background Visual Layer */}
+          <div className="absolute inset-0 z-0">
             <img
+              key={slide.image}
               src={slide.image}
               alt={slide.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover transition-all duration-500 scale-100"
             />
-            {/* Subtle Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-
-            {/* Pill Tag inside image */}
-            <div className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-[#4ADE80] border border-white/20">
-              <BadgeIcon className="w-3.5 h-3.5 text-[#22C55E]" />
-              <span>{slide.badge}</span>
-            </div>
+            {/* Ambient Gradient Overlay for text and button legibility */}
+            <div
+              className={`absolute inset-0 pointer-events-none transition-colors duration-500 ${
+                slide.theme === 'light'
+                  ? 'bg-gradient-to-b from-white/95 via-white/10 to-white/90'
+                  : 'bg-gradient-to-b from-black/85 via-black/20 to-black/95'
+              }`}
+            />
           </div>
 
-          {/* Text Content */}
-          <div className="space-y-1.5 text-center px-1 shrink-0">
-            <h2 className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight leading-snug">
-              {slide.title}
-            </h2>
-            <p className="text-xs font-bold text-[#15803D]">
-              {slide.subtitle}
-            </p>
-            <p className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed pt-0.5 max-w-md mx-auto">
-              {slide.description}
-            </p>
+          {/* Interactive Invisible Tap Zones (Left 40% goes Back, Right 60% goes Forward) */}
+          <div className="absolute inset-0 z-10 flex">
+            <div
+              className="w-[40%] h-[78%] cursor-pointer"
+              onClick={handlePrevSlide}
+              onMouseDown={() => setIsHolding(true)}
+              onMouseUp={() => setIsHolding(false)}
+              aria-label="Previous slide"
+              title="Tap left to go back"
+            />
+            <div
+              className="w-[60%] h-[78%] cursor-pointer"
+              onClick={handleNextSlide}
+              onMouseDown={() => setIsHolding(true)}
+              onMouseUp={() => setIsHolding(false)}
+              aria-label="Next slide"
+              title="Tap right to go forward"
+            />
           </div>
 
-          {/* Bottom Navigation & Indicator Controls */}
-          <div className="space-y-3 sm:space-y-4 pt-1 pb-1 sm:pb-0 shrink-0">
-            {/* 5 Dots Indicator */}
-            <div className="flex items-center justify-center gap-1.5">
+          {/* Top Bar: WhatsApp/Instagram Story Segmented Progress Bars & Text */}
+          <div className="relative z-20 pt-3 sm:pt-4 px-4 sm:px-5 space-y-3 shrink-0">
+            {/* 5 Segmented Story Progress Bars */}
+            <div className="flex items-center gap-1.5 w-full">
               {onboardingSlides.map((_, idx) => (
-                <button
+                <div
                   key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
-                    currentSlide === idx
-                      ? 'w-7 h-2 bg-[#15803D]'
-                      : 'w-2 h-2 bg-neutral-300 hover:bg-neutral-400'
+                  className={`flex-1 h-1 rounded-full overflow-hidden cursor-pointer ${
+                    slide.theme === 'light' ? 'bg-black/15' : 'bg-white/25'
                   }`}
-                  aria-label={`Slide ${idx + 1}`}
-                />
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide(idx);
+                    setSlideProgress(0);
+                  }}
+                >
+                  <div
+                    className={`h-full rounded-full transition-all duration-75 ${
+                      slide.theme === 'light' ? 'bg-black' : 'bg-white'
+                    }`}
+                    style={{
+                      width:
+                        idx < currentSlide
+                          ? '100%'
+                          : idx === currentSlide
+                          ? `${slideProgress}%`
+                          : '0%',
+                    }}
+                  />
+                </div>
               ))}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              {currentSlide > 0 && (
-                <button
-                  onClick={() => setCurrentSlide((prev) => prev - 1)}
-                  className="px-4 py-3 sm:py-3.5 rounded-2xl bg-neutral-100 hover:bg-neutral-200 text-[#0A341B] text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                >
-                  Back
-                </button>
-              )}
-
-              <button
-                onClick={handleNextSlide}
-                className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(34,197,94,0.35)] active:scale-95 cursor-pointer"
+            {/* Headline and Description (Directly below progress bars, matching reference) */}
+            <div className="pt-3 px-1 space-y-1.5">
+              <h1
+                className={`text-2xl sm:text-[28px] font-bold tracking-tight leading-tight transition-colors duration-300 ${
+                  slide.theme === 'light' ? 'text-[#0A1A2F]' : 'text-white'
+                }`}
               >
-                <span>{isLastSlide ? 'Get Started & Login' : 'Next'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                {slide.title}
+              </h1>
+              <p
+                className={`text-xs sm:text-sm font-normal leading-relaxed max-w-sm transition-colors duration-300 ${
+                  slide.theme === 'light' ? 'text-neutral-600' : 'text-neutral-300'
+                }`}
+              >
+                {slide.description}
+              </p>
             </div>
+          </div>
+
+          {/* Spacer in middle for visuals */}
+          <div className="flex-1 pointer-events-none" />
+
+          {/* Bottom Action Area: Continue & Skip (Matching reference image) */}
+          <div className="relative z-20 px-6 pb-8 pt-4 flex flex-col items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleNextSlide}
+              className="w-full py-4 rounded-full bg-[#0B1528] sm:bg-[#0F172A] hover:bg-black text-white text-base font-bold shadow-2xl active:scale-[0.98] transition-all cursor-pointer border border-white/10"
+            >
+              Continue
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSkipToAuth}
+              className={`text-sm font-semibold py-1 transition-colors cursor-pointer ${
+                slide.theme === 'light'
+                  ? 'text-neutral-600 hover:text-black'
+                  : 'text-neutral-300 hover:text-white'
+              }`}
+            >
+              Skip
+            </button>
           </div>
         </div>
       </div>
