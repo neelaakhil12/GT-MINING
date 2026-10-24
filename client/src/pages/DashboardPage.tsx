@@ -6,6 +6,7 @@ import {
   Pickaxe,
   Clock,
   ArrowRight,
+  ArrowUpRight,
   Globe,
   Zap,
   CheckCircle2
@@ -188,47 +189,32 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Mining Status Card */}
-      <GlassCard className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-[#0A341B] flex items-center gap-2">
-              <Pickaxe className="w-5 h-5 text-[#16A34A]" />
-              <span>4-Hour Mining Engine</span>
-            </h3>
-            <span className={`text-xs px-3 py-1 rounded-full font-bold ${
-              isEligible
-                ? 'bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30'
-                : 'bg-[#FBBF24]/20 text-[#B45309] border border-[#FBBF24]/40'
-            }`}>
-              {isEligible ? 'Claim Ready' : 'Cooldown Active'}
-            </span>
-          </div>
-
-          <p className="text-xs text-[#1E5E36]">
-            Claim reward: <strong className="text-[#15803D] font-bold">+1.0 GT</strong> per 4-hour cycle. Verified by atomic ledger timestamps.
+      {/* 3. GT Tasks Action Card matching Screenshot 5 */}
+      <div className="p-6 rounded-3xl bg-white/85 border border-white shadow-sm flex items-center justify-between gap-4 relative overflow-hidden group">
+        <div className="space-y-2 relative z-10 max-w-[260px]">
+          <h3 className="text-xl sm:text-2xl font-black text-[#0A341B]">
+            GT Tasks
+          </h3>
+          <p className="text-xs text-[#1E5E36] font-medium">
+            Complete tasks & earn GT
           </p>
+          <div className="pt-2">
+            <Link
+              to="/tasks"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs shadow-[0_8px_20px_rgba(34,197,94,0.35)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.5)] transition-all transform active:scale-95"
+            >
+              <span>GT Tasks</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
-        <div className="py-6 flex flex-col items-center justify-center space-y-3 bg-white/70 rounded-2xl border border-white/90 shadow-sm">
-          <Clock className="w-8 h-8 text-[#16A34A] animate-pulse" />
-          <div className="text-3xl sm:text-4xl font-mono font-black text-[#0A341B] tracking-widest">
-            {countdownStr}
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-[#22C55E]/20 to-[#86EFAC]/30 flex items-center justify-center p-2 shadow-inner shrink-0 group-hover:scale-105 transition-transform duration-300">
+          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white shadow-lg flex items-center justify-center">
+            <span className="font-black text-2xl text-[#15803D] italic">GT</span>
           </div>
-          <p className="text-[11px] font-bold text-[#1E5E36] uppercase tracking-wider">
-            {isEligible ? 'Tap below to claim reward' : 'Time until next mining claim'}
-          </p>
         </div>
-
-        <Link
-          to="/mining"
-          className="w-full py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_6px_20px_rgba(34,197,94,0.35)] transition-all flex items-center justify-center gap-2 text-sm"
-        >
-          <Pickaxe className="w-4 h-4" />
-          <span>Open Full Mining Station</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </GlassCard>
+      </div>
     </div>
   );
 };

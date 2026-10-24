@@ -19,6 +19,7 @@ import { CommunityPage } from './pages/CommunityPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { LegalPage } from './pages/LegalPage';
+import { TasksPage } from './pages/TasksPage';
 
 // Admin pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -146,6 +147,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <CommunityPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute>
+                    <TasksPage />
                   </ProtectedRoute>
                 }
               />
