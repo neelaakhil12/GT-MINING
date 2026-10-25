@@ -159,11 +159,49 @@ const TaskIcon: React.FC<{ type: TaskItem['iconType'] }> = ({ type }) => {
   }
 };
 
+// Slider slides for GT Tasks station matching homepage slider size and theme
+const TASK_SLIDES = [
+  {
+    id: 1,
+    image: '/banners/task_slide1.jpg',
+    tag: 'DAILY REWARDS',
+    title: 'Complete Tasks, Earn GT',
+    description: 'Boost your balance every day by completing verified social quests.',
+    accentColor: '#22C55E',
+  },
+  {
+    id: 2,
+    image: '/banners/task_slide2.jpg',
+    tag: 'GLOBAL COMMUNITY',
+    title: 'Connect & Multiply',
+    description: 'Join official GT channels across X, Telegram, and YouTube.',
+    accentColor: '#38BDF8',
+  },
+  {
+    id: 3,
+    image: '/banners/task_slide3.jpg',
+    tag: 'VIDEO REWARDS',
+    title: 'Watch & Collect',
+    description: 'Explore the latest GT ecosystem updates and claim instant rewards.',
+    accentColor: '#A855F7',
+  },
+];
+
 export const TasksPage: React.FC = () => {
   const { showToast } = useToast();
 
   // Active filter tab
   const [activeTab, setActiveTab] = useState<'all' | 'social' | 'video'>('all');
+
+  // Slider state with 1 second auto-scroll as requested
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % TASK_SLIDES.length);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Track completed task IDs in localStorage
   const [completedTasks, setCompletedTasks] = useState<string[]>(() => {
@@ -274,37 +312,101 @@ export const TasksPage: React.FC = () => {
         </span>
       </div>
 
-      {/* 1. Header Banner Card matching Screenshot 1 */}
-      <div className="relative p-6 sm:p-8 rounded-[32px] bg-white border border-white shadow-[0_10px_30px_rgba(22,101,52,0.06)] overflow-hidden">
-        {/* Soft mint ambient glow circle in top right */}
-        <div className="absolute -top-12 -right-12 w-52 h-52 bg-[#DCFCE7]/70 rounded-full pointer-events-none" />
+      {/* 1. Header Hero Image Slides Carousel - Same size as homepage slider, auto 1-second transition, without left/right arrows */}
+      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(22,101,52,0.12)] border-2 border-white/90 group bg-[#071F14]">
+        {/* Slides Track */}
+        <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
+          {TASK_SLIDES.map((slide, index) => {
+            const isActive = index === currentSlide;
 
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-[#15803D]">
-              COMMUNITY REWARDS
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-black text-[#0A341B] tracking-tight">
+            return (
+              <div
+                key={slide.id}
+                className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                }`}
+              >
+                {/* Background Image with Ambient Glass Gradient Overlays */}
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.08] transition-transform duration-1000 scale-100"
+                  loading="eager"
+                />
+
+                {/* Multi-layered cinematic gradient overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+                <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-[#22C55E]/20 rounded-full blur-3xl pointer-events-none" />
+
+                {/* Slide Foreground Content */}
+                <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1 sm:space-y-2 z-20">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                    <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
+                    <span>{slide.tag}</span>
+                  </div>
+
+                  <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                    {slide.title}
+                  </h2>
+
+                  <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
+                    {slide.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Indicator Dots - Auto loop without left/right arrows */}
+        <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+          {TASK_SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                currentSlide === i ? 'w-6 bg-[#22C55E] shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/80'
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 2. Tasks Rewards Summary Card - Reduced height and size matching Screenshot 4 */}
+      <div className="relative p-4 sm:p-5 rounded-3xl bg-white border border-white shadow-[0_10px_30px_rgba(22,101,52,0.06)] overflow-hidden">
+        {/* Soft mint ambient glow circle */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#DCFCE7]/70 rounded-full pointer-events-none" />
+
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <div className="space-y-1 min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[9px] sm:text-[10px] font-black uppercase tracking-wider w-fit">
+              <span>COMMUNITY REWARDS</span>
+            </div>
+
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-[#0A341B] tracking-tight">
               Tasks to Earn GT
-            </h1>
-            <p className="text-xs sm:text-sm font-medium text-[#1E5E36] max-w-lg">
+            </h2>
+
+            <p className="text-[11px] sm:text-xs font-medium text-[#1E5E36] line-clamp-1 max-w-md">
               Complete social tasks, watch videos and grow with the GT community.
             </p>
 
-            <div className="pt-4">
-              <span className="text-[11px] font-bold text-[#1E5E36]/80 block">
-                Your task rewards
+            <div className="pt-1 flex items-baseline gap-2">
+              <span className="text-[11px] font-bold text-[#1E5E36]/80">
+                Your task rewards:
               </span>
-              <div className="text-3xl sm:text-4xl font-black text-[#0A341B] tracking-tight mt-0.5">
+              <span className="text-base sm:text-lg font-black text-[#0A341B] tracking-tight">
                 {taskRewards.toFixed(2)} GT
-              </div>
+              </span>
             </div>
           </div>
 
           {/* Right GT Brand Badge */}
-          <div className="shrink-0 flex items-center justify-end">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#DCFCE7] flex items-center justify-center text-[#15803D] shadow-sm">
-              <span className="font-black text-2xl sm:text-3xl italic tracking-tight font-sans">
+          <div className="shrink-0 flex items-center justify-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#DCFCE7] flex items-center justify-center text-[#15803D] shadow-sm">
+              <span className="font-black text-xl sm:text-2xl italic tracking-tight font-sans">
                 GT
               </span>
             </div>
@@ -312,7 +414,7 @@ export const TasksPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Daily & Social Tasks Section matching Screenshot 1 & 2 */}
+      {/* 3. Daily & Social Tasks Section */}
       <div className="space-y-4">
         
         {/* Section Title & Done Pill */}
@@ -331,7 +433,7 @@ export const TasksPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Tabs matching Screenshot 1 */}
+        {/* Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => setActiveTab('all')}
@@ -365,7 +467,7 @@ export const TasksPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Tasks List matching Screenshot 1, 2, 3 */}
+        {/* Tasks List matching Screenshot 1 - Compact horizontal row on all viewports */}
         <div className="space-y-3">
           {filteredTasks.map((task) => {
             const isCompleted = completedTasks.includes(task.id);
@@ -374,23 +476,23 @@ export const TasksPage: React.FC = () => {
             return (
               <div
                 key={task.id}
-                className="p-4 sm:p-5 rounded-3xl bg-white border border-white shadow-[0_4px_20px_rgba(22,101,52,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:shadow-[0_8px_25px_rgba(22,101,52,0.08)]"
+                className="p-3.5 sm:p-4 rounded-[22px] sm:rounded-3xl bg-white border border-white shadow-[0_4px_20px_rgba(22,101,52,0.04)] flex items-center justify-between gap-3 sm:gap-4 transition-all hover:shadow-[0_8px_25px_rgba(22,101,52,0.08)]"
               >
                 {/* Left Side: Brand Icon and Task Info */}
-                <div className="flex items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                   <TaskIcon type={task.iconType} />
 
-                  <div className="space-y-0.5 flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight truncate">
                       {task.title}
                     </h3>
-                    <p className="text-xs text-[#1E5E36] font-medium truncate sm:whitespace-normal">
+                    <p className="text-[11px] sm:text-xs text-[#1E5E36]/80 font-medium truncate">
                       {task.description}
                     </p>
 
                     {/* Video Progress Bar in case of demo */}
                     {task.id === 'task_video' && (
-                      <div className="pt-2 w-full max-w-[260px]">
+                      <div className="pt-1.5 w-full max-w-[200px]">
                         <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-[#22C55E] transition-all duration-300"
@@ -404,32 +506,32 @@ export const TasksPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right Side: Reward Points & Action Button */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E2E8F0]/40">
-                  <span className="text-xs sm:text-sm font-black text-[#0A341B] shrink-0">
+                {/* Right Side: Reward Points on Top, Action Button Below (matching Screenshot 1) */}
+                <div className="flex flex-col items-end justify-center shrink-0 gap-1.5">
+                  <span className="text-xs sm:text-sm font-black text-[#0A341B] tracking-tight">
                     {task.rewardLabel}
                   </span>
 
                   {isCompleted ? (
-                    <div className="inline-flex items-center gap-1 px-4 py-2 rounded-2xl bg-[#DCFCE7] text-[#15803D] font-black text-xs shrink-0 border border-[#22C55E]/30">
+                    <div className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#DCFCE7] text-[#15803D] font-black text-[11px] sm:text-xs border border-[#22C55E]/30 shrink-0">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       <span>Completed</span>
                     </div>
                   ) : isVideoWatching ? (
                     <button
                       disabled
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#FBBF24]/20 text-[#B45309] font-black text-xs shrink-0 border border-[#FBBF24]/30"
+                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FBBF24]/20 text-[#B45309] font-black text-[11px] sm:text-xs border border-[#FBBF24]/30 shrink-0"
                     >
-                      <span className="w-2 h-2 rounded-full bg-[#F59E0B] animate-ping" />
-                      <span>{videoTimer}s remaining...</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-ping" />
+                      <span>{videoTimer}s...</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => handleTaskAction(task)}
-                      className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-xs shadow-sm transition-all active:scale-95 shrink-0"
+                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 shrink-0"
                     >
                       <span>{task.buttonLabel}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span className="text-xs">↗</span>
                     </button>
                   )}
                 </div>
@@ -439,7 +541,7 @@ export const TasksPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Reward Security Disclaimer matching Screenshot 3 */}
+      {/* 4. Reward Security Disclaimer */}
       <div className="p-4 sm:p-5 rounded-3xl bg-[#EAF8EE]/80 border border-[#86EFAC]/40 text-xs text-[#1E5E36] leading-relaxed">
         <p>
           <strong className="text-[#0A341B] font-bold">Reward security:</strong>{' '}
