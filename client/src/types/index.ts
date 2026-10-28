@@ -141,3 +141,51 @@ export interface DashboardSummary {
   latestNews: CommunityPost[];
   unreadNotificationsCount: number;
 }
+
+export interface PrivateNetworkMember {
+  id: string;
+  name: string;
+  maskedId: string;
+  email: string;
+  initials: string;
+  avatarColor: string;
+  isMiningActive: boolean;
+  nextEligibleAt: string | null;
+  lastMiningAt: string | null;
+  totalMined: number;
+  streakDays: number;
+  activityStatus: 'MINING' | 'IDLE';
+  lastPingedAt?: string | null;
+}
+
+export interface PrivateNetworkMessage {
+  id: string;
+  circleId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'HOST' | 'MEMBER';
+  senderAvatar: string;
+  text: string;
+  type: 'CHAT' | 'REMINDER' | 'ALERT';
+  targetMemberId?: string | null;
+  targetMemberName?: string | null;
+  createdAt: string;
+}
+
+export interface PrivateNetworkData {
+  circleHost: {
+    id: string;
+    fullName: string;
+    email?: string;
+    referralCode: string;
+    totalReferrals: number;
+  };
+  members: PrivateNetworkMember[];
+  messages: PrivateNetworkMessage[];
+  stats: {
+    totalMembers: number;
+    activeMiningCount: number;
+    idleCount: number;
+  };
+}
+

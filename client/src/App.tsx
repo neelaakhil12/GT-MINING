@@ -20,6 +20,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { LegalPage } from './pages/LegalPage';
 import { TasksPage } from './pages/TasksPage';
+import { PrivateNetworkPage } from './pages/PrivateNetworkPage';
 
 // Admin pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -139,6 +140,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <ReferralsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/private-network"
+                element={
+                  <ProtectedRoute>
+                    <PrivateNetworkPage />
                   </ProtectedRoute>
                 }
               />

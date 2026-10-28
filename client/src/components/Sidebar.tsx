@@ -8,7 +8,8 @@ import {
   Globe,
   Bell,
   User,
-  ShieldAlert
+  ShieldAlert,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,6 +24,7 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
     { label: 'Mining', path: '/mining', icon: Pickaxe, badge: '4h Cycle' },
     { label: 'Wallet', path: '/wallet', icon: Wallet },
     { label: 'My Referrals', path: '/referrals', icon: Users },
+    { label: 'Private Network', path: '/private-network', icon: MessageSquare, badge: 'Circle' },
     { label: 'Community News', path: '/community', icon: Globe },
     { label: 'Notifications', path: '/notifications', icon: Bell },
     { label: 'Profile & Settings', path: '/profile', icon: User },

@@ -11,6 +11,7 @@ import walletRouter from './routes/wallet.js';
 import communityRouter from './routes/community.js';
 import profileRouter from './routes/profile.js';
 import notificationsRouter from './routes/notifications.js';
+import privateNetworkRouter from './routes/privateNetwork.js';
 import adminRouter from './routes/admin.js';
 import { readDB } from './db.js';
 
@@ -53,6 +54,7 @@ app.use('/api/wallet', walletRouter);
 app.use('/api/community', communityRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/private-network', privateNetworkRouter);
 app.use('/api/admin', adminRouter);
 
 // Health check

@@ -9,7 +9,8 @@ import {
   ArrowUpRight,
   Globe,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -169,24 +170,32 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Network Node Status */}
-        <div className="border-beam-card border-beam-card-delay-3 group cursor-pointer h-full">
-          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2">
+        {/* Private Network Button / Circle Chat */}
+        <Link
+          to="/private-network"
+          id="private-network-button"
+          className="border-beam-card border-beam-card-delay-3 group cursor-pointer h-full block text-left"
+          title="Open Private Network"
+        >
+          <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2 group-hover:bg-[#EAF8EE]/60 transition-colors">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Node Status</span>
+              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Private Network</span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
-                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
             <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#0A341B] tracking-tight truncate">
-              Online
+              Circle Chat
             </p>
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping shrink-0" />
-              <span className="truncate">Epoch Synced</span>
+            <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse shrink-0" />
+                <span className="truncate">Open Chat & Mining</span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-[#16A34A] group-hover:translate-x-0.5 transition-transform shrink-0" />
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* 3. GT Tasks Action Card matching Screenshot 5 */}

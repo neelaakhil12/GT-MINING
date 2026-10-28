@@ -96,6 +96,13 @@ export const api = {
   markNotificationRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () => request<any>('/notifications/mark-all-read', { method: 'POST' }),
 
+  // Private Network
+  getPrivateNetwork: () => request<any>('/private-network'),
+  sendPrivateNetworkMessage: (body: { text: string; type?: string; targetMemberId?: string; targetMemberName?: string }) =>
+    request<any>('/private-network/messages', { method: 'POST', body: JSON.stringify(body) }),
+  pingPrivateNetworkMember: (body: { memberId: string; memberName: string }) =>
+    request<any>('/private-network/ping-member', { method: 'POST', body: JSON.stringify(body) }),
+
   // Admin
   getAdminDashboard: () => request<any>('/admin/dashboard'),
   getAdminUsers: (search?: string, status?: string) => {

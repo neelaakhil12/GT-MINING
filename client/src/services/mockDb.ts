@@ -423,6 +423,135 @@ export const handleMockApi = (endpoint: string, options: RequestInit = {}): any 
     };
   }
 
+  // Private Network Handlers
+  if (endpoint === '/private-network') {
+    const rawStored = localStorage.getItem('gt_mock_private_network_v1');
+    if (rawStored) {
+      try {
+        return JSON.parse(rawStored);
+      } catch (_) {}
+    }
+
+    const defaultCircleData = {
+      success: true,
+      circleHost: {
+        id: currentUser.id,
+        fullName: currentUser.fullName,
+        email: currentUser.email,
+        referralCode: currentUser.referralCode,
+        totalReferrals: 10,
+      },
+      stats: {
+        totalMembers: 10,
+        activeMiningCount: 6,
+        idleCount: 4,
+      },
+      members: [
+        { id: 'pn_1', name: 'Rahul Varma', maskedId: 'GT-91****24', email: 'ra***@gmail.com', initials: 'RV', avatarColor: 'from-[#3B82F6] to-[#60A5FA]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 45 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 45) * 60000).toISOString(), totalMined: 24.0, streakDays: 6, activityStatus: 'MINING' },
+        { id: 'pn_2', name: 'Priya Sharma', maskedId: 'GT-44****89', email: 'pr***@yahoo.com', initials: 'PS', avatarColor: 'from-[#EC4899] to-[#F472B6]', isMiningActive: false, lastMiningAt: new Date(Date.now() - 310 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() - 70 * 60000).toISOString(), totalMined: 18.0, streakDays: 3, activityStatus: 'IDLE' },
+        { id: 'pn_3', name: 'Arjun Reddy', maskedId: 'GT-77****12', email: 'ar***@outlook.com', initials: 'AR', avatarColor: 'from-[#10B981] to-[#34D399]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 110 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 110) * 60000).toISOString(), totalMined: 42.0, streakDays: 14, activityStatus: 'MINING' },
+        { id: 'pn_4', name: 'Kavya Nair', maskedId: 'GT-55****67', email: 'ka***@gmail.com', initials: 'KN', avatarColor: 'from-[#8B5CF6] to-[#A78BFA]', isMiningActive: false, lastMiningAt: new Date(Date.now() - 480 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() - 240 * 60000).toISOString(), totalMined: 8.0, streakDays: 1, activityStatus: 'IDLE' },
+        { id: 'pn_5', name: 'Sneha Rao', maskedId: 'GT-23****45', email: 'sn***@gmail.com', initials: 'SR', avatarColor: 'from-[#F59E0B] to-[#FBBF24]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 30 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 30) * 60000).toISOString(), totalMined: 31.0, streakDays: 9, activityStatus: 'MINING' },
+        { id: 'pn_6', name: 'Vikram Patel', maskedId: 'GT-88****31', email: 'vi***@hotmail.com', initials: 'VP', avatarColor: 'from-[#14B8A6] to-[#2DD4BF]', isMiningActive: false, lastMiningAt: new Date(Date.now() - 380 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() - 140 * 60000).toISOString(), totalMined: 15.0, streakDays: 4, activityStatus: 'IDLE' },
+        { id: 'pn_7', name: 'Elena Rostova', maskedId: 'GT-66****90', email: 'el***@crypto.net', initials: 'ER', avatarColor: 'from-[#06B6D4] to-[#22D3EE]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 95 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 95) * 60000).toISOString(), totalMined: 55.0, streakDays: 18, activityStatus: 'MINING' },
+        { id: 'pn_8', name: 'Deepak Gupta', maskedId: 'GT-33****58', email: 'de***@gmail.com', initials: 'DG', avatarColor: 'from-[#6366F1] to-[#818CF8]', isMiningActive: false, lastMiningAt: new Date(Date.now() - 620 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() - 380 * 60000).toISOString(), totalMined: 5.0, streakDays: 1, activityStatus: 'IDLE' },
+        { id: 'pn_9', name: 'Ananya Das', maskedId: 'GT-19****73', email: 'an***@gmail.com', initials: 'AD', avatarColor: 'from-[#D946EF] to-[#F0ABFC]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 15 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 15) * 60000).toISOString(), totalMined: 29.0, streakDays: 8, activityStatus: 'MINING' },
+        { id: 'pn_10', name: 'Rohit Verma', maskedId: 'GT-48****16', email: 'ro***@yahoo.com', initials: 'RV', avatarColor: 'from-[#84CC16] to-[#A3E635]', isMiningActive: true, lastMiningAt: new Date(Date.now() - 180 * 60000).toISOString(), nextEligibleAt: new Date(Date.now() + (240 - 180) * 60000).toISOString(), totalMined: 20.0, streakDays: 5, activityStatus: 'MINING' },
+      ],
+      messages: [
+        {
+          id: 'msg_1',
+          circleId: currentUser.id,
+          senderId: currentUser.id,
+          senderName: currentUser.fullName,
+          senderRole: 'HOST',
+          senderAvatar: currentUser.fullName.charAt(0).toUpperCase(),
+          text: '👋 Welcome team to our Private Mining Circle! Let\'s keep our hash power at 100% by claiming every 4 hours.',
+          type: 'CHAT',
+          createdAt: new Date(Date.now() - 7200000).toISOString(),
+        },
+        {
+          id: 'msg_2',
+          circleId: currentUser.id,
+          senderId: 'pn_1',
+          senderName: 'Rahul Varma',
+          senderRole: 'MEMBER',
+          senderAvatar: 'RV',
+          text: 'Thanks for the invite bro! Just claimed my +1 GT ⛏️',
+          type: 'CHAT',
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: 'msg_3',
+          circleId: currentUser.id,
+          senderId: 'pn_3',
+          senderName: 'Arjun Reddy',
+          senderRole: 'MEMBER',
+          senderAvatar: 'AR',
+          text: 'Epoch synced! Ready for next mining window.',
+          type: 'CHAT',
+          createdAt: new Date(Date.now() - 1800000).toISOString(),
+        },
+      ],
+    };
+
+    localStorage.setItem('gt_mock_private_network_v1', JSON.stringify(defaultCircleData));
+    return defaultCircleData;
+  }
+
+  if (endpoint === '/private-network/messages' && method === 'POST') {
+    const body = options.body ? JSON.parse(options.body as string) : {};
+    const rawStored = localStorage.getItem('gt_mock_private_network_v1');
+    const circle = rawStored ? JSON.parse(rawStored) : { messages: [] };
+
+    const newMsg = {
+      id: `msg_${Date.now()}`,
+      circleId: currentUser.id,
+      senderId: currentUser.id,
+      senderName: currentUser.fullName,
+      senderRole: 'HOST',
+      senderAvatar: currentUser.fullName.charAt(0).toUpperCase(),
+      text: body.text || '',
+      type: body.type || 'CHAT',
+      targetMemberId: body.targetMemberId || null,
+      targetMemberName: body.targetMemberName || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    circle.messages.push(newMsg);
+    localStorage.setItem('gt_mock_private_network_v1', JSON.stringify(circle));
+    return { success: true, message: newMsg };
+  }
+
+  if (endpoint === '/private-network/ping-member' && method === 'POST') {
+    const body = options.body ? JSON.parse(options.body as string) : {};
+    const rawStored = localStorage.getItem('gt_mock_private_network_v1');
+    const circle = rawStored ? JSON.parse(rawStored) : { messages: [], members: [] };
+
+    const targetMember = circle.members?.find((m: any) => m.id === body.memberId);
+    if (targetMember) {
+      targetMember.lastPingedAt = new Date().toISOString();
+    }
+
+    const newMsg = {
+      id: `msg_ping_${Date.now()}`,
+      circleId: currentUser.id,
+      senderId: currentUser.id,
+      senderName: currentUser.fullName,
+      senderRole: 'HOST',
+      senderAvatar: currentUser.fullName.charAt(0).toUpperCase(),
+      text: `⏰ @${body.memberName || 'Member'}, your 4-Hour GT Mining session is ready! Tap 'Mine Now' to claim your 1.00 GT reward and keep our circle streak alive.`,
+      type: 'REMINDER',
+      targetMemberId: body.memberId,
+      targetMemberName: body.memberName,
+      createdAt: new Date().toISOString(),
+    };
+
+    circle.messages.push(newMsg);
+    localStorage.setItem('gt_mock_private_network_v1', JSON.stringify(circle));
+    return { success: true, message: newMsg, member: targetMember };
+  }
+
   // Default fallback
   return {
     success: true,
