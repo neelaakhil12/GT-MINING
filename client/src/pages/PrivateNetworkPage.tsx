@@ -24,6 +24,8 @@ import {
   BarChart3,
   Plus,
   Trash2,
+  Pencil,
+  RotateCcw,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -109,6 +111,7 @@ export const PrivateNetworkPage: React.FC = () => {
 
   const [showQuickMenu, setShowQuickMenu] = useState<boolean>(false);
   const [showAddQuickModal, setShowAddQuickModal] = useState<boolean>(false);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [newShortcut, setNewShortcut] = useState<string>('');
   const [newLabel, setNewLabel] = useState<string>('');
   const [newText, setNewText] = useState<string>('');
@@ -268,6 +271,34 @@ export const PrivateNetworkPage: React.FC = () => {
     }
   };
 
+  const handleOpenAddQuickReply = () => {
+    setEditingReplyId(null);
+    setNewShortcut('');
+    setNewLabel('');
+    setNewText('');
+    setNewType('REMINDER');
+    setShowAddQuickModal(true);
+  };
+
+  const handleOpenEditQuickReply = (qr: QuickReply, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingReplyId(qr.id);
+    setNewShortcut(qr.shortcut);
+    setNewLabel(qr.label);
+    setNewText(qr.text);
+    setNewType(qr.type);
+    setShowAddQuickModal(true);
+  };
+
+  const handleResetQuickReplies = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setQuickReplies(DEFAULT_QUICK_REPLIES);
+    try {
+      localStorage.removeItem('gt_circle_quick_replies');
+    } catch (err) {}
+    showToast('Quick replies reset to defaults', 'info');
+  };
+
   const handleSaveCustomQuickReply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newShortcut.trim() || !newText.trim()) return;
@@ -277,26 +308,48 @@ export const PrivateNetworkPage: React.FC = () => {
       formattedShortcut = `/${formattedShortcut}`;
     }
 
-    const newReply: QuickReply = {
-      id: `custom_${Date.now()}`,
-      shortcut: formattedShortcut,
-      label: newLabel.trim() || formattedShortcut,
-      text: newText.trim(),
-      type: newType,
-      isCustom: true,
-    };
+    if (editingReplyId) {
+      // Update existing quick reply
+      const updated = quickReplies.map((qr) => {
+        if (qr.id === editingReplyId) {
+          return {
+            ...qr,
+            shortcut: formattedShortcut,
+            label: newLabel.trim() || formattedShortcut,
+            text: newText.trim(),
+            type: newType,
+          };
+        }
+        return qr;
+      });
+      setQuickReplies(updated);
+      try {
+        localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
+      } catch (err) {}
+      showToast(`Quick reply ${formattedShortcut} updated!`, 'success');
+    } else {
+      // Create new quick reply
+      const newReply: QuickReply = {
+        id: `custom_${Date.now()}`,
+        shortcut: formattedShortcut,
+        label: newLabel.trim() || formattedShortcut,
+        text: newText.trim(),
+        type: newType,
+        isCustom: true,
+      };
+      const updated = [...quickReplies, newReply];
+      setQuickReplies(updated);
+      try {
+        localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
+      } catch (err) {}
+      showToast(`Quick reply ${formattedShortcut} saved!`, 'success');
+    }
 
-    const updated = [...quickReplies, newReply];
-    setQuickReplies(updated);
-    try {
-      localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
-    } catch (err) {}
-
+    setEditingReplyId(null);
     setNewShortcut('');
     setNewLabel('');
     setNewText('');
     setShowAddQuickModal(false);
-    showToast(`Quick reply ${formattedShortcut} saved!`, 'success');
   };
 
   const handleDeleteQuickReply = (id: string, e: React.MouseEvent) => {
@@ -306,7 +359,7 @@ export const PrivateNetworkPage: React.FC = () => {
     try {
       localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
     } catch (err) {}
-    showToast('Quick reply removed', 'info');
+    showToast('Quick reply deleted', 'info');
   };
 
   const filterQuery = inputText.startsWith('/') ? inputText.slice(1).toLowerCase().trim() : '';
@@ -773,7 +826,15 @@ export const PrivateNetworkPage: React.FC = () => {
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setShowAddQuickModal(true)}
+                      onClick={handleResetQuickReplies}
+                      className="p-1 rounded-lg bg-white border border-[#22C55E]/30 text-[#1E5E36] hover:bg-[#22C55E]/10 transition-all"
+                      title="Reset to Defaults"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddQuickReply}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-[#22C55E]/30 text-[#15803D] hover:bg-[#22C55E]/10 font-bold text-[10px] transition-all shadow-2xs active:scale-95"
                       title="Add Custom Quick Reply"
                     >
@@ -818,7 +879,8 @@ export const PrivateNetworkPage: React.FC = () => {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Instant Send */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -832,16 +894,25 @@ export const PrivateNetworkPage: React.FC = () => {
                           <span className="hidden sm:inline">Send</span>
                         </button>
 
-                        {qr.isCustom && (
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteQuickReply(qr.id, e)}
-                            className="p-1 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
-                            title="Delete custom shortcut"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        {/* Edit Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenEditQuickReply(qr, e)}
+                          className="p-1 rounded-lg text-[#15803D] hover:bg-[#22C55E]/15 bg-white border border-[#22C55E]/20 transition-all active:scale-95 shadow-2xs"
+                          title="Edit shortcut"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteQuickReply(qr.id, e)}
+                          className="p-1 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 bg-white border border-red-200 transition-all active:scale-95 shadow-2xs"
+                          title="Delete shortcut"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -931,12 +1002,19 @@ export const PrivateNetworkPage: React.FC = () => {
                   <Zap className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-[#0A341B]">Create Quick Reply</h3>
-                  <p className="text-[11px] text-[#1E5E36] font-medium">Save custom shortcut like in WhatsApp</p>
+                  <h3 className="text-base font-black text-[#0A341B]">
+                    {editingReplyId ? 'Edit Quick Reply' : 'Create Quick Reply'}
+                  </h3>
+                  <p className="text-[11px] text-[#1E5E36] font-medium">
+                    {editingReplyId ? 'Modify shortcut trigger or message content' : 'Save custom shortcut like in WhatsApp'}
+                  </p>
                 </div>
               </div>
               <button
-                onClick={() => setShowAddQuickModal(false)}
+                onClick={() => {
+                  setShowAddQuickModal(false);
+                  setEditingReplyId(null);
+                }}
                 className="w-8 h-8 rounded-full bg-white/80 border border-white flex items-center justify-center text-[#1E5E36] hover:text-[#0A341B]"
               >
                 <X className="w-4 h-4" />
@@ -1018,7 +1096,10 @@ export const PrivateNetworkPage: React.FC = () => {
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddQuickModal(false)}
+                  onClick={() => {
+                    setShowAddQuickModal(false);
+                    setEditingReplyId(null);
+                  }}
                   className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-[#1E5E36] hover:bg-gray-50"
                 >
                   Cancel
@@ -1027,7 +1108,7 @@ export const PrivateNetworkPage: React.FC = () => {
                   type="submit"
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white text-xs font-black shadow-sm hover:shadow active:scale-95 transition-all"
                 >
-                  Save Shortcut
+                  {editingReplyId ? 'Update Shortcut' : 'Save Shortcut'}
                 </button>
               </div>
             </form>
