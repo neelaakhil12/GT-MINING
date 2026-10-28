@@ -242,20 +242,11 @@ export const PrivateNetworkPage: React.FC = () => {
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setShowStatsModal(true)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/85 border border-white text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-xs active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 border border-white text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-xs active:scale-95"
             title="View Circle Details & Stats"
           >
             <BarChart3 className="w-3.5 h-3.5 text-[#16A34A]" />
-            <span className="hidden sm:inline">Circle Info</span>
-          </button>
-
-          <button
-            onClick={copyInviteLink}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs shadow-sm hover:shadow active:scale-95 transition-all"
-            title="Invite Friends"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Invite</span>
+            <span>Circle Info</span>
           </button>
         </div>
       </div>
@@ -364,17 +355,6 @@ export const PrivateNetworkPage: React.FC = () => {
                 <span>
                   {idleCount > 0 ? `Nudge All ${idleCount} Idle Miners ⏰` : 'All Miners Active ⚡'}
                 </span>
-              </button>
-
-              <button
-                onClick={() => {
-                  copyInviteLink();
-                  setShowStatsModal(false);
-                }}
-                className="w-full py-2.5 rounded-2xl bg-white border border-[#22C55E]/30 text-[#15803D] hover:bg-[#22C55E]/10 font-bold text-xs flex items-center justify-center gap-2 transition-all"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Invite More Friends</span>
               </button>
             </div>
           </div>
