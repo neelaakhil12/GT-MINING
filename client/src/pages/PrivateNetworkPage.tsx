@@ -20,6 +20,8 @@ import {
   ChevronRight,
   RefreshCw,
   ExternalLink,
+  X,
+  BarChart3,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +40,7 @@ export const PrivateNetworkPage: React.FC = () => {
   const [data, setData] = useState<PrivateNetworkData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showStatsModal, setShowStatsModal] = useState<boolean>(false);
   const [inputText, setInputText] = useState<string>('');
   const [sending, setSending] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
@@ -202,9 +205,9 @@ export const PrivateNetworkPage: React.FC = () => {
   const idleCount = data?.stats.idleCount || 0;
 
   return (
-    <div className="space-y-6 pb-28 sm:pb-16 max-w-7xl mx-auto">
+    <div className="space-y-4 pb-20 sm:pb-16 max-w-7xl mx-auto">
       {/* 1. Header Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link
@@ -214,10 +217,14 @@ export const PrivateNetworkPage: React.FC = () => {
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
               <span>Dashboard</span>
             </Link>
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[11px] font-black text-[#15803D]">
+            <button
+              onClick={() => setShowStatsModal(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[11px] font-black text-[#15803D] hover:bg-[#22C55E]/25 transition-colors cursor-pointer"
+            >
               <ShieldCheck className="w-3 h-3 text-[#16A34A]" />
               <span>PRIVATE CIRCLE</span>
-            </div>
+              <span className="text-[#15803D]/70">• {totalCount} Miners</span>
+            </button>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
             Private Network
@@ -229,99 +236,157 @@ export const PrivateNetworkPage: React.FC = () => {
 
         {/* Top Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Circle Stats & Nudge Button (Opens clean Popup Modal) */}
+          <button
+            onClick={() => setShowStatsModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/85 border border-white text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-sm active:scale-95"
+            title="View Circle Details & Stats"
+          >
+            <BarChart3 className="w-4 h-4 text-[#16A34A]" />
+            <span>Circle Info</span>
+            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+          </button>
+
           <button
             onClick={() => fetchPrivateNetwork(true)}
             disabled={refreshing}
-            className="p-2.5 rounded-2xl bg-white/80 border border-white/90 text-[#1E5E36] hover:text-[#0A341B] hover:bg-white transition-all shadow-sm"
+            className="p-2 rounded-2xl bg-white/80 border border-white/90 text-[#1E5E36] hover:text-[#0A341B] hover:bg-white transition-all shadow-sm"
             title="Refresh status"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
+
           <button
             onClick={copyInviteLink}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs shadow-[0_8px_20px_rgba(34,197,94,0.3)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.45)] transition-all transform active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs shadow-[0_8px_20px_rgba(34,197,94,0.3)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.45)] transition-all transform active:scale-95"
           >
             {copiedLink ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-            <span>Invite More Friends</span>
+            <span className="hidden sm:inline">Invite Friends</span>
+            <span className="sm:hidden">Invite</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Top Summary & Host Banner */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white/85 border border-white shadow-sm space-y-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-[#22C55E]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-3.5">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-xl text-white shadow-[0_8px_20px_rgba(34,197,94,0.3)] shrink-0">
-              {hostName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-black text-[#0A341B]">{hostName}</span>
-                <span className="px-2 py-0.5 rounded-md bg-[#22C55E]/20 text-[#15803D] text-[10px] font-black uppercase tracking-wider">
-                  Circle Leader
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-[#1E5E36] font-medium mt-0.5">
-                <span>Referral Code:</span>
-                <button
-                  onClick={copyCode}
-                  className="inline-flex items-center gap-1 font-mono font-bold text-[#15803D] bg-white/90 px-2 py-0.5 rounded-lg border border-[#22C55E]/30 hover:bg-[#22C55E]/10 transition-colors"
-                >
-                  <span>{refCode}</span>
-                  {copiedCode ? <Check className="w-3 h-3 text-[#16A34A]" /> : <Copy className="w-3 h-3 text-[#15803D]" />}
-                </button>
-                <span className="hidden sm:inline">•</span>
-                <span>{totalCount} Total Referred Miners</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Broadcast Action */}
-          <button
-            onClick={handleNudgeAllIdle}
-            disabled={idleCount === 0 || sending}
-            className={`inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-black text-xs transition-all shadow-sm ${
-              idleCount > 0
-                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[0_8px_20px_rgba(245,158,11,0.3)] active:scale-95'
-                : 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
-            }`}
+      {/* Circle Info & Stats Popup Modal */}
+      {showStatsModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowStatsModal(false)}
+        >
+          <div
+            className="max-w-md w-full bg-[#EBF8EF] border border-white/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            <Bell className="w-4 h-4" />
-            <span>
-              {idleCount > 0 ? `Nudge All ${idleCount} Idle Miners ⏰` : 'All Miners Active ⚡'}
-            </span>
-          </button>
-        </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#22C55E]/20 to-transparent rounded-full blur-2xl pointer-events-none" />
 
-        {/* 3 Overview Metric Cards */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4 pt-2">
-          <div className="p-3 sm:p-4 rounded-2xl bg-white/80 border border-white/90 shadow-sm flex flex-col justify-between">
-            <span className="text-[10px] sm:text-xs font-bold text-[#1E5E36]">Total Circle</span>
-            <p className="text-xl sm:text-2xl font-black text-[#0A341B]">{totalCount}</p>
-            <span className="text-[10px] text-[#1E5E36]/80 font-medium">Referred Members</span>
-          </div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#22C55E]/20 border border-[#22C55E]/30 flex items-center justify-center text-[#15803D]">
+                  <BarChart3 className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#0A341B]">Circle Details & Stats</h3>
+                  <p className="text-[11px] text-[#1E5E36] font-medium">Referred network performance</p>
+                </div>
+              </div>
 
-          <div className="p-3 sm:p-4 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping" />
-              <span className="text-[10px] sm:text-xs font-bold text-[#15803D]">Mining Active</span>
+              <button
+                onClick={() => setShowStatsModal(false)}
+                className="w-8 h-8 rounded-full bg-white/80 border border-white flex items-center justify-center text-[#1E5E36] hover:text-[#0A341B] hover:bg-white shadow-sm transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-xl sm:text-2xl font-black text-[#15803D]">{activeCount}</p>
-            <span className="text-[10px] text-[#15803D] font-medium">In 4h cooldown</span>
-          </div>
 
-          <div className="p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-[10px] sm:text-xs font-bold text-amber-800">Mining Idle</span>
+            {/* Host Details */}
+            <div className="p-4 rounded-2xl bg-white/90 border border-white shadow-sm flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-lg text-white shadow-sm shrink-0">
+                {hostName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-[#0A341B] truncate">{hostName}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#22C55E]/20 text-[#15803D] text-[9px] font-black uppercase">
+                    Leader
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#1E5E36] font-medium mt-0.5">
+                  <span>Code:</span>
+                  <button
+                    onClick={copyCode}
+                    className="inline-flex items-center gap-1 font-mono font-bold text-[#15803D] bg-white px-1.5 py-0.5 rounded border border-[#22C55E]/30"
+                  >
+                    <span>{refCode}</span>
+                    {copiedCode ? <Check className="w-3 h-3 text-[#16A34A]" /> : <Copy className="w-3 h-3 text-[#15803D]" />}
+                  </button>
+                  <span>•</span>
+                  <span>{totalCount} Total Miners</span>
+                </div>
+              </div>
             </div>
-            <p className="text-xl sm:text-2xl font-black text-amber-700">{idleCount}</p>
-            <span className="text-[10px] text-amber-800 font-medium">Ready for reminder</span>
+
+            {/* 3 Metric Cards */}
+            <div className="grid grid-cols-3 gap-2.5 relative z-10">
+              <div className="p-3 rounded-2xl bg-white/80 border border-white shadow-sm">
+                <span className="text-[10px] font-bold text-[#1E5E36]">Total Circle</span>
+                <p className="text-lg font-black text-[#0A341B]">{totalCount}</p>
+                <span className="text-[9px] text-[#1E5E36]/80">Members</span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 shadow-sm">
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-ping" />
+                  <span className="text-[10px] font-bold text-[#15803D]">Mining</span>
+                </div>
+                <p className="text-lg font-black text-[#15803D]">{activeCount}</p>
+                <span className="text-[9px] text-[#15803D]">Active</span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm">
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="text-[10px] font-bold text-amber-800">Idle</span>
+                </div>
+                <p className="text-lg font-black text-amber-700">{idleCount}</p>
+                <span className="text-[9px] text-amber-800">Ready</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-1 relative z-10">
+              <button
+                onClick={() => {
+                  handleNudgeAllIdle();
+                  setShowStatsModal(false);
+                }}
+                disabled={idleCount === 0 || sending}
+                className={`w-full py-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm ${
+                  idleCount > 0
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_16px_rgba(245,158,11,0.3)] active:scale-95'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                <span>
+                  {idleCount > 0 ? `Nudge All ${idleCount} Idle Miners ⏰` : 'All Miners Active ⚡'}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  copyInviteLink();
+                  setShowStatsModal(false);
+                }}
+                className="w-full py-2.5 rounded-2xl bg-white border border-[#22C55E]/30 text-[#15803D] hover:bg-[#22C55E]/10 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Invite More Friends</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Mobile Tab Switcher */}
       <div className="flex lg:hidden rounded-2xl bg-white/80 p-1 border border-white shadow-sm">
