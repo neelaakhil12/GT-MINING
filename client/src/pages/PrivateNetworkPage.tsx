@@ -205,64 +205,57 @@ export const PrivateNetworkPage: React.FC = () => {
   const idleCount = data?.stats.idleCount || 0;
 
   return (
-    <div className="space-y-4 pb-20 sm:pb-16 max-w-7xl mx-auto">
+    <div className="flex-1 min-h-0 flex flex-col h-full max-h-full overflow-hidden space-y-2 max-w-7xl w-full mx-auto">
       {/* 1. Header Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-white/90 text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-sm group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-              <span>Dashboard</span>
-            </Link>
-            <button
-              onClick={() => setShowStatsModal(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[11px] font-black text-[#15803D] hover:bg-[#22C55E]/25 transition-colors cursor-pointer"
-            >
-              <ShieldCheck className="w-3 h-3 text-[#16A34A]" />
-              <span>PRIVATE CIRCLE</span>
-              <span className="text-[#15803D]/70">• {totalCount} Miners</span>
-            </button>
+      <div className="flex items-center justify-between gap-2 shrink-0 py-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            to="/dashboard"
+            className="p-2 rounded-xl bg-white/80 border border-white/90 text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-sm shrink-0"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+
+          <div
+            onClick={() => setShowStatsModal(true)}
+            className="flex items-center gap-2.5 min-w-0 cursor-pointer p-1 rounded-2xl hover:bg-white/40 transition-colors"
+          >
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#22C55E]/20 border border-[#22C55E]/30 flex items-center justify-center text-[#15803D] shrink-0 font-black text-sm relative">
+              {hostName.charAt(0).toUpperCase()}
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#22C55E] ring-2 ring-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-black text-[#0A341B] truncate flex items-center gap-1.5">
+                <span>Private Circle Chat</span>
+              </h1>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-[#15803D] truncate flex items-center gap-1">
+                <span>{totalCount} Members</span>
+                <span>•</span>
+                <span>{activeCount} Mining Active</span>
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
-            Private Network
-          </h1>
-          <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
-            Encrypted chatroom strictly between you ({hostName}) and your directly referred miners.
-          </p>
         </div>
 
         {/* Top Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Circle Stats & Nudge Button (Opens clean Popup Modal) */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setShowStatsModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/85 border border-white text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/85 border border-white text-xs font-bold text-[#1E5E36] hover:bg-white hover:text-[#0A341B] transition-all shadow-xs active:scale-95"
             title="View Circle Details & Stats"
           >
-            <BarChart3 className="w-4 h-4 text-[#16A34A]" />
-            <span>Circle Info</span>
-            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-          </button>
-
-          <button
-            onClick={() => fetchPrivateNetwork(true)}
-            disabled={refreshing}
-            className="p-2 rounded-2xl bg-white/80 border border-white/90 text-[#1E5E36] hover:text-[#0A341B] hover:bg-white transition-all shadow-sm"
-            title="Refresh status"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <BarChart3 className="w-3.5 h-3.5 text-[#16A34A]" />
+            <span className="hidden sm:inline">Circle Info</span>
           </button>
 
           <button
             onClick={copyInviteLink}
-            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs shadow-[0_8px_20px_rgba(34,197,94,0.3)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.45)] transition-all transform active:scale-95"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs shadow-sm hover:shadow active:scale-95 transition-all"
+            title="Invite Friends"
           >
-            {copiedLink ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-            <span className="hidden sm:inline">Invite Friends</span>
-            <span className="sm:hidden">Invite</span>
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Invite</span>
           </button>
         </div>
       </div>
@@ -389,96 +382,96 @@ export const PrivateNetworkPage: React.FC = () => {
       )}
 
       {/* Mobile Tab Switcher */}
-      <div className="flex lg:hidden rounded-2xl bg-white/80 p-1 border border-white shadow-sm">
+      <div className="flex lg:hidden rounded-xl bg-white/80 p-1 border border-white shadow-2xs shrink-0">
         <button
           onClick={() => setActiveTab('CHAT')}
-          className={`flex-1 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 py-1.5 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'CHAT'
-              ? 'bg-[#22C55E] text-white shadow-md'
+              ? 'bg-[#22C55E] text-white shadow-sm'
               : 'text-[#1E5E36] hover:text-[#0A341B]'
           }`}
         >
-          <MessageSquare className="w-4 h-4" />
-          <span>Circle Chat</span>
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Chat</span>
         </button>
         <button
           onClick={() => setActiveTab('MEMBERS')}
-          className={`flex-1 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 py-1.5 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'MEMBERS'
-              ? 'bg-[#22C55E] text-white shadow-md'
+              ? 'bg-[#22C55E] text-white shadow-sm'
               : 'text-[#1E5E36] hover:text-[#0A341B]'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Members Status ({totalCount})</span>
+          <Users className="w-3.5 h-3.5" />
+          <span>Miners Status ({totalCount})</span>
         </button>
       </div>
 
       {/* 3. Main Workspace: Side-by-side or Tabbed */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden">
         {/* Left Column: Referred Members & Mining Status */}
         <div
-          className={`lg:col-span-5 space-y-4 ${
-            activeTab === 'MEMBERS' ? 'block' : 'hidden lg:block'
+          className={`lg:col-span-5 h-full flex flex-col min-h-0 overflow-hidden ${
+            activeTab === 'MEMBERS' ? 'flex' : 'hidden lg:flex'
           }`}
         >
-          <div className="p-5 sm:p-6 rounded-3xl bg-white/85 border border-white shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="flex-1 min-h-0 p-4 sm:p-5 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between pb-3 shrink-0 border-b border-[#22C55E]/15">
               <div>
-                <h3 className="text-base sm:text-lg font-black text-[#0A341B] flex items-center gap-2">
-                  <Users className="w-4.5 h-4.5 text-[#16A34A]" />
-                  <span>Referred Miners Status</span>
+                <h3 className="text-sm sm:text-base font-black text-[#0A341B] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#16A34A]" />
+                  <span>Referred Miners</span>
                 </h3>
-                <p className="text-xs text-[#1E5E36] font-medium">
-                  Track 4-hour mining cycles for each member
+                <p className="text-[11px] text-[#1E5E36] font-medium">
+                  {activeCount} active • {idleCount} idle
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-white border border-[#22C55E]/30 text-xs font-black text-[#15803D]">
-                {filteredMembers.length} Miners
+              <span className="px-2 py-0.5 rounded-full bg-white border border-[#22C55E]/30 text-xs font-black text-[#15803D]">
+                {filteredMembers.length}
               </span>
             </div>
 
             {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/20 text-xs font-bold">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#EAF8EE] border border-[#22C55E]/20 text-[11px] font-bold my-2.5 shrink-0">
               <button
                 onClick={() => setStatusFilter('ALL')}
-                className={`flex-1 py-1.5 rounded-xl transition-all ${
+                className={`flex-1 py-1 rounded-lg transition-all ${
                   statusFilter === 'ALL'
-                    ? 'bg-white text-[#0A341B] shadow-sm font-black'
-                    : 'text-[#1E5E36] hover:text-[#0A341B]'
+                    ? 'bg-white text-[#0A341B] shadow-2xs font-black'
+                    : 'text-[#1E5E36]'
                 }`}
               >
                 All ({totalCount})
               </button>
               <button
                 onClick={() => setStatusFilter('ACTIVE')}
-                className={`flex-1 py-1.5 rounded-xl transition-all ${
+                className={`flex-1 py-1 rounded-lg transition-all ${
                   statusFilter === 'ACTIVE'
-                    ? 'bg-white text-[#15803D] shadow-sm font-black'
-                    : 'text-[#1E5E36] hover:text-[#15803D]'
+                    ? 'bg-white text-[#15803D] shadow-2xs font-black'
+                    : 'text-[#1E5E36]'
                 }`}
               >
-                Mining Active ({activeCount})
+                Active ({activeCount})
               </button>
               <button
                 onClick={() => setStatusFilter('IDLE')}
-                className={`flex-1 py-1.5 rounded-xl transition-all ${
+                className={`flex-1 py-1 rounded-lg transition-all ${
                   statusFilter === 'IDLE'
-                    ? 'bg-white text-amber-700 shadow-sm font-black'
-                    : 'text-[#1E5E36] hover:text-amber-700'
+                    ? 'bg-white text-amber-700 shadow-2xs font-black'
+                    : 'text-[#1E5E36]'
                 }`}
               >
                 Idle ({idleCount})
               </button>
             </div>
 
-            {/* Member Cards List */}
-            <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
+            {/* Member Cards List - Scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-2 pr-1">
               {filteredMembers.map((member) => {
                 return (
                   <div
                     key={member.id}
-                    className={`p-3.5 rounded-2xl border transition-all ${
+                    className={`p-3 rounded-2xl border transition-all ${
                       member.isMiningActive
                         ? 'bg-white/90 border-[#22C55E]/20 hover:border-[#22C55E]/40'
                         : 'bg-amber-50/70 border-amber-200/70 hover:border-amber-300'
@@ -488,11 +481,11 @@ export const PrivateNetworkPage: React.FC = () => {
                       {/* Member Info */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${member.avatarColor} text-white font-bold flex items-center justify-center shadow-sm shrink-0 relative`}
+                          className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${member.avatarColor} text-white font-bold flex items-center justify-center shadow-sm shrink-0 relative`}
                         >
                           <span className="text-xs">{member.initials}</span>
                           <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
                               member.isMiningActive ? 'bg-[#22C55E]' : 'bg-amber-500'
                             }`}
                           />
@@ -527,7 +520,7 @@ export const PrivateNetworkPage: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handlePingMember(member)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[10px] shadow-xs hover:shadow transition-all active:scale-95 whitespace-nowrap"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[10px] shadow-xs hover:shadow transition-all active:scale-95 whitespace-nowrap"
                           >
                             <Bell className="w-2.5 h-2.5" />
                             <span>Ping to Mine</span>
@@ -550,36 +543,13 @@ export const PrivateNetworkPage: React.FC = () => {
 
         {/* Right Column: Private Network Chatroom */}
         <div
-          className={`lg:col-span-7 space-y-4 ${
-            activeTab === 'CHAT' ? 'block' : 'hidden lg:block'
+          className={`lg:col-span-7 h-full flex flex-col min-h-0 overflow-hidden ${
+            activeTab === 'CHAT' ? 'flex' : 'hidden lg:flex'
           }`}
         >
-          <div className="p-4 sm:p-6 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col h-[calc(100dvh-220px)] min-h-[460px] lg:h-[680px]">
-            {/* Chatroom Top Header */}
-            <div className="pb-4 border-b border-[#22C55E]/15 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/20 border border-[#22C55E]/30 flex items-center justify-center text-[#15803D] shrink-0">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-[#0A341B] flex items-center gap-2">
-                    <span>Private Circle Chat</span>
-                    <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-                  </h3>
-                  <p className="text-xs text-[#1E5E36] font-medium">
-                    Strictly visible to {hostName} and your {totalCount} referred miners
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 text-[11px] font-bold text-[#15803D] bg-[#22C55E]/10 px-2.5 py-1 rounded-xl">
-                <Users className="w-3.5 h-3.5" />
-                <span>{totalCount} Connected</span>
-              </div>
-            </div>
-
+          <div className="flex-1 min-h-0 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden">
             {/* Quick Reminder Prompt Chips */}
-            <div className="py-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <div className="px-4 py-2 border-b border-[#22C55E]/15 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-white/50">
               <span className="text-[10px] font-black uppercase text-[#15803D] shrink-0 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
                 <span>Quick:</span>
@@ -589,15 +559,15 @@ export const PrivateNetworkPage: React.FC = () => {
                   key={idx}
                   onClick={() => handleSendMessage(q.text, 'REMINDER')}
                   disabled={sending}
-                  className="px-2.5 py-1 rounded-xl bg-white border border-[#22C55E]/30 text-[11px] font-bold text-[#1E5E36] hover:bg-[#22C55E]/15 hover:text-[#0A341B] hover:border-[#22C55E]/50 transition-all shrink-0 shadow-2xs"
+                  className="px-2.5 py-1 rounded-xl bg-white border border-[#22C55E]/30 text-[11px] font-bold text-[#1E5E36] hover:bg-[#22C55E]/15 hover:text-[#0A341B] transition-all shrink-0 shadow-2xs"
                 >
                   {q.label}
                 </button>
               ))}
             </div>
 
-            {/* Messages Stream - ONLY messages scroll */}
-            <div className="flex-1 overflow-y-auto overscroll-contain space-y-3.5 pr-2 py-2 pb-20 lg:pb-3">
+            {/* Messages Stream - ONLY THIS SCROLLS! Background & Header stay 100% still */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3.5 p-3 sm:p-4 touch-pan-y">
               {(data?.messages || []).map((msg) => {
                 const isHost = msg.senderRole === 'HOST' || msg.senderId === user?.id;
                 const isReminder = msg.type === 'REMINDER';
@@ -679,16 +649,16 @@ export const PrivateNetworkPage: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* WhatsApp-Style Docked Bottom Input Bar */}
-            <div className="lg:static fixed bottom-0 left-0 right-0 z-40 bg-[#EAF8EE]/95 backdrop-blur-xl border-t border-[#22C55E]/20 p-2.5 sm:p-3 lg:bg-transparent lg:border-t lg:border-[#22C55E]/15 lg:p-0 lg:pt-3">
+            {/* WhatsApp Docked Bottom Input Bar - Permanently docked at bottom of card */}
+            <div className="p-2 sm:p-2.5 bg-white border-t border-[#22C55E]/15 shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="max-w-screen-2xl mx-auto flex items-center gap-2"
+                className="flex items-center gap-2"
               >
-                <div className="relative flex-1 bg-white border border-[#22C55E]/30 rounded-full px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:border-[#22C55E] transition-all">
+                <div className="relative flex-1 bg-[#F0FAF3] border border-[#22C55E]/30 rounded-full px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:bg-white transition-all">
                   <input
                     type="text"
                     value={inputText}
@@ -701,7 +671,7 @@ export const PrivateNetworkPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!inputText.trim() || sending}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(34,197,94,0.35)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 shrink-0"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 shrink-0"
                   aria-label="Send message"
                 >
                   <Send className="w-4 h-4 ml-0.5 text-white" />
@@ -714,3 +684,4 @@ export const PrivateNetworkPage: React.FC = () => {
     </div>
   );
 };
+

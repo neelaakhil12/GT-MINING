@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -52,8 +52,33 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const isChatScreen = location.pathname === '/private-network';
 
+  // Lock document body and root scroll completely on chat screen to emulate native WhatsApp
+  useEffect(() => {
+    if (isChatScreen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.overscrollBehavior = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.overscrollBehavior = '';
+    };
+  }, [isChatScreen]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#EAF8EE] text-[#0A341B] selection:bg-[#22C55E]/30 selection:text-[#0A341B] relative overflow-x-hidden">
+    <div
+      className={`flex flex-col bg-[#EAF8EE] text-[#0A341B] selection:bg-[#22C55E]/30 selection:text-[#0A341B] relative ${
+        isChatScreen ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'
+      }`}
+    >
       
       {/* 3D Floating Green Spheres matching user reference image */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -73,7 +98,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="absolute top-1/2 left-1/3 w-[500px] h-[500px] bg-[#4ADE80]/20 rounded-full blur-[140px]" />
       </div>
 
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className={`relative z-10 flex flex-col ${isChatScreen ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
         {!isPublicStandalone && <Navbar />}
 
         {/* Main Content Area - Fullscreen for onboarding/auth, padded for dashboard */}
@@ -82,7 +107,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             isPublicStandalone
               ? 'p-0 max-w-full flex items-center justify-center'
               : isChatScreen
-              ? 'max-w-screen-2xl px-3 sm:px-8 lg:px-12 pt-20 sm:pt-28 pb-4 sm:pb-16'
+              ? 'w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-20 pb-2 h-full max-h-full flex flex-col overflow-hidden'
               : 'max-w-screen-2xl px-4 sm:px-8 lg:px-12 pt-24 sm:pt-28 pb-28 sm:pb-16'
           }`}
         >
