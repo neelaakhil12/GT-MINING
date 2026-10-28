@@ -264,10 +264,10 @@ export const PrivateNetworkPage: React.FC = () => {
       setShowQuickMenu(false);
     }
 
-    // Mention trigger: check if cursor or end of input has @
-    const cursor = e.target.selectionStart || val.length;
+    // Mention trigger: check if cursor or end of input has @ followed by query without spaces
+    const cursor = e.target.selectionStart ?? val.length;
     const textBeforeCursor = val.slice(0, cursor);
-    const lastAtMatch = textBeforeCursor.match(/@([a-zA-Z0-9_\s]*)$/);
+    const lastAtMatch = textBeforeCursor.match(/(?:^|\s)@([^\s@]*)$/);
 
     if (lastAtMatch) {
       setShowMentionMenu(true);
@@ -280,12 +280,15 @@ export const PrivateNetworkPage: React.FC = () => {
   };
 
   const handleSelectMention = (memberName: string) => {
-    const cursor = inputRef.current?.selectionStart || inputText.length;
+    const cursor = inputRef.current?.selectionStart ?? inputText.length;
     const textBeforeCursor = inputText.slice(0, cursor);
     const textAfterCursor = inputText.slice(cursor);
 
-    // Replace the last @... with @MemberName 
-    const updatedBeforeCursor = textBeforeCursor.replace(/@([a-zA-Z0-9_\s]*)$/, `@${memberName} `);
+    // Replace the trailing @query with @MemberName 
+    const updatedBeforeCursor = textBeforeCursor.replace(/(?:^|\s)@([^\s@]*)$/, (match) => {
+      const leadingSpace = match.startsWith(' ') ? ' ' : '';
+      return `${leadingSpace}@${memberName} `;
+    });
     const newText = updatedBeforeCursor + textAfterCursor;
     setInputText(newText);
     setShowMentionMenu(false);
@@ -473,17 +476,7 @@ export const PrivateNetworkPage: React.FC = () => {
   const idleCount = data?.stats.idleCount || 0;
 
   const mentionCandidates = [
-    // Include Host
-    {
-      id: data?.circleHost?.id || 'host',
-      name: hostName,
-      maskedId: hostName === user?.fullName ? 'You (Host)' : 'Leader',
-      isMiningActive: true,
-      initials: hostName.charAt(0).toUpperCase(),
-      avatarColor: 'from-[#22C55E] to-[#16A34A]',
-      isHost: true,
-    },
-    // Include circle members
+    // Include all circle referred members first
     ...(data?.members || []).map((m) => ({
       id: m.id,
       name: m.name,
@@ -491,8 +484,24 @@ export const PrivateNetworkPage: React.FC = () => {
       isMiningActive: m.isMiningActive,
       initials: m.initials,
       avatarColor: m.avatarColor,
+      streakDays: m.streakDays,
       isHost: false,
     })),
+    // Include Host if different from current user
+    ...(hostName !== user?.fullName
+      ? [
+          {
+            id: data?.circleHost?.id || 'host',
+            name: hostName,
+            maskedId: 'Circle Leader',
+            isMiningActive: true,
+            initials: hostName.charAt(0).toUpperCase(),
+            avatarColor: 'from-[#22C55E] to-[#16A34A]',
+            streakDays: 1,
+            isHost: true,
+          },
+        ]
+      : []),
   ].filter((m) => {
     if (!mentionQuery) return true;
     return (
@@ -1160,36 +1169,19 @@ export const PrivateNetworkPage: React.FC = () => {
                   <Zap className="w-4 h-4" />
                 </button>
 
-                {/* Mention @ Trigger Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMentionMenu(!showMentionMenu);
-                    setShowQuickMenu(false);
-                    if (!showMentionMenu) {
-                      if (!inputText.endsWith('@') && !inputText.endsWith('@ ')) {
-                        setInputText((prev) => (prev ? `${prev} @` : '@'));
-                      }
-                      setTimeout(() => inputRef.current?.focus(), 50);
-                    }
-                  }}
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                    showMentionMenu
-                      ? 'bg-[#22C55E] text-white shadow-sm ring-2 ring-[#22C55E]/40'
-                      : 'bg-[#F0FAF3] hover:bg-[#E0F5E7] text-[#15803D] border border-[#22C55E]/30'
-                  }`}
-                  title="Mention Circle Member (or type '@')"
-                >
-                  <AtSign className="w-4 h-4" />
-                </button>
-
                 <div className="relative flex-1 bg-[#F0FAF3] border border-[#22C55E]/30 rounded-full px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:bg-white transition-all">
                   <input
                     ref={inputRef}
                     type="text"
                     value={inputText}
                     onChange={handleInputChange}
-                    placeholder="Type message, '@' to mention, or '/'..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setShowMentionMenu(false);
+                        setShowQuickMenu(false);
+                      }
+                    }}
+                    placeholder="Type a message (type '@' to mention friend)..."
                     className="w-full bg-transparent text-xs text-[#0A341B] placeholder-[#1E5E36]/60 font-medium focus:outline-none"
                   />
                   {inputText && (
