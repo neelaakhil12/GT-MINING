@@ -50,6 +50,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     '/privacy',
   ].includes(location.pathname);
 
+  const isChatScreen = location.pathname === '/private-network';
+
   return (
     <div className="min-h-screen flex flex-col bg-[#EAF8EE] text-[#0A341B] selection:bg-[#22C55E]/30 selection:text-[#0A341B] relative overflow-x-hidden">
       
@@ -79,14 +81,16 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           className={`flex-1 w-full mx-auto ${
             isPublicStandalone
               ? 'p-0 max-w-full flex items-center justify-center'
+              : isChatScreen
+              ? 'max-w-screen-2xl px-3 sm:px-8 lg:px-12 pt-20 sm:pt-28 pb-4 sm:pb-16'
               : 'max-w-screen-2xl px-4 sm:px-8 lg:px-12 pt-24 sm:pt-28 pb-28 sm:pb-16'
           }`}
         >
           {children}
         </main>
 
-        {/* Mobile Bottom Navigation for authenticated pages */}
-        {isAuthenticated && !isPublicStandalone && <BottomNav />}
+        {/* Mobile Bottom Navigation for authenticated pages (hidden in private network chat like WhatsApp) */}
+        {isAuthenticated && !isPublicStandalone && !isChatScreen && <BottomNav />}
       </div>
     </div>
   );
