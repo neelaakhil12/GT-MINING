@@ -694,14 +694,14 @@ export const PrivateNetworkPage: React.FC = () => {
       </div>
 
       {/* 3. Main Workspace: Side-by-side or Tabbed */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 lg:[grid-template-rows:1fr] gap-3 sm:gap-4 overflow-hidden">
         {/* Left Column: Referred Members & Mining Status */}
         <div
-          className={`lg:col-span-5 h-full flex flex-col min-h-0 overflow-hidden ${
+          className={`lg:col-span-5 h-full flex-1 flex flex-col min-h-0 overflow-hidden ${
             activeTab === 'MEMBERS' ? 'flex' : 'hidden lg:flex'
           }`}
         >
-          <div className="flex-1 min-h-0 p-4 sm:p-5 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-3 shrink-0 border-b border-[#22C55E]/15">
               <div>
                 <h3 className="text-sm sm:text-base font-black text-[#0A341B] flex items-center gap-2">
@@ -829,11 +829,11 @@ export const PrivateNetworkPage: React.FC = () => {
 
         {/* Right Column: Private Network Chatroom */}
         <div
-          className={`lg:col-span-7 h-full flex flex-col min-h-0 overflow-hidden ${
+          className={`lg:col-span-7 h-full flex-1 flex flex-col min-h-0 overflow-hidden ${
             activeTab === 'CHAT' ? 'flex' : 'hidden lg:flex'
           }`}
         >
-          <div className="flex-1 min-h-0 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden relative">
+          <div className="flex-1 min-h-0 rounded-2xl sm:rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden relative">
             {/* Messages Stream - ONLY THIS SCROLLS! Background & Header stay 100% still */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3.5 p-3 sm:p-4 touch-pan-y">
               {(data?.messages || []).map((msg) => {

@@ -107,7 +107,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             isPublicStandalone
               ? 'p-0 max-w-full flex items-center justify-center'
               : isChatScreen
-              ? 'w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-20 pb-2 h-full max-h-full flex flex-col overflow-hidden'
+              ? 'fixed inset-x-0 top-20 bottom-0 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pb-1 flex flex-col overflow-hidden z-20'
               : 'max-w-screen-2xl px-4 sm:px-8 lg:px-12 pt-24 sm:pt-28 pb-28 sm:pb-16'
           }`}
         >
