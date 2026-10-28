@@ -26,6 +26,7 @@ import {
   Trash2,
   Pencil,
   RotateCcw,
+  AtSign,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -110,6 +111,8 @@ export const PrivateNetworkPage: React.FC = () => {
   });
 
   const [showQuickMenu, setShowQuickMenu] = useState<boolean>(false);
+  const [showMentionMenu, setShowMentionMenu] = useState<boolean>(false);
+  const [mentionQuery, setMentionQuery] = useState<string>('');
   const [showAddQuickModal, setShowAddQuickModal] = useState<boolean>(false);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [newShortcut, setNewShortcut] = useState<string>('');
@@ -252,11 +255,89 @@ export const PrivateNetworkPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputText(val);
+
+    // Slash command trigger
     if (val.startsWith('/')) {
       setShowQuickMenu(true);
+      setShowMentionMenu(false);
     } else if (showQuickMenu && !val) {
       setShowQuickMenu(false);
     }
+
+    // Mention trigger: check if cursor or end of input has @
+    const cursor = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const lastAtMatch = textBeforeCursor.match(/@([a-zA-Z0-9_\s]*)$/);
+
+    if (lastAtMatch) {
+      setShowMentionMenu(true);
+      setMentionQuery(lastAtMatch[1].toLowerCase());
+      setShowQuickMenu(false);
+    } else {
+      setShowMentionMenu(false);
+      setMentionQuery('');
+    }
+  };
+
+  const handleSelectMention = (memberName: string) => {
+    const cursor = inputRef.current?.selectionStart || inputText.length;
+    const textBeforeCursor = inputText.slice(0, cursor);
+    const textAfterCursor = inputText.slice(cursor);
+
+    // Replace the last @... with @MemberName 
+    const updatedBeforeCursor = textBeforeCursor.replace(/@([a-zA-Z0-9_\s]*)$/, `@${memberName} `);
+    const newText = updatedBeforeCursor + textAfterCursor;
+    setInputText(newText);
+    setShowMentionMenu(false);
+    setMentionQuery('');
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newCursorPos = updatedBeforeCursor.length;
+        inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 50);
+  };
+
+  const renderMessageText = (text: string, isHost: boolean) => {
+    const memberNames = [
+      user?.fullName || 'Alex Reynolds',
+      ...(data?.members || []).map((m) => m.name),
+    ];
+
+    // Split text by tokens starting with @
+    const parts = text.split(/(@[a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?)/g);
+
+    return (
+      <span>
+        {parts.map((part, i) => {
+          if (part.startsWith('@')) {
+            const rawName = part.slice(1).trim().toLowerCase();
+            const isMatch = memberNames.some((m) => {
+              const lower = m.toLowerCase();
+              return lower.startsWith(rawName) || rawName.startsWith(lower) || lower.split(' ')[0] === rawName;
+            });
+
+            if (isMatch || rawName.length > 0) {
+              return (
+                <span
+                  key={i}
+                  className={`font-black px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5 mx-0.5 ${
+                    isHost
+                      ? 'bg-white/30 text-white shadow-2xs'
+                      : 'bg-[#22C55E]/20 text-[#15803D]'
+                  }`}
+                >
+                  <span>{part}</span>
+                </span>
+              );
+            }
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
   };
 
   const handleSelectQuickReply = (qr: QuickReply, autoSend = false) => {
@@ -390,6 +471,35 @@ export const PrivateNetworkPage: React.FC = () => {
   const totalCount = data?.stats.totalMembers || data?.members.length || 0;
   const activeCount = data?.stats.activeMiningCount || 0;
   const idleCount = data?.stats.idleCount || 0;
+
+  const mentionCandidates = [
+    // Include Host
+    {
+      id: data?.circleHost?.id || 'host',
+      name: hostName,
+      maskedId: hostName === user?.fullName ? 'You (Host)' : 'Leader',
+      isMiningActive: true,
+      initials: hostName.charAt(0).toUpperCase(),
+      avatarColor: 'from-[#22C55E] to-[#16A34A]',
+      isHost: true,
+    },
+    // Include circle members
+    ...(data?.members || []).map((m) => ({
+      id: m.id,
+      name: m.name,
+      maskedId: m.maskedId,
+      isMiningActive: m.isMiningActive,
+      initials: m.initials,
+      avatarColor: m.avatarColor,
+      isHost: false,
+    })),
+  ].filter((m) => {
+    if (!mentionQuery) return true;
+    return (
+      m.name.toLowerCase().includes(mentionQuery) ||
+      m.maskedId.toLowerCase().includes(mentionQuery)
+    );
+  });
 
   return (
     <div className="flex-1 min-h-0 flex flex-col h-full max-h-full overflow-hidden space-y-2 max-w-7xl w-full mx-auto">
@@ -773,7 +883,9 @@ export const PrivateNetworkPage: React.FC = () => {
                             <span>MINING ALERT & CYCLE REMINDER</span>
                           </div>
                         )}
-                        <p>{msg.text}</p>
+                        <div className="leading-relaxed whitespace-pre-wrap break-words">
+                          {renderMessageText(msg.text, isHost)}
+                        </div>
 
                         {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
                         {isReminder && (
@@ -926,6 +1038,102 @@ export const PrivateNetworkPage: React.FC = () => {
               </div>
             )}
 
+            {/* WhatsApp Member Mention Popover (Type @ or tap @) */}
+            {showMentionMenu && (
+              <div
+                className="absolute bottom-14 left-2 right-2 sm:left-4 sm:right-4 z-40 bg-white/95 backdrop-blur-xl border border-[#22C55E]/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[300px] animate-in fade-in slide-in-from-bottom-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Popover Header */}
+                <div className="p-2.5 sm:p-3 bg-[#EAF8EE] border-b border-[#22C55E]/20 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-lg bg-[#22C55E] text-white flex items-center justify-center shrink-0">
+                      <AtSign className="w-3.5 h-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-[#0A341B] truncate flex items-center gap-1.5">
+                        <span>Mention Member</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-white text-[#15803D] font-mono font-bold">
+                          Type @
+                        </span>
+                      </h4>
+                      <p className="text-[10px] text-[#1E5E36] truncate">
+                        Select a member to tag and ping them in circle
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowMentionMenu(false)}
+                    className="w-6 h-6 rounded-lg bg-white/80 hover:bg-white text-[#1E5E36] flex items-center justify-center transition-all"
+                    title="Close"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Candidates List */}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1 touch-pan-y">
+                  {mentionCandidates.map((member) => (
+                    <div
+                      key={member.id}
+                      onClick={() => handleSelectMention(member.name)}
+                      className="p-2 rounded-xl hover:bg-[#F0FAF3] border border-transparent hover:border-[#22C55E]/20 transition-all flex items-center justify-between gap-2.5 cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-8 h-8 rounded-xl bg-gradient-to-tr ${member.avatarColor} text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0 relative`}
+                        >
+                          <span>{member.initials}</span>
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ring-2 ring-white ${
+                              member.isMiningActive ? 'bg-[#22C55E]' : 'bg-amber-500'
+                            }`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-[#0A341B] truncate">
+                              {member.name}
+                            </span>
+                            {member.isHost && (
+                              <span className="px-1 py-0.2 rounded bg-[#22C55E]/20 text-[#15803D] text-[9px] font-black">
+                                HOST
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] text-[#1E5E36] font-medium">
+                            <span className="font-mono">{member.maskedId}</span>
+                            <span>•</span>
+                            <span
+                              className={`font-bold ${
+                                member.isMiningActive ? 'text-[#15803D]' : 'text-amber-700'
+                              }`}
+                            >
+                              {member.isMiningActive ? 'Mining Active ⚡' : 'Idle (Ready to Mine) ⏰'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[10px] font-black text-[#15803D] bg-white px-2 py-0.5 rounded-lg border border-[#22C55E]/30">
+                          @{member.name.split(' ')[0]}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {mentionCandidates.length === 0 && (
+                    <div className="py-6 text-center text-xs text-[#1E5E36]">
+                      No members found matching "@{mentionQuery}"
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* WhatsApp Docked Bottom Input Bar - Permanently docked at bottom of card */}
             <div className="p-2 sm:p-2.5 bg-white border-t border-[#22C55E]/15 shrink-0">
               <form
@@ -938,7 +1146,10 @@ export const PrivateNetworkPage: React.FC = () => {
                 {/* Quick Reply / Slash Trigger Button */}
                 <button
                   type="button"
-                  onClick={() => setShowQuickMenu(!showQuickMenu)}
+                  onClick={() => {
+                    setShowQuickMenu(!showQuickMenu);
+                    setShowMentionMenu(false);
+                  }}
                   className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all shrink-0 ${
                     showQuickMenu
                       ? 'bg-[#22C55E] text-white shadow-sm ring-2 ring-[#22C55E]/40'
@@ -949,13 +1160,36 @@ export const PrivateNetworkPage: React.FC = () => {
                   <Zap className="w-4 h-4" />
                 </button>
 
+                {/* Mention @ Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMentionMenu(!showMentionMenu);
+                    setShowQuickMenu(false);
+                    if (!showMentionMenu) {
+                      if (!inputText.endsWith('@') && !inputText.endsWith('@ ')) {
+                        setInputText((prev) => (prev ? `${prev} @` : '@'));
+                      }
+                      setTimeout(() => inputRef.current?.focus(), 50);
+                    }
+                  }}
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                    showMentionMenu
+                      ? 'bg-[#22C55E] text-white shadow-sm ring-2 ring-[#22C55E]/40'
+                      : 'bg-[#F0FAF3] hover:bg-[#E0F5E7] text-[#15803D] border border-[#22C55E]/30'
+                  }`}
+                  title="Mention Circle Member (or type '@')"
+                >
+                  <AtSign className="w-4 h-4" />
+                </button>
+
                 <div className="relative flex-1 bg-[#F0FAF3] border border-[#22C55E]/30 rounded-full px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:bg-white transition-all">
                   <input
                     ref={inputRef}
                     type="text"
                     value={inputText}
                     onChange={handleInputChange}
-                    placeholder="Type a message or '/' for shortcuts..."
+                    placeholder="Type message, '@' to mention, or '/'..."
                     className="w-full bg-transparent text-xs text-[#0A341B] placeholder-[#1E5E36]/60 font-medium focus:outline-none"
                   />
                   {inputText && (
