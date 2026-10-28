@@ -489,7 +489,7 @@ export const PrivateNetworkPage: React.FC = () => {
             activeTab === 'CHAT' ? 'block' : 'hidden lg:block'
           }`}
         >
-          <div className="p-5 sm:p-6 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col h-[680px]">
+          <div className="p-4 sm:p-6 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col h-[540px] sm:h-[620px] lg:h-[680px]">
             {/* Chatroom Top Header */}
             <div className="pb-4 border-b border-[#22C55E]/15 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -531,8 +531,8 @@ export const PrivateNetworkPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Messages Stream */}
-            <div className="flex-1 overflow-y-auto space-y-3.5 pr-2 py-2">
+            {/* Messages Stream - ONLY messages scroll */}
+            <div className="flex-1 overflow-y-auto overscroll-contain space-y-3.5 pr-2 py-2 pb-24 lg:pb-3">
               {(data?.messages || []).map((msg) => {
                 const isHost = msg.senderRole === 'HOST' || msg.senderId === user?.id;
                 const isReminder = msg.type === 'REMINDER';
@@ -614,33 +614,35 @@ export const PrivateNetworkPage: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Form Bar */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="pt-3 border-t border-[#22C55E]/15 flex items-center gap-2"
-            >
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Message your private circle (e.g. claim mining reward)..."
-                  className="w-full px-4 py-3 rounded-2xl bg-white border border-[#22C55E]/30 text-xs text-[#0A341B] placeholder-[#1E5E36]/60 font-medium focus:outline-none focus:ring-2 focus:ring-[#22C55E]/50 focus:border-[#22C55E] transition-all"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!inputText.trim() || sending}
-                className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs shadow-[0_4px_16px_rgba(34,197,94,0.3)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.45)] disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 flex items-center gap-1.5 shrink-0"
+            {/* Floating WhatsApp-Style Input Form Bar */}
+            <div className="lg:static fixed bottom-[78px] left-3 right-3 max-w-xl mx-auto z-40 lg:z-auto lg:max-w-none lg:left-auto lg:right-auto lg:bottom-auto">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="p-1.5 sm:p-2 lg:p-0 lg:pt-3 bg-white/95 lg:bg-transparent backdrop-blur-2xl lg:backdrop-blur-none rounded-2xl lg:rounded-none border border-[#22C55E]/35 lg:border-0 lg:border-t lg:border-[#22C55E]/15 shadow-[0_8px_30px_rgba(22,101,52,0.2)] lg:shadow-none flex items-center gap-2"
               >
-                <span>Send</span>
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </form>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Message your private circle (e.g. claim mining reward)..."
+                    className="w-full px-4 py-2.5 sm:py-3 rounded-xl lg:rounded-2xl bg-[#F0FAF3]/80 lg:bg-white border border-[#22C55E]/30 text-xs text-[#0A341B] placeholder-[#1E5E36]/60 font-medium focus:outline-none focus:ring-2 focus:ring-[#22C55E]/50 focus:border-[#22C55E] transition-all"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || sending}
+                  className="px-4 py-2.5 sm:py-3 rounded-xl lg:rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs shadow-[0_4px_16px_rgba(34,197,94,0.3)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.45)] disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 flex items-center gap-1.5 shrink-0"
+                >
+                  <span>Send</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
