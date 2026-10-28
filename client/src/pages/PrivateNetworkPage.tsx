@@ -432,11 +432,11 @@ export const PrivateNetworkPage: React.FC = () => {
                             }`}
                           />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-black text-[#0A341B] truncate">
                             {member.name}
                           </p>
-                          <div className="flex items-center gap-2 text-[10px] text-[#1E5E36] font-medium">
+                          <div className="flex items-center gap-1.5 text-[10px] text-[#1E5E36] font-medium whitespace-nowrap">
                             <span className="font-mono">{member.maskedId}</span>
                             <span>•</span>
                             <span className="flex items-center gap-0.5 font-bold text-[#15803D]">
@@ -448,23 +448,23 @@ export const PrivateNetworkPage: React.FC = () => {
                       </div>
 
                       {/* Status / Action Button */}
-                      <div className="shrink-0 flex items-center gap-2">
+                      <div className="shrink-0 flex items-center">
                         {member.isMiningActive ? (
                           <div className="text-right">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#22C55E]/15 text-[#15803D] text-[10px] font-black">
-                              <CheckCircle2 className="w-3 h-3 text-[#16A34A]" />
+                              <CheckCircle2 className="w-2.5 h-2.5 text-[#16A34A]" />
                               <span>Mined ⚡</span>
                             </span>
-                            <p className="text-[10px] text-[#1E5E36] font-semibold mt-0.5">
+                            <p className="text-[9px] text-[#1E5E36] font-semibold mt-0.5">
                               Cooldown active
                             </p>
                           </div>
                         ) : (
                           <button
                             onClick={() => handlePingMember(member)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-[11px] shadow-sm hover:shadow transition-all active:scale-95"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[10px] shadow-xs hover:shadow transition-all active:scale-95 whitespace-nowrap"
                           >
-                            <Bell className="w-3 h-3" />
+                            <Bell className="w-2.5 h-2.5" />
                             <span>Ping to Mine</span>
                           </button>
                         )}
