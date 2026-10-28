@@ -22,6 +22,8 @@ import {
   ExternalLink,
   X,
   BarChart3,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +34,15 @@ import {
   PrivateNetworkMessage,
   PrivateNetworkData,
 } from '../types';
+
+export interface QuickReply {
+  id: string;
+  shortcut: string;
+  label: string;
+  text: string;
+  type: 'REMINDER' | 'CHAT';
+  isCustom?: boolean;
+}
 
 export const PrivateNetworkPage: React.FC = () => {
   const { user } = useAuth();
@@ -48,7 +59,63 @@ export const PrivateNetworkPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'IDLE'>('ALL');
   const [activeTab, setActiveTab] = useState<'MEMBERS' | 'CHAT'>('CHAT'); // Mobile tab toggle
 
+  const DEFAULT_QUICK_REPLIES: QuickReply[] = [
+    {
+      id: '1',
+      shortcut: '/reminder',
+      label: '⏰ 4h Mining Claim',
+      text: '⏰ Reminder: Your 4-hour mining claim is ready! Claim 1 GT now.',
+      type: 'REMINDER',
+    },
+    {
+      id: '2',
+      shortcut: '/hashrate',
+      label: '🔥 Team Hash Rate Boost',
+      text: '🔥 Let’s keep our circle hash rate at 100%! Claim your mining cycle today.',
+      type: 'REMINDER',
+    },
+    {
+      id: '3',
+      shortcut: '/welcome',
+      label: '👋 Welcome to Circle',
+      text: '👋 Welcome to our private circle! Reach out here if you have any questions.',
+      type: 'CHAT',
+    },
+    {
+      id: '4',
+      shortcut: '/streak',
+      label: '⚡ Daily Streak Alert',
+      text: '⚡ Keep your daily streak going! Don’t let your mining bonus reset.',
+      type: 'REMINDER',
+    },
+    {
+      id: '5',
+      shortcut: '/sync',
+      label: '⛏️ Node Sync Check',
+      text: '⛏️ Active mining cycle in progress. Sync your node now to maximize team rewards!',
+      type: 'REMINDER',
+    },
+  ];
+
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>(() => {
+    try {
+      const saved = localStorage.getItem('gt_circle_quick_replies');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_QUICK_REPLIES;
+  });
+
+  const [showQuickMenu, setShowQuickMenu] = useState<boolean>(false);
+  const [showAddQuickModal, setShowAddQuickModal] = useState<boolean>(false);
+  const [newShortcut, setNewShortcut] = useState<string>('');
+  const [newLabel, setNewLabel] = useState<string>('');
+  const [newText, setNewText] = useState<string>('');
+  const [newType, setNewType] = useState<'REMINDER' | 'CHAT'>('REMINDER');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchPrivateNetwork = async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -179,11 +246,78 @@ export const PrivateNetworkPage: React.FC = () => {
     return true;
   });
 
-  const quickPrompts = [
-    { label: '⏰ 4h Mining Reminder', text: '⏰ Reminder: Your 4-hour mining claim is ready! Claim 1 GT now.' },
-    { label: '🔥 Team Hash Rate Alert', text: '🔥 Let’s keep our circle hash rate at 100%! Claim your mining cycle today.' },
-    { label: '👋 Welcome Team', text: '👋 Welcome to our private circle! Reach out here if you have any questions.' },
-  ];
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+    if (val.startsWith('/')) {
+      setShowQuickMenu(true);
+    } else if (showQuickMenu && !val) {
+      setShowQuickMenu(false);
+    }
+  };
+
+  const handleSelectQuickReply = (qr: QuickReply, autoSend = false) => {
+    if (autoSend) {
+      handleSendMessage(qr.text, qr.type);
+      setShowQuickMenu(false);
+      setInputText('');
+    } else {
+      setInputText(qr.text);
+      setShowQuickMenu(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleSaveCustomQuickReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newShortcut.trim() || !newText.trim()) return;
+
+    let formattedShortcut = newShortcut.trim().toLowerCase();
+    if (!formattedShortcut.startsWith('/')) {
+      formattedShortcut = `/${formattedShortcut}`;
+    }
+
+    const newReply: QuickReply = {
+      id: `custom_${Date.now()}`,
+      shortcut: formattedShortcut,
+      label: newLabel.trim() || formattedShortcut,
+      text: newText.trim(),
+      type: newType,
+      isCustom: true,
+    };
+
+    const updated = [...quickReplies, newReply];
+    setQuickReplies(updated);
+    try {
+      localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
+    } catch (err) {}
+
+    setNewShortcut('');
+    setNewLabel('');
+    setNewText('');
+    setShowAddQuickModal(false);
+    showToast(`Quick reply ${formattedShortcut} saved!`, 'success');
+  };
+
+  const handleDeleteQuickReply = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = quickReplies.filter((qr) => qr.id !== id);
+    setQuickReplies(updated);
+    try {
+      localStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated));
+    } catch (err) {}
+    showToast('Quick reply removed', 'info');
+  };
+
+  const filterQuery = inputText.startsWith('/') ? inputText.slice(1).toLowerCase().trim() : '';
+  const filteredQuickReplies = quickReplies.filter((qr) => {
+    if (!filterQuery) return true;
+    return (
+      qr.shortcut.toLowerCase().includes(filterQuery) ||
+      qr.label.toLowerCase().includes(filterQuery) ||
+      qr.text.toLowerCase().includes(filterQuery)
+    );
+  });
 
   if (loading) {
     return (
@@ -527,25 +661,7 @@ export const PrivateNetworkPage: React.FC = () => {
             activeTab === 'CHAT' ? 'flex' : 'hidden lg:flex'
           }`}
         >
-          <div className="flex-1 min-h-0 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden">
-            {/* Quick Reminder Prompt Chips */}
-            <div className="px-4 py-2 border-b border-[#22C55E]/15 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-white/50">
-              <span className="text-[10px] font-black uppercase text-[#15803D] shrink-0 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                <span>Quick:</span>
-              </span>
-              {quickPrompts.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSendMessage(q.text, 'REMINDER')}
-                  disabled={sending}
-                  className="px-2.5 py-1 rounded-xl bg-white border border-[#22C55E]/30 text-[11px] font-bold text-[#1E5E36] hover:bg-[#22C55E]/15 hover:text-[#0A341B] transition-all shrink-0 shadow-2xs"
-                >
-                  {q.label}
-                </button>
-              ))}
-            </div>
-
+          <div className="flex-1 min-h-0 rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden relative">
             {/* Messages Stream - ONLY THIS SCROLLS! Background & Header stay 100% still */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3.5 p-3 sm:p-4 touch-pan-y">
               {(data?.messages || []).map((msg) => {
@@ -629,6 +745,116 @@ export const PrivateNetworkPage: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* WhatsApp Quick Replies Popover (Type / or tap ⚡) */}
+            {showQuickMenu && (
+              <div
+                className="absolute bottom-14 left-2 right-2 sm:left-4 sm:right-4 z-40 bg-white/95 backdrop-blur-xl border border-[#22C55E]/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[320px] animate-in fade-in slide-in-from-bottom-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Popover Header */}
+                <div className="p-2.5 sm:p-3 bg-[#EAF8EE] border-b border-[#22C55E]/20 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-lg bg-[#22C55E] text-white flex items-center justify-center shrink-0">
+                      <Zap className="w-3.5 h-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-black text-[#0A341B] truncate flex items-center gap-1.5">
+                        <span>Quick Replies</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-white text-[#15803D] font-mono font-bold">
+                          Type /
+                        </span>
+                      </h4>
+                      <p className="text-[10px] text-[#1E5E36] truncate">
+                        Select a shortcut to instant send or edit
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddQuickModal(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-[#22C55E]/30 text-[#15803D] hover:bg-[#22C55E]/10 font-bold text-[10px] transition-all shadow-2xs active:scale-95"
+                      title="Add Custom Quick Reply"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>New</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickMenu(false)}
+                      className="w-6 h-6 rounded-lg bg-white/80 hover:bg-white text-[#1E5E36] flex items-center justify-center transition-all"
+                      title="Close"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Templates List */}
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1.5 touch-pan-y">
+                  {filteredQuickReplies.map((qr) => (
+                    <div
+                      key={qr.id}
+                      onClick={() => handleSelectQuickReply(qr, false)}
+                      className="p-2 sm:p-2.5 rounded-xl hover:bg-[#F0FAF3] border border-transparent hover:border-[#22C55E]/20 transition-all flex items-center justify-between gap-2 cursor-pointer group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#15803D] bg-[#22C55E]/15 px-1.5 py-0.5 rounded">
+                            {qr.shortcut}
+                          </span>
+                          <span className="text-xs font-bold text-[#0A341B] truncate">
+                            {qr.label}
+                          </span>
+                          {qr.type === 'REMINDER' && (
+                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1 rounded">
+                              ALERT
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#1E5E36]/90 truncate mt-0.5 font-medium">
+                          {qr.text}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectQuickReply(qr, true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-[10px] flex items-center gap-1 shadow-2xs hover:shadow active:scale-95 transition-all"
+                          title="Instant Send"
+                        >
+                          <Send className="w-2.5 h-2.5" />
+                          <span className="hidden sm:inline">Send</span>
+                        </button>
+
+                        {qr.isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteQuickReply(qr.id, e)}
+                            className="p-1 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
+                            title="Delete custom shortcut"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {filteredQuickReplies.length === 0 && (
+                    <div className="py-6 text-center text-xs text-[#1E5E36]">
+                      No shortcuts matching "{filterQuery}". Tap "+ New" to create one!
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* WhatsApp Docked Bottom Input Bar - Permanently docked at bottom of card */}
             <div className="p-2 sm:p-2.5 bg-white border-t border-[#22C55E]/15 shrink-0">
               <form
@@ -636,16 +862,43 @@ export const PrivateNetworkPage: React.FC = () => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5 sm:gap-2"
               >
-                <div className="relative flex-1 bg-[#F0FAF3] border border-[#22C55E]/30 rounded-full px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:bg-white transition-all">
+                {/* Quick Reply / Slash Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowQuickMenu(!showQuickMenu)}
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                    showQuickMenu
+                      ? 'bg-[#22C55E] text-white shadow-sm ring-2 ring-[#22C55E]/40'
+                      : 'bg-[#F0FAF3] hover:bg-[#E0F5E7] text-[#15803D] border border-[#22C55E]/30'
+                  }`}
+                  title="Quick Replies (or type '/')"
+                >
+                  <Zap className="w-4 h-4" />
+                </button>
+
+                <div className="relative flex-1 bg-[#F0FAF3] border border-[#22C55E]/30 rounded-full px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-xs flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#22C55E]/50 focus-within:bg-white transition-all">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Type a message..."
+                    onChange={handleInputChange}
+                    placeholder="Type a message or '/' for shortcuts..."
                     className="w-full bg-transparent text-xs text-[#0A341B] placeholder-[#1E5E36]/60 font-medium focus:outline-none"
                   />
+                  {inputText && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputText('');
+                        setShowQuickMenu(false);
+                      }}
+                      className="text-[#1E5E36]/60 hover:text-[#0A341B] p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <button
@@ -661,6 +914,126 @@ export const PrivateNetworkPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal: Add Custom Quick Reply Shortcut */}
+      {showAddQuickModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowAddQuickModal(false)}
+        >
+          <div
+            className="max-w-md w-full bg-[#EBF8EF] border border-white/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#22C55E]/20 border border-[#22C55E]/30 flex items-center justify-center text-[#15803D]">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#0A341B]">Create Quick Reply</h3>
+                  <p className="text-[11px] text-[#1E5E36] font-medium">Save custom shortcut like in WhatsApp</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddQuickModal(false)}
+                className="w-8 h-8 rounded-full bg-white/80 border border-white flex items-center justify-center text-[#1E5E36] hover:text-[#0A341B]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomQuickReply} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-[#0A341B] mb-1">
+                  Shortcut Trigger (e.g. /ping, /reminder)
+                </label>
+                <input
+                  type="text"
+                  value={newShortcut}
+                  onChange={(e) => setNewShortcut(e.target.value)}
+                  placeholder="/reminder"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#22C55E]/30 font-mono text-xs text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#0A341B] mb-1">
+                  Shortcut Name / Label
+                </label>
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. 4h Mining Claim"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#22C55E]/30 text-xs text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#0A341B] mb-1">
+                  Message Content
+                </label>
+                <textarea
+                  value={newText}
+                  onChange={(e) => setNewText(e.target.value)}
+                  placeholder="Type the message to send when using this shortcut..."
+                  rows={3}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#22C55E]/30 text-xs text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/50 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#0A341B] mb-1">
+                  Style
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewType('REMINDER')}
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                      newType === 'REMINDER'
+                        ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-2xs font-black'
+                        : 'bg-white border-[#22C55E]/30 text-[#1E5E36]'
+                    }`}
+                  >
+                    ⏰ Mining Alert Card
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewType('CHAT')}
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                      newType === 'CHAT'
+                        ? 'bg-[#22C55E]/20 border-[#22C55E] text-[#15803D] shadow-2xs font-black'
+                        : 'bg-white border-[#22C55E]/30 text-[#1E5E36]'
+                    }`}
+                  >
+                    💬 Standard Chat
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddQuickModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-[#1E5E36] hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white text-xs font-black shadow-sm hover:shadow active:scale-95 transition-all"
+                >
+                  Save Shortcut
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
