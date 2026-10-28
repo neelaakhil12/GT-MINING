@@ -220,7 +220,7 @@ export const PrivateNetworkPage: React.FC = () => {
             </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
-            Private Network (ప్రైవేట్ నెట్వర్క్)
+            Private Network
           </h1>
           <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
             Encrypted chatroom strictly between you ({hostName}) and your directly referred miners.
