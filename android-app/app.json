@@ -15,7 +15,6 @@
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": false,
       "bundleIdentifier": "com.gtnetwork.app"
     },
     "android": {
