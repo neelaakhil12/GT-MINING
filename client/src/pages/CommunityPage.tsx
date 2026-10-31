@@ -219,7 +219,7 @@ export const CommunityPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-28 sm:pb-16 w-full max-w-5xl mx-auto">
+    <div className="space-y-6 w-full max-w-5xl mx-auto">
       
       {/* Header Banner matching DashboardPage */}
       <GlassCard glow className="space-y-3">

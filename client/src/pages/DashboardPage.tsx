@@ -20,7 +20,7 @@ import { GlassCard } from '../components/GlassCard';
 import { HomeBanners } from '../components/HomeBanners';
 
 export const DashboardPage: React.FC = () => {
-  const { wallet } = useAuth();
+  const { user, wallet } = useAuth();
   const { showToast } = useToast();
 
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -93,18 +93,18 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-28 sm:pb-16">
+    <div className="space-y-6">
       
       {/* 0. Dashboard Greeting Header matching client reference */}
       <div className="space-y-1">
         <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#15803D]">
-          GT NETWORK / DASHBOARD
+          GT NETWORK
         </span>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#0A341B] tracking-tight">
           {getGreeting()}!
         </h1>
         <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
-          Build the human network today.
+          {user?.fullName || 'User'}
         </p>
       </div>
 

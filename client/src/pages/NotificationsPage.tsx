@@ -61,7 +61,7 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto">
       
       {/* Header */}
       <GlassCard glow className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

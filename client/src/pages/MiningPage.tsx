@@ -178,7 +178,7 @@ export const MiningPage: React.FC = () => {
     : '09:16:58 PM';
 
   return (
-    <div className="space-y-4 pb-28 sm:pb-16 w-full max-w-lg mx-auto select-none">
+    <div className="space-y-4 w-full max-w-lg mx-auto select-none">
       
       {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 */}
       <div className="flex items-center justify-between px-2 pt-1">

@@ -134,7 +134,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16 w-full max-w-5xl mx-auto">
+    <div className="space-y-8 w-full max-w-5xl mx-auto">
       
       {/* Header Profile Summary matching Dashboard theme */}
       <GlassCard glow className="space-y-6">

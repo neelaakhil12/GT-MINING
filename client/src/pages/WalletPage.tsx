@@ -64,7 +64,7 @@ export const WalletPage: React.FC = () => {
   const lifetime = walletData?.lifetimeEarned ?? authWallet?.lifetimeEarned ?? 0;
 
   return (
-    <div className="space-y-8 pb-16 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
       
       {/* Wallet Balance Hero Card */}
       <GlassCard glow className="relative overflow-hidden p-6 sm:p-8 space-y-6">

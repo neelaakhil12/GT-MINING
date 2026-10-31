@@ -296,7 +296,7 @@ export const TasksPage: React.FC = () => {
   const completedCount = completedTasks.length;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-28 sm:pb-16">
+    <div className="space-y-6 max-w-4xl mx-auto">
       
       {/* Back button and navigation breadcrumb */}
       <div className="flex items-center justify-between">

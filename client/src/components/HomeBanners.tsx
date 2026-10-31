@@ -11,6 +11,7 @@ import {
   Zap
 } from 'lucide-react';
 import { GtLogo } from './GtLogo';
+import { GtCoinStream3D } from './GtCoinStream3D';
 
 export const HomeBanners: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -21,7 +22,7 @@ export const HomeBanners: React.FC = () => {
       image: '/banners/slide1.jpg',
       tag: 'GT ECOSYSTEM',
       title: 'Join the Future of Mining',
-      description: 'Experience the GT Titanium network.',
+      description: 'Experience the GT network.',
       ctaText: 'Explore Now',
       ctaLink: '/mining',
       accentColor: '#22C55E',
@@ -146,22 +147,27 @@ export const HomeBanners: React.FC = () => {
         {/* 2 cards side-by-side on mobile, responsive grid on desktop */}
         <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
           
-          {/* Card 1: GT TITANIUM */}
-          <div className="w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/90 border border-white shadow-sm flex flex-col justify-between gap-2.5">
-            <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-[#22C55E]/15 to-[#86EFAC]/25 flex items-center justify-center text-[#15803D]">
-              <Users className="w-4.5 h-4.5" />
+          {/* Card 1: GT with 3D Animated Coin Stream */}
+          <div className="relative overflow-hidden w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/95 border border-white shadow-sm flex flex-col justify-between gap-2.5 group">
+            {/* 3D Animated GT Coins Cascade matching reference video */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+              <GtCoinStream3D className="w-full h-full" />
             </div>
 
-            <div className="space-y-0.5">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1E5E36]/80 block">
-                GT TITANIUM
+            {/* Subtle ambient corner glow */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#22C55E]/12 rounded-full blur-xl pointer-events-none" />
+
+            {/* Card Content Overlay */}
+            <div className="relative z-10 space-y-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1E5E36]/90 block">
+                GT
               </span>
               <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
                 5,200
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-0.5 text-xs">
+            <div className="relative z-10 flex items-center justify-between pt-0.5 text-xs">
               <span className="font-semibold text-[#1E5E36]">
                 $1,200
               </span>

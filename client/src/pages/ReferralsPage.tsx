@@ -4,7 +4,8 @@ import {
   Copy,
   Check,
   Share2,
-  ArrowRight,
+  Sparkles,
+  Loader2,
   Coins,
   Info,
   ChevronRight,
@@ -186,7 +187,7 @@ export const ReferralsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-24 max-w-xl mx-auto px-1 sm:px-0">
+    <div className="space-y-6 max-w-xl mx-auto px-1 sm:px-0">
 
       {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER */}
       <div className="relative overflow-hidden rounded-[26px] p-5 sm:p-6 bg-gradient-to-br from-[#E8F8EE] via-[#F4FBF6] to-white border border-white/90 shadow-[0_8px_25px_rgba(34,197,94,0.08)]">
@@ -354,48 +355,76 @@ export const ReferralsPage: React.FC = () => {
           {/* WhatsApp */}
           <button
             onClick={shareWhatsApp}
-            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center transition-all"
             aria-label="Share on WhatsApp"
           >
-            <MessageCircle className="w-5 h-5 stroke-[1.8]" />
+            <svg className="w-6 h-6" viewBox="0 0 32 32" fill="none">
+              <path
+                fill="#25D366"
+                d="M16 2C8.28 2 2 8.28 2 16c0 2.65.74 5.13 2.03 7.25L2.3 29.7l6.63-1.71A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2z"
+              />
+              <path
+                fill="#FFFFFF"
+                d="M23.1 19.34c-.39-.2-2.31-1.14-2.67-1.27-.36-.13-.62-.2-.88.2s-1.01 1.27-1.24 1.53-.46.3-.85.1a10.66 10.66 0 01-3.15-1.95 11.75 11.75 0 01-2.18-2.72c-.23-.39-.02-.6.17-.8.18-.18.39-.46.59-.69.2-.23.26-.39.39-.65.13-.26.07-.49-.03-.69s-.88-2.12-1.21-2.91c-.32-.76-.64-.66-.88-.67-.23-.01-.49-.02-.75-.02s-.69.1-1.05.49c-.36.39-1.37 1.34-1.37 3.27s1.4 3.8 1.6 4.06c.2.26 2.76 4.21 6.69 5.91.93.4 1.66.64 2.23.82.94.3 1.8.26 2.47.16.76-.11 2.31-.94 2.64-1.85.33-.91.33-1.69.23-1.85-.1-.16-.36-.26-.75-.46z"
+              />
+            </svg>
           </button>
 
           {/* Telegram */}
           <button
             onClick={shareTelegram}
-            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center transition-all"
             aria-label="Share on Telegram"
           >
-            <Send className="w-5 h-5 stroke-[1.8]" />
+            <svg className="w-6 h-6" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="14" fill="#229ED9" />
+              <path
+                fill="#FFFFFF"
+                d="M23.07 9.42L6.87 15.67c-1.1.44-1.09 1.06-.2 1.33l4.16 1.3 9.63-6.08c.45-.28.87-.13.53.18l-7.81 7.05-.3 4.29c.42 0 .61-.19.85-.42l2.04-1.98 4.24 3.13c.78.43 1.34.21 1.54-.72l2.78-13.11c.29-1.14-.43-1.66-1.46-1.22z"
+              />
+            </svg>
           </button>
 
           {/* Twitter / 𝕏 */}
           <button
             onClick={shareTwitter}
-            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center transition-all"
             aria-label="Share on Twitter"
           >
-            <span className="font-mono font-black text-base leading-none">𝕏</span>
+            <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
           </button>
 
           {/* Instagram */}
           <button
             onClick={() => setInstagramModal(true)}
-            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center transition-all"
             aria-label="Share on Instagram"
           >
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            <svg className="w-6 h-6" viewBox="0 0 32 32" fill="none">
+              <defs>
+                <radialGradient id="igRadGrad" cx="30%" cy="105%" r="120%">
+                  <stop offset="0%" stopColor="#fdf497" />
+                  <stop offset="10%" stopColor="#fdf497" />
+                  <stop offset="35%" stopColor="#fd5949" />
+                  <stop offset="60%" stopColor="#d6249f" />
+                  <stop offset="100%" stopColor="#285AEB" />
+                </radialGradient>
+              </defs>
+              <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#igRadGrad)" />
+              <circle cx="16" cy="16" r="6" stroke="#FFFFFF" strokeWidth="2.2" />
+              <circle cx="22.5" cy="9.5" r="1.5" fill="#FFFFFF" />
             </svg>
           </button>
 
           {/* Share */}
           <button
             onClick={handleNativeShare}
-            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center text-neutral-800 transition-all"
+            className="h-12 rounded-[18px] bg-white border border-neutral-200/80 shadow-xs hover:bg-neutral-50 active:scale-95 flex items-center justify-center transition-all"
             aria-label="Share Referral Link"
           >
-            <Share2 className="w-5 h-5 stroke-[1.8]" />
+            <Share2 className="w-5 h-5 text-neutral-800 stroke-[2.2]" />
           </button>
         </div>
       </div>
@@ -449,17 +478,47 @@ export const ReferralsPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-black text-[#0A341B] font-mono">
+              <span className="text-2xl font-black text-[#0A341B] font-mono whitespace-nowrap">
                 {claimableAmount.toFixed(2)} <span className="text-sm font-bold text-neutral-600">GT</span>
               </span>
-              <button
-                onClick={handleClaimCommission}
-                disabled={isClaiming || claimableAmount <= 0}
-                className="w-10 h-10 rounded-full bg-[#0A341B] hover:bg-[#15803D] active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white flex items-center justify-center transition-all shadow-md"
-                aria-label="Claim commission"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
+
+              {/* Claim Button with Rotating Line Animation */}
+              <div className="relative p-[2px] rounded-full overflow-hidden inline-flex items-center justify-center shrink-0 shadow-md shadow-[#22C55E]/20">
+                {/* Rotating line / border beam */}
+                <span
+                  className="absolute inset-[-150%] animate-[border-beam-spin_2.5s_linear_infinite] pointer-events-none"
+                  style={{
+                    background:
+                      'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 270deg, rgba(34,197,94,0.3) 300deg, #22C55E 335deg, #86EFAC 352deg, #FFFFFF 360deg)',
+                  }}
+                />
+                {/* Neon blur glow layer */}
+                <span
+                  className="absolute inset-[-150%] animate-[border-beam-spin_2.5s_linear_infinite] blur-[3px] pointer-events-none"
+                  style={{
+                    background:
+                      'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 290deg, #22C55E 340deg, #86EFAC 355deg, #FFFFFF 360deg)',
+                  }}
+                />
+                <button
+                  onClick={handleClaimCommission}
+                  disabled={isClaiming || claimableAmount <= 0}
+                  className="relative z-10 px-4 py-2 rounded-full bg-[#0A341B] hover:bg-[#15803D] active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-inner"
+                  aria-label="Claim commission"
+                >
+                  {isClaiming ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Claiming</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-[#86EFAC] animate-pulse" />
+                      <span>Claim</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -545,8 +604,19 @@ export const ReferralsPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
           <div className="w-full max-w-sm bg-white p-6 rounded-3xl space-y-4 border border-neutral-200 shadow-2xl">
             <h3 className="text-base font-black text-[#0A341B] flex items-center gap-2">
-              <svg className="w-5 h-5 fill-current text-neutral-800" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.449-1.44z"/>
+              <svg className="w-5 h-5" viewBox="0 0 32 32" fill="none">
+                <defs>
+                  <radialGradient id="igModalGrad" cx="30%" cy="105%" r="120%">
+                    <stop offset="0%" stopColor="#fdf497" />
+                    <stop offset="10%" stopColor="#fdf497" />
+                    <stop offset="35%" stopColor="#fd5949" />
+                    <stop offset="60%" stopColor="#d6249f" />
+                    <stop offset="100%" stopColor="#285AEB" />
+                  </radialGradient>
+                </defs>
+                <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#igModalGrad)" />
+                <circle cx="16" cy="16" r="6" stroke="#FFFFFF" strokeWidth="2.2" />
+                <circle cx="22.5" cy="9.5" r="1.5" fill="#FFFFFF" />
               </svg>
               <span>Share to Instagram</span>
             </h3>
