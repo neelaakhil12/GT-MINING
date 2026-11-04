@@ -20,6 +20,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5050;
 
+// Trust reverse proxy (Nginx) for correct rate limiting & client IP detection
+app.set('trust proxy', 1);
+
 // Initialize / verify database on boot
 readDB();
 
