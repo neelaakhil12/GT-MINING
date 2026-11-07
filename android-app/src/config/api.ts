@@ -2,8 +2,8 @@
  * Global API Configuration for GT Network Android Mobile App
  * Connected to AWS EC2 Production Server & Google OAuth
  */
-export const API_BASE_URL = 'http://13.210.13.49/api';
-export const SERVER_HOST = 'http://13.210.13.49';
+export const API_BASE_URL = 'https://gtnetwork.in/api';
+export const SERVER_HOST = 'https://gtnetwork.in';
 
 /**
  * Google OAuth 2.0 Client Credentials

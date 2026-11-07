@@ -44,8 +44,8 @@ const defaultMiningStats: MiningStats = {
 // Real database API caller
 const callAuthApi = async (path: string, body: any) => {
   const endpoints = [
-    `http://localhost:5050/api${path}`,
     `${API_BASE_URL}${path}`,
+    `http://localhost:5050/api${path}`,
   ];
 
   let lastError: any = null;
@@ -270,8 +270,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const endpoints = [
-        'http://localhost:5050/api/auth/session',
         `${API_BASE_URL}/auth/session`,
+        'http://localhost:5050/api/auth/session',
       ];
       for (const url of endpoints) {
         try {

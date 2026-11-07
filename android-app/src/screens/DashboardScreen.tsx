@@ -30,10 +30,11 @@ import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
+import { API_BASE_URL } from '../config/api';
 
 const { width } = Dimensions.get('window');
 
-const bannerSlides = [
+const DEFAULT_BANNER_SLIDES = [
   {
     id: 1,
     tag: 'GT ECOSYSTEM',
@@ -69,7 +70,44 @@ const bannerSlides = [
 export const DashboardScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [bannerSlides, setBannerSlides] = useState(DEFAULT_BANNER_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Fetch live home carousel banners from production server
+  useEffect(() => {
+    let isMounted = true;
+    const fetchHomeBanners = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/home-banners`);
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+          const active = data.banners.filter((b: any) => b.isActive !== false);
+          if (active.length > 0 && isMounted) {
+            setBannerSlides(
+              active.map((b: any, idx: number) => ({
+                id: b.order || idx + 1,
+                tag: b.tag || 'GT ECOSYSTEM',
+                title: b.title,
+                description: b.description,
+                ctaText: b.ctaText || 'Explore Now',
+                targetRoute: (b.targetRoute === '/referrals'
+                  ? 'Referrals'
+                  : b.targetRoute === '/wallet'
+                  ? 'Wallet'
+                  : 'Mine') as const,
+                gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
+                accentColor: b.accentColor || '#22C55E',
+              }))
+            );
+          }
+        }
+      } catch {}
+    };
+    fetchHomeBanners();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Refresh user data from backend DB on mount
   useEffect(() => {
@@ -91,7 +129,7 @@ export const DashboardScreen: React.FC = () => {
     return 'Good Evening';
   };
 
-  const activeSlide = bannerSlides[currentSlide];
+  const activeSlide = bannerSlides[currentSlide] || bannerSlides[0] || DEFAULT_BANNER_SLIDES[0];
 
   const handleBannerCta = (route: string) => {
     if (route === 'Mine') (navigation as any).navigate('MainTabs', { screen: 'Mine' });

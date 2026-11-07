@@ -152,8 +152,8 @@ export const TasksScreen: React.FC = () => {
   useEffect(() => {
     const fetchLiveTasks = async () => {
       const endpoints = [
-        'http://localhost:5050/api/tasks',
         `${API_BASE_URL}/tasks`,
+        'http://localhost:5050/api/tasks',
       ];
       for (const endpoint of endpoints) {
         try {

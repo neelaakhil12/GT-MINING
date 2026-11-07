@@ -123,8 +123,8 @@ export const PrivateNetworkScreen: React.FC = () => {
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const endpoints = [
-        'http://localhost:5050/api/private-network',
         `${API_BASE_URL}/private-network`,
+        'http://localhost:5050/api/private-network',
       ];
       for (const url of endpoints) {
         try {
@@ -229,8 +229,8 @@ export const PrivateNetworkScreen: React.FC = () => {
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const endpoints = [
-        'http://localhost:5050/api/private-network/messages',
         `${API_BASE_URL}/private-network/messages`,
+        'http://localhost:5050/api/private-network/messages',
       ];
       for (const url of endpoints) {
         try {
@@ -279,8 +279,8 @@ export const PrivateNetworkScreen: React.FC = () => {
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const endpoints = [
-        'http://localhost:5050/api/private-network/ping-member',
         `${API_BASE_URL}/private-network/ping-member`,
+        'http://localhost:5050/api/private-network/ping-member',
       ];
       for (const url of endpoints) {
         try {

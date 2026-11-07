@@ -34,16 +34,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     const contentType = response.headers.get('content-type') || '';
 
-    // If server returned HTML (Vercel 404 page) or endpoint is unavailable -> Fall back to persistent in-browser database!
-    if (!response.ok || !contentType.includes('application/json')) {
-      console.warn(`[GT Network] Backend not available (${response.status}), activating in-browser node database for: ${endpoint}`);
-      return handleMockApi(endpoint, options) as T;
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `Request failed with status ${response.status}`);
+      }
+      return data;
     }
 
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    // Network failure, offline, or CORS on Vercel -> Fall back to persistent in-browser database!
+    // If server returned non-JSON HTML (e.g. static 404 page / offline) -> Fall back to persistent in-browser database
+    console.warn(`[GT Network] Backend not available (${response.status}), activating in-browser node database for: ${endpoint}`);
+    return handleMockApi(endpoint, options) as T;
+  } catch (err: any) {
+    if (err && err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+    // Network failure or offline -> Fall back to in-browser node database
     console.warn(`[GT Network] Network fetch failed, activating in-browser node database for: ${endpoint}`);
     return handleMockApi(endpoint, options) as T;
   }

@@ -80,8 +80,8 @@ export const ReferralsScreen: React.FC = () => {
       try {
         const token = await appStorage.getItem('gt_mobile_token');
         const endpoints = [
-          'http://localhost:5050/api',
           API_BASE_URL,
+          'http://localhost:5050/api',
         ];
         for (const base of endpoints) {
           try {

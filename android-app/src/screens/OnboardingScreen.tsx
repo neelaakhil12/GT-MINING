@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,7 +25,7 @@ interface Slide {
   image: any;
 }
 
-const SLIDES: Slide[] = [
+const DEFAULT_SLIDES: Slide[] = [
   {
     id: 1,
     title: 'Automated 4-Hour Mining Engine',
@@ -66,9 +67,44 @@ export const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isAuthenticated } = useAuth();
 
+  const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0);
+
+  // Dynamically fetch live pre-opening banners from server
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/onboarding-banners`);
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+          const active = data.banners.filter((b: any) => b.isActive !== false);
+          if (active.length > 0 && isMounted) {
+            setSlides(
+              active.map((b: any, i: number) => ({
+                id: b.stepNumber || i + 1,
+                title: b.title,
+                description: b.description,
+                image: b.imageUrl
+                  ? (b.imageUrl.startsWith('data:') || b.imageUrl.startsWith('http')
+                      ? { uri: b.imageUrl }
+                      : { uri: `https://gtnetwork.in${b.imageUrl}` })
+                  : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].image,
+              }))
+            );
+          }
+        }
+      } catch (err) {
+        // Fallback to default local slides if network is unavailable
+      }
+    };
+    fetchBanners();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // If user is already authenticated, bypass onboarding and go directly to main app
   useEffect(() => {
@@ -92,7 +128,7 @@ export const OnboardingScreen: React.FC = () => {
     const timer = setInterval(() => {
       setSlideProgress((prev) => {
         if (prev >= 100) {
-          if (currentIdx < SLIDES.length - 1) {
+          if (currentIdx < slides.length - 1) {
             setCurrentIdx((c) => c + 1);
             return 0;
           } else {
@@ -106,10 +142,10 @@ export const OnboardingScreen: React.FC = () => {
     }, 55);
 
     return () => clearInterval(timer);
-  }, [currentIdx, isHolding, navigation, isAuthenticated]);
+  }, [currentIdx, isHolding, navigation, isAuthenticated, slides.length]);
 
   const handleNext = () => {
-    if (currentIdx < SLIDES.length - 1) {
+    if (currentIdx < slides.length - 1) {
       setCurrentIdx((c) => c + 1);
       setSlideProgress(0);
     } else {
@@ -130,7 +166,7 @@ export const OnboardingScreen: React.FC = () => {
     proceedToNext();
   };
 
-  const activeSlide = SLIDES[currentIdx];
+  const activeSlide = slides[currentIdx] || slides[0] || DEFAULT_SLIDES[0];
 
   return (
     <View style={styles.container}>
@@ -147,7 +183,7 @@ export const OnboardingScreen: React.FC = () => {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         {/* Top Story Progress Bars */}
         <View style={styles.storyBarsRow}>
-          {SLIDES.map((slide, idx) => {
+          {slides.map((slide, idx) => {
             let fillPct = '0%';
             if (idx < currentIdx) fillPct = '100%';
             else if (idx === currentIdx) fillPct = `${slideProgress}%`;

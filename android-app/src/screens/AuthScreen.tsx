@@ -146,8 +146,8 @@ export const AuthScreen: React.FC = () => {
     setLoading(true);
     try {
       const endpoints = [
-        'http://localhost:5050/api/auth/forgot-password',
         `${API_BASE_URL}/auth/forgot-password`,
+        'http://localhost:5050/api/auth/forgot-password',
       ];
       let sent = false;
       let msg = '';
@@ -200,8 +200,8 @@ export const AuthScreen: React.FC = () => {
     setLoading(true);
     try {
       const endpoints = [
-        'http://localhost:5050/api/auth/reset-password',
         `${API_BASE_URL}/auth/reset-password`,
+        'http://localhost:5050/api/auth/reset-password',
       ];
       let updated = false;
 

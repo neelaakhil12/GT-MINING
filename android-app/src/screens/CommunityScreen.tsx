@@ -74,8 +74,8 @@ export const CommunityScreen: React.FC = () => {
   useEffect(() => {
     const fetchLivePosts = async () => {
       const endpoints = [
-        'http://localhost:5050/api/community/posts',
         `${API_BASE_URL}/community/posts`,
+        'http://localhost:5050/api/community/posts',
       ];
       for (const url of endpoints) {
         try {
