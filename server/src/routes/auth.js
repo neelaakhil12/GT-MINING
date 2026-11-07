@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { readDB, writeDB, generateId, generateReferralCode, lockManager } from '../db.js';
-import { generateToken, requireAuth } from '../middleware/auth.js';
+import { generateToken, requireAuth, ADMIN_EMAILS } from '../middleware/auth.js';
 import { sendPasswordResetEmail } from '../services/email.js';
 
 const router = express.Router();
@@ -9,7 +9,11 @@ const router = express.Router();
 // Helper to sanitize user object
 export const sanitizeUser = (user) => {
   const { passwordHash, ...rest } = user;
-  return rest;
+  const isEmailAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  return {
+    ...rest,
+    role: isEmailAdmin ? 'ADMIN' : (user.role || 'USER'),
+  };
 };
 
 // Sign Up

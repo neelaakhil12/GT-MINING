@@ -447,9 +447,15 @@ router.post('/transactions/adjust', async (req, res) => {
 
 // Community Management Routes
 router.get('/community/posts', (req, res) => {
-  const db = readDB();
-  const posts = [...db.communityPosts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  return res.json({ success: true, posts });
+  try {
+    const db = readDB();
+    const rawPosts = Array.isArray(db.communityPosts) ? db.communityPosts : [];
+    const posts = [...rawPosts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.json({ success: true, posts });
+  } catch (err) {
+    console.error('Error fetching admin community posts:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch posts', posts: [] });
+  }
 });
 
 router.post('/community/posts', (req, res) => {
