@@ -83,14 +83,6 @@ const DEFAULT_ONBOARDING_SLIDES = [
   },
 ];
 
-const ONBOARDING_SAMPLE_IMAGES = [
-  { name: 'Slide 1 (Mining Engine)', url: '/onboarding/story_1.jpg' },
-  { name: 'Slide 2 (NYSE Exchange)', url: '/onboarding/story_2.jpg' },
-  { name: 'Slide 3 (Yield & Commission)', url: '/onboarding/story_3.jpg' },
-  { name: 'Slide 4 (Visa & Mastercard)', url: '/onboarding/story_4.png' },
-  { name: 'Slide 5 (Wallet Claims)', url: '/onboarding/story_5.jpg' },
-];
-
 export const AdminOnboardingBannersPage: React.FC = () => {
   const { showToast } = useToast();
   const [banners, setBanners] = useState<any[]>([]);
@@ -158,7 +150,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     setTitle('');
     setSubtitle('');
     setDescription('');
-    setImageUrl(ONBOARDING_SAMPLE_IMAGES[0].url);
+    setImageUrl('');
     setBadgeText('GT PROTOCOL');
     setCtaText('Next Step →');
     setCtaLink('/signup');
@@ -599,27 +591,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
                     </button>
                   </div>
                 )}
-
-                {/* Optional Preset Chips */}
-                <div className="pt-1 space-y-1">
-                  <span className="text-[10px] text-[#A7C9B1] block">Or pick an official slide preset:</span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {ONBOARDING_SAMPLE_IMAGES.map((preset, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setImageUrl(preset.url)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                          imageUrl === preset.url
-                            ? 'bg-[#22C55E]/30 text-[#86EFAC] border-[#22C55E]'
-                            : 'bg-white/5 text-[#A7C9B1] border-white/10 hover:border-white/30'
-                        }`}
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Description */}
