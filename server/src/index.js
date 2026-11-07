@@ -60,6 +60,19 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/private-network', privateNetworkRouter);
 app.use('/api/admin', adminRouter);
 
+// Public Banners Endpoints
+app.get('/api/onboarding-banners', (req, res) => {
+  const db = readDB();
+  const banners = (db.onboardingBanners || []).filter(b => b.isActive !== false);
+  return res.json({ success: true, banners });
+});
+
+app.get('/api/home-banners', (req, res) => {
+  const db = readDB();
+  const banners = (db.homeBanners || []).filter(b => b.isActive !== false);
+  return res.json({ success: true, banners });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

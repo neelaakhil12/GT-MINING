@@ -19,18 +19,75 @@ import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
 
+const DEFAULT_ONBOARDING_SLIDES = [
+  {
+    id: 'ob_001',
+    stepNumber: 1,
+    title: 'Automated 4-Hour Mining Engine',
+    subtitle: 'Zero hardware wear, zero battery drain',
+    description: 'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device or web browser.',
+    imageUrl: '/onboarding/story_1.jpg',
+    ctaText: 'Next Step →',
+    ctaLink: '/tour',
+    badgeText: 'DECENTRALIZED VIRTUAL MINING',
+    isActive: true,
+  },
+  {
+    id: 'ob_002',
+    stepNumber: 2,
+    title: "Recognized by the world's largest stock exchange",
+    subtitle: 'The only blockchain company invited by the NYSE',
+    description: 'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
+    imageUrl: '/onboarding/story_2.jpg',
+    ctaText: 'Next Step →',
+    ctaLink: '/tour',
+    badgeText: 'INSTITUTIONAL TRUST',
+    isActive: true,
+  },
+  {
+    id: 'ob_003',
+    stepNumber: 3,
+    title: 'Autonomous 10% Yield Accrual',
+    subtitle: 'Protocol dividend distribution',
+    description: 'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
+    imageUrl: '/onboarding/story_3.jpg',
+    ctaText: 'Next Step →',
+    ctaLink: '/tour',
+    badgeText: '10% LIFETIME REWARD',
+    isActive: true,
+  },
+  {
+    id: 'ob_004',
+    stepNumber: 4,
+    title: 'Powered by Visa & Mastercard',
+    subtitle: 'Accepted in 150+ countries worldwide',
+    description: 'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
+    imageUrl: '/onboarding/story_4.png',
+    ctaText: 'Next Step →',
+    ctaLink: '/tour',
+    badgeText: 'GLOBAL CARD ACCESS',
+    isActive: true,
+  },
+  {
+    id: 'ob_005',
+    stepNumber: 5,
+    title: 'Instant Direct Wallet Claims',
+    subtitle: 'Zero gas fees, direct ledger deposits',
+    description: 'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
+    imageUrl: '/onboarding/story_5.jpg',
+    ctaText: 'Get Started Now 🚀',
+    ctaLink: '/signup',
+    badgeText: 'ZERO GAS VAULT',
+    isActive: true,
+  },
+];
+
 const ONBOARDING_SAMPLE_IMAGES = [
-  { name: 'Mining Engine 3D', url: '/onboarding/story_1.jpg' },
-  { name: 'NYSE & Stock Exchange', url: '/onboarding/story_2.jpg' },
-  { name: 'Yield & Commission', url: '/onboarding/story_3.jpg' },
-  {
-    name: 'Crypto Hardware Nodes',
-    url: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    name: 'Abstract Neon Grid',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-  },
+  { name: 'Slide 1 (Mining Engine)', url: '/onboarding/story_1.jpg' },
+  { name: 'Slide 2 (NYSE Exchange)', url: '/onboarding/story_2.jpg' },
+  { name: 'Slide 3 (Yield & Commission)', url: '/onboarding/story_3.jpg' },
+  { name: 'Slide 4 (Visa & Mastercard)', url: '/onboarding/story_4.png' },
+  { name: 'Slide 5 (Wallet Claims)', url: '/onboarding/story_5.jpg' },
 ];
 
 export const AdminOnboardingBannersPage: React.FC = () => {
@@ -65,14 +122,33 @@ export const AdminOnboardingBannersPage: React.FC = () => {
   const fetchBanners = async () => {
     try {
       const res = await api.getAdminOnboardingBanners();
-      if (res.success) {
-        setBanners(res.banners || []);
+      if (res.success && Array.isArray(res.banners) && res.banners.length > 0) {
+        setBanners(res.banners);
+      } else {
+        setBanners(DEFAULT_ONBOARDING_SLIDES);
       }
     } catch (err: any) {
-      showToast('Failed to load pre-opening banners', 'error');
+      setBanners(DEFAULT_ONBOARDING_SLIDES);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size should be less than 5MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setImageUrl(reader.result);
+        showToast('Image selected successfully!', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleOpenCreate = () => {
@@ -468,8 +544,27 @@ export const AdminOnboardingBannersPage: React.FC = () => {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-mono text-[11px]"
                 />
 
+                {/* Upload File button & presets */}
+                <div className="flex items-center gap-2 pt-1">
+                  <label className="px-3 py-1.5 rounded-xl bg-[#22C55E]/20 hover:bg-[#22C55E]/30 text-[#86EFAC] text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-[#22C55E]/40 transition-all">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Upload Custom Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {imageUrl && (
+                    <span className="text-[10px] text-[#86EFAC] truncate max-w-[240px]">
+                      Selected: {imageUrl.startsWith('data:') ? 'Custom Uploaded' : imageUrl}
+                    </span>
+                  )}
+                </div>
+
                 {/* Preset Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
                   {ONBOARDING_SAMPLE_IMAGES.map((preset, i) => (
                     <button
                       key={i}
