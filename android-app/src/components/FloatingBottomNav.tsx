@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Home, Users } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -30,8 +31,12 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
 }) => {
   const hookNav = useNavigation<any>();
   const nav = propNav || hookNav;
+  const insets = useSafeAreaInsets();
 
   const currentRouteName = state ? state.routes[state.index].name : (activeTab || 'Wallet');
+
+  // Dynamic bottom margin respecting gesture bar and 3-button navigation
+  const bottomMargin = Math.max(insets.bottom, 10) + (Platform.OS === 'ios' ? 12 : 8);
 
   const navigateTo = (routeName: string) => {
     try {
@@ -47,7 +52,7 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
   };
 
   return (
-    <View style={styles.floatingContainer} pointerEvents="box-none">
+    <View style={[styles.floatingContainer, { bottom: bottomMargin }]} pointerEvents="box-none">
       <View style={styles.barPill}>
         {/* 1. Home */}
         <TouchableOpacity
@@ -144,7 +149,6 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
 const styles = StyleSheet.create({
   floatingContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 24 : 18,
     left: 0,
     right: 0,
     alignItems: 'center',

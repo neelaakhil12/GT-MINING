@@ -94,7 +94,7 @@ export const DashboardScreen: React.FC = () => {
                   ? 'Referrals'
                   : b.targetRoute === '/wallet'
                   ? 'Wallet'
-                  : 'Mine') as const,
+                  : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
                 gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
                 accentColor: b.accentColor || '#22C55E',
               }))

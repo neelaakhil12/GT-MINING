@@ -27,6 +27,7 @@ const MainTabs: React.FC = () => {
     <Tab.Navigator
       id="main-tabs"
       tabBar={(props) => <FloatingBottomNav {...props} />}
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
       }}

@@ -27,7 +27,7 @@ import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config/api';
-import { appStorage } from '../services/storage';
+import { appStorage } from '../utils/storage';
 
 export const ProfileScreen: React.FC = () => {
   const { user, refreshUserData, logout } = useAuth();

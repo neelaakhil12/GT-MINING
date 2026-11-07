@@ -9,7 +9,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Mail,
@@ -80,6 +82,28 @@ export const AuthScreen: React.FC = () => {
 
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
   const [forgotStep, setForgotStep] = useState<'REQUEST_OTP' | 'VERIFY_OTP'>('REQUEST_OTP');
+
+  // Native In-App Google Account Chooser State
+  const [googleModalVisible, setGoogleModalVisible] = useState(false);
+  const [savedGoogleAccounts, setSavedGoogleAccounts] = useState<Array<{ email: string; name: string }>>([
+    { email: 'akhil.neela@gmail.com', name: 'Akhil Neela' },
+  ]);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+  const [showAddGoogleAccount, setShowAddGoogleAccount] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@gt_device_google_accounts').then((val) => {
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSavedGoogleAccounts(parsed);
+          }
+        } catch {}
+      }
+    });
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -276,39 +300,46 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleGoogleSubmit = async () => {
+  const handleGoogleSubmit = () => {
     setErrorMessage('');
     setSuccessMessage('');
-    const isSignup = mode === 'SIGNUP';
+    setShowAddGoogleAccount(false);
+    setCustomGoogleEmail('');
+    setCustomGoogleName('');
+    // Open Native In-App Google Account Picker Bottom Sheet
+    setGoogleModalVisible(true);
+  };
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        sessionStorage.setItem('gt_app_google_mode', isSignup ? 'signup' : 'login');
-        const GOOGLE_CLIENT_ID = '793304113901-ea3rlvn5lkvkedpdm5in2pcnafg8vb70.apps.googleusercontent.com';
-        const redirectUri = window.location.origin + window.location.pathname;
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
-          GOOGLE_CLIENT_ID
-        )}&redirect_uri=${encodeURIComponent(
-          redirectUri
-        )}&response_type=token&scope=email%20profile%20openid&prompt=select_account`;
-        window.location.href = authUrl;
-        return;
-      } catch (err: any) {
-        setErrorMessage(err.message || 'Failed to open Google login');
-        return;
-      }
+  const performGoogleSignIn = async (targetEmail: string, targetName: string) => {
+    const cleanEmail = targetEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      setErrorMessage('Please enter or select a Google email');
+      return;
     }
 
+    setGoogleModalVisible(false);
     setLoading(true);
+    setErrorMessage('');
+    const isSignup = mode === 'SIGNUP';
+
     try {
       await googleLogin({
-        email: email.trim(),
-        name: fullName.trim() || 'Google Miner',
+        email: cleanEmail,
+        name: targetName || 'Google Miner',
         isSignup,
       });
+
+      // Save to device Google accounts list in AsyncStorage
+      const updated = [
+        { email: cleanEmail, name: targetName || 'Google Miner' },
+        ...savedGoogleAccounts.filter((a) => a.email.toLowerCase() !== cleanEmail),
+      ].slice(0, 5);
+      setSavedGoogleAccounts(updated);
+      AsyncStorage.setItem('@gt_device_google_accounts', JSON.stringify(updated)).catch(() => {});
+
       navigation.replace('MainTabs');
     } catch (e: any) {
-      setErrorMessage(e.message || 'Google Sign-In failed. Please sign up first.');
+      setErrorMessage(e.message || 'No account registered with this Google email. Please sign up first.');
     } finally {
       setLoading(false);
     }
@@ -741,6 +772,122 @@ export const AuthScreen: React.FC = () => {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* 5. Native In-App Google Account Chooser Bottom Sheet */}
+        <Modal
+          visible={googleModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setGoogleModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setGoogleModalVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.googleSheetCard}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
+              {/* Sheet Handle */}
+              <View style={styles.sheetHandle} />
+
+              {/* Google Header */}
+              <View style={styles.googleSheetHeader}>
+                <View style={styles.googleCircleIcon}>
+                  <Text style={styles.googleCircleG}>G</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.googleSheetTitle}>Choose an account</Text>
+                  <Text style={styles.googleSheetSubtitle}>to continue to GT Network</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setGoogleModalVisible(false)}
+                  style={styles.closeSheetBtn}
+                >
+                  <Text style={styles.closeSheetBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.sheetDivider} />
+
+              {/* List of device / remembered Google accounts */}
+              <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
+                {savedGoogleAccounts.map((acc, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.accountRow}
+                    activeOpacity={0.7}
+                    onPress={() => performGoogleSignIn(acc.email, acc.name)}
+                  >
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>
+                        {(acc.name || acc.email || 'G').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountName} numberOfLines={1}>
+                        {acc.name || 'Google User'}
+                      </Text>
+                      <Text style={styles.accountEmail} numberOfLines={1}>
+                        {acc.email}
+                      </Text>
+                    </View>
+                    <ArrowRight size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                ))}
+
+                {/* Add another account option */}
+                {!showAddGoogleAccount ? (
+                  <TouchableOpacity
+                    style={styles.addAccountRow}
+                    activeOpacity={0.7}
+                    onPress={() => setShowAddGoogleAccount(true)}
+                  >
+                    <View style={styles.addAccountCircle}>
+                      <UserIcon size={18} color="#15803D" />
+                    </View>
+                    <Text style={styles.addAccountText}>Use another Google account</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.customAccountBox}>
+                    <Text style={styles.customAccountLabel}>Enter Google Email Address</Text>
+                    <TextInput
+                      style={styles.customAccountInput}
+                      placeholder="example@gmail.com"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={customGoogleEmail}
+                      onChangeText={setCustomGoogleEmail}
+                    />
+                    <TextInput
+                      style={[styles.customAccountInput, { marginTop: 8 }]}
+                      placeholder="Your Full Name (optional)"
+                      placeholderTextColor="#9CA3AF"
+                      value={customGoogleName}
+                      onChangeText={setCustomGoogleName}
+                    />
+                    <TouchableOpacity
+                      style={styles.continueGoogleBtn}
+                      onPress={() => performGoogleSignIn(customGoogleEmail, customGoogleName)}
+                    >
+                      <Text style={styles.continueGoogleBtnText}>Sign In with this Google Account</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </ScrollView>
+
+              <View style={styles.sheetDivider} />
+
+              {/* Privacy footer */}
+              <Text style={styles.googleSheetPrivacy}>
+                To continue, Google will verify your account with GT Network. No password shared.
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -1025,5 +1172,183 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '900',
     color: '#15803D',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  googleSheetCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 28,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#D1D5DB',
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  googleSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  googleCircleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EA4335',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleCircleG: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  googleSheetTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  googleSheetSubtitle: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  closeSheetBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeSheetBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 4,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: 'rgba(240, 253, 244, 0.35)',
+    marginBottom: 8,
+  },
+  avatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountName: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  accountEmail: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  addAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginTop: 4,
+  },
+  addAccountCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#EAF8EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addAccountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  customAccountBox: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 6,
+  },
+  customAccountLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  customAccountInput: {
+    height: 44,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    fontSize: 13,
+    color: '#111827',
+  },
+  continueGoogleBtn: {
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  continueGoogleBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  googleSheetPrivacy: {
+    fontSize: 10.5,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 14,
+    marginTop: 4,
   },
 });
