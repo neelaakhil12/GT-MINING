@@ -87,7 +87,7 @@ export interface MockDatabase {
   referrals?: Array<any>;
 }
 
-const STORAGE_KEY = 'gt_mock_database_v3';
+const STORAGE_KEY = 'gt_mock_database_v4';
 
 const now = Date.now();
 const hour = 3600000;
@@ -102,208 +102,46 @@ const defaultDb: MockDatabase = {
       role: 'ADMIN',
       referralCode: 'GTADMIN',
       accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 2).toISOString(),
-      createdAt: new Date(now - day * 30).toISOString(),
+      lastMiningAt: undefined,
+      createdAt: '2026-10-18T11:12:45.081Z',
     },
     {
-      id: 'usr_demo_002',
-      fullName: 'Akhil Kumar',
-      email: 'demo@gtmining.com',
-      role: 'USER',
-      referralCode: 'GT88241',
+      id: 'usr_mw5634kx_h06dk4',
+      fullName: 'Akhil kumar',
+      email: 'neelaakhilkumar50@gmail.com',
+      role: 'ADMIN',
+      referralCode: 'GTAKNATH',
       accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 1).toISOString(),
-      createdAt: new Date(now - day * 14).toISOString(),
+      lastMiningAt: undefined,
+      createdAt: '2026-11-06T16:06:39.425Z',
     },
     {
-      id: 'usr_003',
-      fullName: 'Rahul Varma',
-      email: 'rahul.varma@gmail.com',
+      id: 'usr_mw573yqx_sr0oyq',
+      fullName: 'rajesh',
+      email: 'neelaakhilharish@gmail.com',
       role: 'USER',
-      referralCode: 'GT55291',
+      referralCode: 'GTGLJXMK',
       accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 3).toISOString(),
-      createdAt: new Date(now - day * 10).toISOString(),
-    },
-    {
-      id: 'usr_004',
-      fullName: 'Priya Sharma',
-      email: 'priya.sharma@yahoo.com',
-      role: 'USER',
-      referralCode: 'GT44182',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 5).toISOString(),
-      createdAt: new Date(now - day * 9).toISOString(),
-    },
-    {
-      id: 'usr_005',
-      fullName: 'Arjun Reddy',
-      email: 'arjun.reddy@outlook.com',
-      role: 'USER',
-      referralCode: 'GT77312',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 2).toISOString(),
-      createdAt: new Date(now - day * 8).toISOString(),
-    },
-    {
-      id: 'usr_006',
-      fullName: 'Elena Rostova',
-      email: 'elena.rostova@crypto.net',
-      role: 'USER',
-      referralCode: 'GT66901',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 4).toISOString(),
-      createdAt: new Date(now - day * 7).toISOString(),
-    },
-    {
-      id: 'usr_007',
-      fullName: 'Vikram Patel',
-      email: 'vikram.patel@hotmail.com',
-      role: 'USER',
-      referralCode: 'GT88134',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 6).toISOString(),
-      createdAt: new Date(now - day * 6).toISOString(),
-    },
-    {
-      id: 'usr_008',
-      fullName: 'Sneha Rao',
-      email: 'sneha.rao@gmail.com',
-      role: 'USER',
-      referralCode: 'GT23445',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 8).toISOString(),
-      createdAt: new Date(now - day * 5).toISOString(),
-    },
-    {
-      id: 'usr_009',
-      fullName: 'Marcus Vance',
-      email: 'marcus.vance@tech.co',
-      role: 'USER',
-      referralCode: 'GT99182',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 12).toISOString(),
-      createdAt: new Date(now - day * 4).toISOString(),
-    },
-    {
-      id: 'usr_010',
-      fullName: 'Ananya Das',
-      email: 'ananya.das@gmail.com',
-      role: 'USER',
-      referralCode: 'GT19773',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - hour * 16).toISOString(),
-      createdAt: new Date(now - day * 3).toISOString(),
-    },
-    {
-      id: 'usr_011',
-      fullName: 'David Miller',
-      email: 'david.miller@ledger.org',
-      role: 'USER',
-      referralCode: 'GT33190',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - day * 3).toISOString(),
-      createdAt: new Date(now - day * 12).toISOString(),
-    },
-    {
-      id: 'usr_012',
-      fullName: 'Chloe Dubois',
-      email: 'chloe.dubois@meta.fr',
-      role: 'USER',
-      referralCode: 'GT88201',
-      accountStatus: 'ACTIVE',
-      lastMiningAt: new Date(now - day * 10).toISOString(),
-      createdAt: new Date(now - day * 20).toISOString(),
+      lastMiningAt: undefined,
+      createdAt: '2026-11-06T16:35:18.137Z',
     },
   ],
   wallets: {
-    usr_demo_002: {
+    usr_admin_001: {
+      availableBalance: 10.0,
+      lifetimeEarned: 10.0,
+    },
+    usr_mw5634kx_h06dk4: {
       availableBalance: 0.0,
       lifetimeEarned: 0.0,
-      lastMiningAt: new Date(now - hour * 1).toISOString(),
-      nextEligibleAt: new Date(now + hour * 3).toISOString(),
     },
-    usr_admin_001: {
-      availableBalance: 5200.0,
-      lifetimeEarned: 5200.0,
+    usr_mw573yqx_sr0oyq: {
+      availableBalance: 0.0,
+      lifetimeEarned: 0.0,
     },
   },
-  claims: [
-    {
-      id: 'claim_101',
-      userId: 'usr_demo_002',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 1).toISOString(),
-      nextEligibleAt: new Date(now + hour * 3).toISOString(),
-      transactionId: 'tx_101',
-      status: 'SUCCESS',
-    },
-    {
-      id: 'claim_102',
-      userId: 'usr_003',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 3).toISOString(),
-      nextEligibleAt: new Date(now + hour * 1).toISOString(),
-      transactionId: 'tx_102',
-      status: 'SUCCESS',
-    },
-    {
-      id: 'claim_103',
-      userId: 'usr_005',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 2).toISOString(),
-      nextEligibleAt: new Date(now + hour * 2).toISOString(),
-      transactionId: 'tx_103',
-      status: 'SUCCESS',
-    },
-    {
-      id: 'claim_104',
-      userId: 'usr_006',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 4).toISOString(),
-      nextEligibleAt: new Date(now).toISOString(),
-      transactionId: 'tx_104',
-      status: 'SUCCESS',
-    },
-    {
-      id: 'claim_105',
-      userId: 'usr_008',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 8).toISOString(),
-      nextEligibleAt: new Date(now - hour * 4).toISOString(),
-      transactionId: 'tx_105',
-      status: 'SUCCESS',
-    },
-    {
-      id: 'claim_106',
-      userId: 'usr_010',
-      rewardAmount: 1.0,
-      claimedAt: new Date(now - hour * 16).toISOString(),
-      nextEligibleAt: new Date(now - hour * 12).toISOString(),
-      transactionId: 'tx_106',
-      status: 'SUCCESS',
-    },
-  ],
-  transactions: [
-    {
-      id: 'tx_101',
-      userId: 'usr_demo_002',
-      type: 'MINING_REWARD',
-      amount: 1.0,
-      status: 'COMPLETED',
-      description: '4-Hour Mining Reward (+1 GT)',
-      createdAt: new Date(now - hour * 1).toISOString(),
-    },
-    {
-      id: 'tx_102',
-      userId: 'usr_demo_002',
-      type: 'REFERRAL_REWARD',
-      amount: 0.5,
-      status: 'COMPLETED',
-      description: 'Referral commission (+0.5 GT)',
-      createdAt: new Date(now - day * 1).toISOString(),
-    },
-  ],
+  claims: [],
+  transactions: [],
   posts: [
     {
       id: "post_live_004",
@@ -444,16 +282,39 @@ const defaultDb: MockDatabase = {
 
 export const getMockDb = (): MockDatabase => {
   try {
+    // Purge previous storage versions containing dummy seed users
+    localStorage.removeItem('gt_mock_database_v3');
+    localStorage.removeItem('gt_mock_database_v2');
+    localStorage.removeItem('gt_mock_database_v1');
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultDb));
       return defaultDb;
     }
     const parsed = JSON.parse(raw);
+    const fakeEmails = new Set([
+      'demo@gtmining.com',
+      'rahul.varma@gmail.com',
+      'priya.sharma@yahoo.com',
+      'arjun.reddy@outlook.com',
+      'elena.rostova@crypto.net',
+      'vikram.patel@hotmail.com',
+      'sneha.rao@gmail.com',
+      'marcus.vance@tech.co',
+      'ananya.das@gmail.com',
+      'david.miller@ledger.org',
+      'chloe.dubois@meta.fr',
+      'chloe.dubois@paris.fr'
+    ]);
+    if (parsed.users && Array.isArray(parsed.users)) {
+      parsed.users = parsed.users.filter((u: any) => !fakeEmails.has((u.email || '').toLowerCase()) && u.id !== 'usr_demo_002');
+    }
     // Ensure all new collections exist
     if (!parsed.posts) parsed.posts = defaultDb.posts;
     if (!parsed.onboardingBanners) parsed.onboardingBanners = defaultDb.onboardingBanners;
     if (!parsed.homeBanners) parsed.homeBanners = defaultDb.homeBanners;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     return parsed;
   } catch {
     return defaultDb;
@@ -478,8 +339,8 @@ export const handleMockApi = (endpoint: string, options: RequestInit = {}): any 
     } catch {}
   }
 
-  const activeUserId = localStorage.getItem('gt_active_user_id') || 'usr_demo_002';
-  let currentUser = db.users.find((u) => u.id === activeUserId) || db.users[1];
+  const activeUserId = localStorage.getItem('gt_active_user_id') || 'usr_mw5634kx_h06dk4';
+  let currentUser = db.users.find((u) => u.id === activeUserId) || db.users[0];
   let currentWallet = db.wallets[currentUser.id] || {
     availableBalance: 0.0,
     lifetimeEarned: 0.0,

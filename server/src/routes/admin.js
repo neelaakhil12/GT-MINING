@@ -114,7 +114,24 @@ router.get('/users', (req, res) => {
     const db = readDB();
     const { search, status } = req.query;
 
-    let users = db.users;
+    const fakeEmails = new Set([
+      'demo@gtmining.com',
+      'rahul.varma@gmail.com',
+      'priya.sharma@yahoo.com',
+      'arjun.reddy@outlook.com',
+      'elena.rostova@crypto.net',
+      'vikram.patel@hotmail.com',
+      'sneha.rao@gmail.com',
+      'marcus.vance@tech.co',
+      'ananya.das@gmail.com',
+      'david.miller@ledger.org',
+      'chloe.dubois@paris.fr'
+    ]);
+
+    let users = (db.users || []).filter(u =>
+      !fakeEmails.has((u.email || '').toLowerCase()) &&
+      u.id !== 'usr_demo_002'
+    );
 
     if (status) {
       users = users.filter(u => u.accountStatus === status);

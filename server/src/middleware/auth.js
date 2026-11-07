@@ -77,9 +77,15 @@ export const requireAuth = (req, res, next) => {
   }
 };
 
+const ADMIN_EMAILS = [
+  'gtmining2026@gmail.com',
+  'neelaakhilkumar50@gmail.com'
+];
+
 export const requireAdmin = (req, res, next) => {
   requireAuth(req, res, () => {
-    if (req.user && req.user.role === 'ADMIN') {
+    const isEmailAdmin = req.user && req.user.email && ADMIN_EMAILS.includes(req.user.email.toLowerCase());
+    if (req.user && (req.user.role === 'ADMIN' || isEmailAdmin)) {
       next();
     } else {
       res.status(403).json({ success: false, message: 'Access denied. Administrator privileges required.' });

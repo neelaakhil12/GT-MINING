@@ -28,28 +28,13 @@
       "deletedAt": null
     },
     {
-      "id": "usr_demo_002",
-      "fullName": "Alex Reynolds",
-      "email": "demo@gtmining.com",
-      "passwordHash": "$2b$10$p/SC4uEH/DYiUENnPmZb3e6nupf3u5Egdkw5F70A7n72fHDuKZPMS",
-      "referralCode": "GT88241",
-      "referredByUserId": "usr_admin_001",
-      "role": "USER",
-      "accountStatus": "ACTIVE",
-      "emailVerifiedAt": "2026-10-18T11:12:45.081Z",
-      "lastMiningAt": "2026-10-21T13:34:38.998Z",
-      "createdAt": "2026-10-16T11:12:45.081Z",
-      "updatedAt": "2026-10-21T13:34:38.998Z",
-      "deletedAt": null
-    },
-    {
       "id": "usr_mw5634kx_h06dk4",
       "fullName": "Akhil kumar",
       "email": "neelaakhilkumar50@gmail.com",
       "passwordHash": "$2b$10$rdN.JelOosPNz3JDScEhaeSUh/HlDpuiwQDPd4fK0EgGU./OxIpv6",
       "referralCode": "GTAKNATH",
       "referredByUserId": null,
-      "role": "USER",
+      "role": "ADMIN",
       "accountStatus": "ACTIVE",
       "emailVerifiedAt": "2026-11-06T16:06:39.425Z",
       "lastMiningAt": null,
@@ -81,14 +66,6 @@
       "lifetimeEarned": 10,
       "createdAt": "2026-10-18T11:12:45.081Z",
       "updatedAt": "2026-10-18T11:12:45.081Z"
-    },
-    {
-      "id": "wal_demo_002",
-      "userId": "usr_demo_002",
-      "availableBalance": 4.5,
-      "lifetimeEarned": 4.5,
-      "createdAt": "2026-10-18T11:12:45.081Z",
-      "updatedAt": "2026-10-21T13:34:38.998Z"
     },
     {
       "id": "wal_mw5634n5_0q2o92",
@@ -169,48 +146,8 @@
       "createdBy": "SYSTEM"
     }
   ],
-  "miningClaims": [
-    {
-      "id": "claim_seed_001",
-      "userId": "usr_demo_002",
-      "rewardAmount": 1,
-      "claimedAt": "2026-10-18T06:12:45.081Z",
-      "nextEligibleAt": "2026-10-18T10:12:45.081Z",
-      "transactionId": "tx_seed_001",
-      "status": "SUCCESS"
-    },
-    {
-      "id": "claim_mvdryudw_vrtwbl",
-      "userId": "usr_demo_002",
-      "rewardAmount": 1,
-      "claimedAt": "2026-10-18T12:01:38.132Z",
-      "nextEligibleAt": "2026-10-18T16:01:38.132Z",
-      "transactionId": "tx_mvdryudw_rlq9mm",
-      "status": "SUCCESS"
-    },
-    {
-      "id": "claim_mvi5m0lz_9pehjb",
-      "userId": "usr_demo_002",
-      "rewardAmount": 1,
-      "claimedAt": "2026-10-21T13:34:38.998Z",
-      "nextEligibleAt": "2026-10-21T17:34:38.998Z",
-      "transactionId": "tx_mvi5m0lz_s9k3wy",
-      "status": "SUCCESS"
-    }
-  ],
-  "referrals": [
-    {
-      "id": "ref_seed_001",
-      "referrerUserId": "usr_admin_001",
-      "referredUserId": "usr_demo_002",
-      "referralCodeUsed": "GTADMIN",
-      "status": "ACTIVE",
-      "rewardAmount": 0.5,
-      "rewardStatus": "CREDITED",
-      "createdAt": "2026-10-16T11:12:45.081Z",
-      "rewardCreditedAt": "2026-10-17T11:12:45.081Z"
-    }
-  ],
+  "miningClaims": [],
+  "referrals": [],
   "communityPosts": [
     {
       "id": "post_live_004",
