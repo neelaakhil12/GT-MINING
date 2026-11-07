@@ -15,10 +15,14 @@ import {
   Eye,
   X,
   Upload,
+  ListOrdered,
+  List,
+  Wand2,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
+import { cleanListSpacing, formatAsNumberedList, formatAsBulletList } from '../../utils/textFormatter';
 
 export const AdminCommunityPage: React.FC = () => {
   const { showToast } = useToast();
@@ -113,12 +117,14 @@ export const AdminCommunityPage: React.FC = () => {
       return;
     }
 
+    const cleanedContent = cleanListSpacing(content.trim());
+
     setSaving(true);
     try {
       if (editingPost) {
         const res = await api.updateAdminPost(editingPost.id, {
           title: title.trim(),
-          content: content.trim(),
+          content: cleanedContent,
           imageUrl: imageUrl.trim() || null,
           category: 'Announcement',
           authorName,
@@ -131,7 +137,7 @@ export const AdminCommunityPage: React.FC = () => {
       } else {
         const res = await api.createAdminPost({
           title: title.trim(),
-          content: content.trim(),
+          content: cleanedContent,
           imageUrl: imageUrl.trim() || null,
           category: 'Announcement',
           authorName,
@@ -151,6 +157,49 @@ export const AdminCommunityPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleContentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text/plain');
+    if (!pastedText) return;
+
+    // Clean extra blank lines between list items
+    const cleaned = cleanListSpacing(pastedText);
+
+    if (cleaned !== pastedText) {
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const val = target.value;
+      const nextVal = val.substring(0, start) + cleaned + val.substring(end);
+      setContent(nextVal);
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + cleaned.length;
+      }, 0);
+      showToast('Pasted points cleaned without extra spaces! ✨', 'info');
+    }
+  };
+
+  const handleAutoCleanSpacing = () => {
+    if (!content.trim()) return;
+    const cleaned = cleanListSpacing(content);
+    setContent(cleaned);
+    showToast('Cleaned unwanted gaps between points! ✨', 'success');
+  };
+
+  const handleApplyNumberedList = () => {
+    if (!content.trim()) return;
+    const formatted = formatAsNumberedList(content);
+    setContent(formatted);
+    showToast('Formatted into Numbered List (1, 2, 3...)! 🔢', 'success');
+  };
+
+  const handleApplyBulletList = () => {
+    if (!content.trim()) return;
+    const formatted = formatAsBulletList(content);
+    setContent(formatted);
+    showToast('Formatted into Bullet Points (•)! 🔘', 'success');
   };
 
   const handleDelete = async (id: string) => {
@@ -303,7 +352,7 @@ export const AdminCommunityPage: React.FC = () => {
                     {post.title}
                   </h3>
                   <p className="text-xs text-[#A7C9B1] mt-2 line-clamp-3 leading-relaxed whitespace-pre-wrap break-words">
-                    {post.content}
+                    {cleanListSpacing(post.content)}
                   </p>
                 </div>
 
@@ -467,20 +516,53 @@ export const AdminCommunityPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Content Body */}
+              {/* Content Body with Smart List Formatter Toolbar */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-bold text-[#A7C9B1]">Post Body / Description *</label>
-                  <span className="text-[10px] text-[#86EFAC]/70">Drag bottom corner to expand height if needed</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleAutoCleanSpacing}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-[#86EFAC] text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1 cursor-pointer transition-all"
+                      title="Remove unwanted extra blank lines between points automatically"
+                    >
+                      <Wand2 className="w-3 h-3 text-[#4ADE80]" />
+                      <span>Auto-Fix Spacing</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyNumberedList}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[#A7C9B1] hover:text-white text-[10px] font-bold border border-white/10 flex items-center gap-1 cursor-pointer transition-all"
+                      title="Format points into 1. 2. 3. numbered list"
+                    >
+                      <ListOrdered className="w-3 h-3" />
+                      <span>1, 2, 3 Numbers</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyBulletList}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[#A7C9B1] hover:text-white text-[10px] font-bold border border-white/10 flex items-center gap-1 cursor-pointer transition-all"
+                      title="Format points into • bullet list"
+                    >
+                      <List className="w-3 h-3" />
+                      <span>• Dot Points</span>
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   required
                   rows={8}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write the full news content, announcement details, or milestone update..."
+                  onPaste={handleContentPaste}
+                  placeholder="Write or copy-paste story, news, bullet points (•) or numbered list (1, 2, 3...)..."
                   className="w-full min-h-[220px] sm:min-h-[260px] px-4 py-3 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs sm:text-sm focus:border-[#FBBF24] outline-none resize-y leading-relaxed shadow-inner font-normal"
                 />
+                <div className="flex items-center justify-between text-[10px] text-[#A7C9B1]/70">
+                  <span>Pasting from ChatGPT or Gemini auto-cleans unnecessary gap lines between points</span>
+                  <span>Drag corner to expand</span>
+                </div>
               </div>
 
               {/* Pin Checkbox */}

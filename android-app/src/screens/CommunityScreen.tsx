@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { API_BASE_URL } from '../config/api';
+import { cleanListSpacing } from '../utils/textFormatter';
 
 interface PostItem {
   id: string;
@@ -251,7 +252,7 @@ export const CommunityScreen: React.FC = () => {
                   )}
 
                   {/* Post Body */}
-                  <Text style={styles.postBody}>{post.content}</Text>
+                  <Text style={styles.postBody}>{cleanListSpacing(post.content)}</Text>
 
                   {/* Action Bar */}
                   <View style={styles.postActionsBar}>

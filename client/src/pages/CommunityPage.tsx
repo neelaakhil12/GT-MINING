@@ -19,6 +19,7 @@ import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { CommunityPost } from '../types';
 import { GlassCard } from '../components/GlassCard';
+import { cleanListSpacing } from '../utils/textFormatter';
 
 interface PostComment {
   id: string;
@@ -319,23 +320,29 @@ export const CommunityPage: React.FC = () => {
                 )}
 
                 {/* Post Content with Pointwise & Paragraph Formatting */}
-                <div className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed font-medium">
-                  <div className="whitespace-pre-wrap break-words leading-relaxed">
-                    {isLong && !isExpanded
-                      ? `${post.content.slice(0, 280)}...`
-                      : post.content}
-                  </div>
+                {(() => {
+                  const cleanedText = cleanListSpacing(post.content);
+                  const isTextLong = cleanedText.length > 280;
+                  return (
+                    <div className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed font-medium">
+                      <div className="whitespace-pre-wrap break-words leading-relaxed">
+                        {isTextLong && !isExpanded
+                          ? `${cleanedText.slice(0, 280)}...`
+                          : cleanedText}
+                      </div>
 
-                  {isLong && (
-                    <button
-                      onClick={() => toggleExpand(post.id)}
-                      className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-2 cursor-pointer"
-                    >
-                      <span>{isExpanded ? 'Show less' : 'Read more'}</span>
-                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                  )}
-                </div>
+                      {isTextLong && (
+                        <button
+                          onClick={() => toggleExpand(post.id)}
+                          className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-2 cursor-pointer"
+                        >
+                          <span>{isExpanded ? 'Show less' : 'Read more'}</span>
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Interactive Twitter-style Engagement Bar */}
                 <div className="flex items-center justify-between border-t border-b border-black/5 py-2.5 text-xs text-[#1E5E36]">

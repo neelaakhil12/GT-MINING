@@ -1,6 +1,7 @@
 import express from 'express';
 import { readDB, writeDB, generateId, lockManager } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { cleanListSpacing } from '../utils/textFormatter.js';
 
 const router = express.Router();
 
@@ -445,7 +446,7 @@ router.post('/community/posts', (req, res) => {
   const newPost = {
     id: generateId('post'),
     title: title.trim(),
-    content: content.trim(),
+    content: cleanListSpacing(content.trim()),
     imageUrl: imageUrl || null,
     category: category || 'Announcement',
     status: status || 'PUBLISHED',
@@ -479,7 +480,7 @@ router.patch('/community/posts/:id', (req, res) => {
   }
 
   if (title !== undefined) post.title = title.trim();
-  if (content !== undefined) post.content = content.trim();
+  if (content !== undefined) post.content = cleanListSpacing(content.trim());
   if (imageUrl !== undefined) post.imageUrl = imageUrl;
   if (category !== undefined) post.category = category;
   if (status !== undefined) post.status = status;
