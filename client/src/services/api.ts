@@ -1,6 +1,27 @@
-import { handleMockApi } from './mockDb';
+// Always connect directly to AWS Production Server (or configured VITE_API_URL)
+const getApiBase = (): string => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // When running locally on Vite dev server (localhost/127.0.0.1), direct all requests to AWS production server
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'https://gtnetwork.in/api';
+    }
+  }
+  return '/api';
+};
 
-const API_BASE = '/api';
+const API_BASE = getApiBase();
+
+// Purge any legacy browser local mock database traces to ensure 100% AWS server persistence
+if (typeof window !== 'undefined') {
+  try {
+    ['gt_mock_database_v4', 'gt_mock_database_v3', 'gt_mock_database_v2', 'gt_mock_database_v1'].forEach((k) => {
+      localStorage.removeItem(k);
+    });
+  } catch {}
+}
 
 export const getToken = (): string | null => {
   return localStorage.getItem('gt_token');
@@ -26,32 +47,30 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Request failed with status ${response.status}`);
+    }
+    return data;
+  }
+
+  if (!response.ok) {
+    throw new Error(`AWS Server returned error ${response.status}: ${response.statusText}`);
+  }
+
+  const text = await response.text();
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    const contentType = response.headers.get('content-type') || '';
-
-    if (contentType.includes('application/json')) {
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || `Request failed with status ${response.status}`);
-      }
-      return data;
-    }
-
-    // If server returned non-JSON HTML (e.g. static 404 page / offline) -> Fall back to persistent in-browser database
-    console.warn(`[GT Network] Backend not available (${response.status}), activating in-browser node database for: ${endpoint}`);
-    return handleMockApi(endpoint, options) as T;
-  } catch (err: any) {
-    if (err && err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to fetch')) {
-      throw err;
-    }
-    // Network failure or offline -> Fall back to in-browser node database
-    console.warn(`[GT Network] Network fetch failed, activating in-browser node database for: ${endpoint}`);
-    return handleMockApi(endpoint, options) as T;
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
   }
 }
 

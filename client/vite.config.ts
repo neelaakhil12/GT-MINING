@@ -22,9 +22,9 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:5050',
+        target: 'https://gtnetwork.in',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
