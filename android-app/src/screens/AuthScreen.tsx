@@ -39,6 +39,43 @@ export const AuthScreen: React.FC = () => {
     if (isAuthenticated) {
       navigation.replace('MainTabs');
     }
+
+    // On Web, check if returning from Google OAuth redirect
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        if (accessToken) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          const isSignup = sessionStorage.getItem('gt_app_google_mode') === 'signup';
+          sessionStorage.removeItem('gt_app_google_mode');
+
+          setLoading(true);
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          })
+            .then((r) => r.json())
+            .then((profile) => {
+              if (profile && profile.email) {
+                return googleLogin({
+                  email: profile.email,
+                  name: profile.name || 'Google Miner',
+                  isSignup,
+                }).then(() => {
+                  navigation.replace('MainTabs');
+                });
+              }
+            })
+            .catch((err) => {
+              setErrorMessage(err.message || 'No account registered with this Google email. Please sign up first.');
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }
+      }
+    }
   }, [isAuthenticated, navigation]);
 
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
@@ -242,11 +279,30 @@ export const AuthScreen: React.FC = () => {
   const handleGoogleSubmit = async () => {
     setErrorMessage('');
     setSuccessMessage('');
+    const isSignup = mode === 'SIGNUP';
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('gt_app_google_mode', isSignup ? 'signup' : 'login');
+        const GOOGLE_CLIENT_ID = '793304113901-ea3rlvn5lkvkedpdm5in2pcnafg8vb70.apps.googleusercontent.com';
+        const redirectUri = window.location.origin + window.location.pathname;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+          GOOGLE_CLIENT_ID
+        )}&redirect_uri=${encodeURIComponent(
+          redirectUri
+        )}&response_type=token&scope=email%20profile%20openid&prompt=select_account`;
+        window.location.href = authUrl;
+        return;
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Failed to open Google login');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const isSignup = mode === 'SIGNUP';
       await googleLogin({
-        email: email.trim() || (isSignup ? 'google.pioneer@gtnetwork.org' : 'demo@gtmining.com'),
+        email: email.trim(),
         name: fullName.trim() || 'Google Miner',
         isSignup,
       });

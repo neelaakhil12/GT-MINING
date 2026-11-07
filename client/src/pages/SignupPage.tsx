@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GtLogo } from '../components/GtLogo';
 import { GlassCard } from '../components/GlassCard';
+import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 
 export const SignupPage: React.FC = () => {
   const { signup, googleLogin } = useAuth();
@@ -44,6 +45,29 @@ export const SignupPage: React.FC = () => {
     if (ref) {
       setReferralCode(ref.toUpperCase());
     }
+
+    // Handle return from Google OAuth redirect flow
+    const checkRedirect = async () => {
+      try {
+        const result = await checkGoogleRedirectResponse();
+        if (result && result.profile) {
+          setLoading(true);
+          await googleLogin({
+            email: result.profile.email,
+            name: result.profile.name,
+            googleId: result.profile.sub,
+            isSignup: true,
+          });
+          showToast('Welcome to GT Mining! Account created with Google.', 'success');
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err: any) {
+        showToast(err.message || 'Google registration failed', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRedirect();
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,15 +107,22 @@ export const SignupPage: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await googleLogin({
-        email: 'google_user@gtmining.com',
-        name: 'Google Verified Miner',
-        isSignup: true,
-      });
-      showToast('Signed in with Google successfully!', 'success');
-      navigate('/dashboard', { replace: true });
+      setError(null);
+      const profile = await triggerGoogleSignIn(true);
+      if (profile && profile.email) {
+        await googleLogin({
+          email: profile.email,
+          name: profile.name,
+          googleId: profile.sub,
+          isSignup: true,
+        });
+        showToast('Welcome to GT Mining! Account created with Google.', 'success');
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err: any) {
-      showToast(err.message || 'Google registration error', 'error');
+      if (err.message && !err.message.includes('canceled') && !err.message.includes('closed')) {
+        showToast(err.message || 'Google registration error', 'error');
+      }
     } finally {
       setLoading(false);
     }

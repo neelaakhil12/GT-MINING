@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GtLogo } from '../components/GtLogo';
 import { GlassCard } from '../components/GlassCard';
+import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 
 export const LoginPage: React.FC = () => {
   const { login, googleLogin } = useAuth();
@@ -21,19 +22,43 @@ export const LoginPage: React.FC = () => {
   // Prevent browser autofill injection on page load
   const [unlocked, setUnlocked] = useState(false);
 
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
+
   useEffect(() => {
     setEmail('');
     setPassword('');
     const handleTouch = () => setUnlocked(true);
     window.addEventListener('click', handleTouch, { once: true });
     window.addEventListener('keydown', handleTouch, { once: true });
+
+    // Handle return from Google OAuth redirect flow
+    const checkRedirect = async () => {
+      try {
+        const result = await checkGoogleRedirectResponse();
+        if (result && result.profile) {
+          setLoading(true);
+          await googleLogin({
+            email: result.profile.email,
+            name: result.profile.name,
+            googleId: result.profile.sub,
+            isSignup: false,
+          });
+          showToast('Signed in with Google successfully!', 'success');
+          navigate(from, { replace: true });
+        }
+      } catch (err: any) {
+        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRedirect();
+
     return () => {
       window.removeEventListener('click', handleTouch);
       window.removeEventListener('keydown', handleTouch);
     };
   }, []);
-
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,15 +80,23 @@ export const LoginPage: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await googleLogin({
-        email: 'google_user@gtmining.com',
-        name: 'Google Verified Miner',
-        isSignup: false,
-      });
-      showToast('Signed in with Google successfully!', 'success');
-      navigate(from, { replace: true });
+      setError(null);
+      // Trigger Google Account Picker (shows all Google emails in browser)
+      const profile = await triggerGoogleSignIn(false);
+      if (profile && profile.email) {
+        await googleLogin({
+          email: profile.email,
+          name: profile.name,
+          googleId: profile.sub,
+          isSignup: false,
+        });
+        showToast('Signed in with Google successfully!', 'success');
+        navigate(from, { replace: true });
+      }
     } catch (err: any) {
-      showToast(err.message || 'No registered account found with Google. Please sign up first.', 'error');
+      if (err.message && !err.message.includes('canceled') && !err.message.includes('closed')) {
+        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
+      }
     } finally {
       setLoading(false);
     }

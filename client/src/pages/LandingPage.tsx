@@ -18,6 +18,7 @@ import {
   Coins,
   Repeat,
 } from 'lucide-react';
+import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
@@ -133,6 +134,30 @@ export const LandingPage: React.FC = () => {
     loadOnboardingBanners();
     const handleUpdate = () => loadOnboardingBanners();
     window.addEventListener('gt_db_updated', handleUpdate);
+
+    // Handle return from Google OAuth redirect flow
+    const checkRedirect = async () => {
+      try {
+        const result = await checkGoogleRedirectResponse();
+        if (result && result.profile) {
+          setLoading(true);
+          await googleLogin({
+            email: result.profile.email,
+            name: result.profile.name,
+            googleId: result.profile.sub,
+            isSignup: result.isSignup,
+          });
+          showToast('Signed in with Google successfully!', 'success');
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err: any) {
+        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRedirect();
+
     return () => window.removeEventListener('gt_db_updated', handleUpdate);
   }, []);
 
@@ -310,15 +335,23 @@ export const LandingPage: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await googleLogin({
-        email: 'google_user@gtmining.com',
-        name: 'Google Verified Miner',
-        isSignup: authMode === 'signup',
-      });
-      showToast('Signed in with Google successfully!', 'success');
-      navigate('/dashboard', { replace: true });
+      setError(null);
+      const isSignup = authMode === 'signup';
+      const profile = await triggerGoogleSignIn(isSignup);
+      if (profile && profile.email) {
+        await googleLogin({
+          email: profile.email,
+          name: profile.name,
+          googleId: profile.sub,
+          isSignup,
+        });
+        showToast('Signed in with Google successfully!', 'success');
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err: any) {
-      showToast(err.message || 'Account not found. Please sign up first.', 'error');
+      if (err.message && !err.message.includes('canceled') && !err.message.includes('closed')) {
+        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
+      }
     } finally {
       setLoading(false);
     }
