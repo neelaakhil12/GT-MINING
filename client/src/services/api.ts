@@ -55,7 +55,7 @@ export const api = {
   login: (body: any) => request<any>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (body: any) => request<any>('/auth/google', { method: 'POST', body: JSON.stringify(body) }),
   getSession: () => request<any>('/auth/session'),
-  forgotPassword: (email: string) => request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  forgotPassword: (email: string, isAdmin?: boolean) => request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email, isAdmin }) }),
   resetPassword: (body: any) => request<any>('/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
   logout: () => request<any>('/auth/logout', { method: 'POST' }),
 
@@ -121,7 +121,26 @@ export const api = {
   getAdminPosts: () => request<any>('/admin/community/posts'),
   createAdminPost: (body: any) => request<any>('/admin/community/posts', { method: 'POST', body: JSON.stringify(body) }),
   updateAdminPost: (id: string, body: any) => request<any>(`/admin/community/posts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  deleteAdminPost: (id: string) => request<any>(`/admin/community/posts/${id}`, { method: 'DELETE' }),
+  deleteAdminPost: async (id: string) => {
+    try {
+      await request<any>(`/community/posts/${id}`, { method: 'DELETE' });
+    } catch {}
+    return request<any>(`/admin/community/posts/${id}`, { method: 'DELETE' });
+  },
+
+  // Pre-Opening / Onboarding Sliders Banners
+  getAdminOnboardingBanners: () => request<any>('/admin/onboarding-banners'),
+  createAdminOnboardingBanner: (body: any) => request<any>('/admin/onboarding-banners', { method: 'POST', body: JSON.stringify(body) }),
+  updateAdminOnboardingBanner: (id: string, body: any) => request<any>(`/admin/onboarding-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminOnboardingBanner: (id: string) => request<any>(`/admin/onboarding-banners/${id}`, { method: 'DELETE' }),
+  getPublicOnboardingBanners: () => request<any>('/onboarding-banners'),
+
+  // Home Page Carousel Banners
+  getAdminHomeBanners: () => request<any>('/admin/home-banners'),
+  createAdminHomeBanner: (body: any) => request<any>('/admin/home-banners', { method: 'POST', body: JSON.stringify(body) }),
+  updateAdminHomeBanner: (id: string, body: any) => request<any>(`/admin/home-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminHomeBanner: (id: string) => request<any>(`/admin/home-banners/${id}`, { method: 'DELETE' }),
+  getPublicHomeBanners: () => request<any>('/home-banners'),
   getAdminSettings: () => request<any>('/admin/settings'),
   updateAdminSettings: (body: any) => request<any>('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getAdminAuditLogs: () => request<any>('/admin/audit-logs'),

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Text } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, Image, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface GtCoinOrbitProps {
@@ -13,16 +13,29 @@ export const GtCoinOrbit: React.FC<GtCoinOrbitProps> = ({
   width = 150,
   height = 110,
 }) => {
-  const animValue = useRef(new Animated.Value(0)).current;
+  const [progress, setProgress] = useState(0);
+  const animRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(animValue, {
-        toValue: 1,
-        duration: 9000, // Calm, smooth orbit speed matching web
-        useNativeDriver: true,
-      })
-    ).start();
+    let active = true;
+    const duration = 8500; // Continuous smooth orbit speed
+
+    const loop = (timestamp: number) => {
+      if (!active) return;
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsed = timestamp - startTimeRef.current;
+      const t = (elapsed % duration) / duration;
+      setProgress(t);
+      animRef.current = requestAnimationFrame(loop);
+    };
+
+    animRef.current = requestAnimationFrame(loop);
+
+    return () => {
+      active = false;
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
   }, []);
 
   const centerX = width * 0.46;
@@ -35,70 +48,30 @@ export const GtCoinOrbit: React.FC<GtCoinOrbitProps> = ({
     <View style={[styles.container, { width, height }]} pointerEvents="none">
       {Array.from({ length: NUM_COINS }).map((_, i) => {
         const baseAngle = (i * 2 * Math.PI) / NUM_COINS;
+        const currentAngle = baseAngle + progress * 2 * Math.PI;
 
-        // Animated position around cross-horizontal slanted ellipse
-        const translateX = animValue.interpolate({
-          inputRange: [0, 0.25, 0.5, 0.75, 1],
-          outputRange: [
-            centerX + Math.cos(baseAngle) * radiusX,
-            centerX + Math.cos(baseAngle + Math.PI * 0.5) * radiusX,
-            centerX + Math.cos(baseAngle + Math.PI) * radiusX,
-            centerX + Math.cos(baseAngle + Math.PI * 1.5) * radiusX,
-            centerX + Math.cos(baseAngle + Math.PI * 2) * radiusX,
-          ],
-        });
+        const x = centerX + Math.cos(currentAngle) * radiusX;
+        const y =
+          centerY -
+          Math.sin(currentAngle) * radiusY +
+          Math.cos(currentAngle) * diagonalTilt;
 
-        const translateY = animValue.interpolate({
-          inputRange: [0, 0.25, 0.5, 0.75, 1],
-          outputRange: [
-            centerY -
-              Math.sin(baseAngle) * radiusY +
-              Math.cos(baseAngle) * diagonalTilt,
-            centerY -
-              Math.sin(baseAngle + Math.PI * 0.5) * radiusY +
-              Math.cos(baseAngle + Math.PI * 0.5) * diagonalTilt,
-            centerY -
-              Math.sin(baseAngle + Math.PI) * radiusY +
-              Math.cos(baseAngle + Math.PI) * diagonalTilt,
-            centerY -
-              Math.sin(baseAngle + Math.PI * 1.5) * radiusY +
-              Math.cos(baseAngle + Math.PI * 1.5) * diagonalTilt,
-            centerY -
-              Math.sin(baseAngle + Math.PI * 2) * radiusY +
-              Math.cos(baseAngle + Math.PI * 2) * diagonalTilt,
-          ],
-        });
-
-        // 3D Depth Scale (front coins ~1.0, back coins ~0.65)
-        const scale = animValue.interpolate({
-          inputRange: [0, 0.25, 0.5, 0.75, 1],
-          outputRange: [
-            0.7 + (Math.sin(baseAngle) + 1) * 0.16,
-            0.7 + (Math.sin(baseAngle + Math.PI * 0.5) + 1) * 0.16,
-            0.7 + (Math.sin(baseAngle + Math.PI) + 1) * 0.16,
-            0.7 + (Math.sin(baseAngle + Math.PI * 1.5) + 1) * 0.16,
-            0.7 + (Math.sin(baseAngle + Math.PI * 2) + 1) * 0.16,
-          ],
-        });
-
-        // Dynamic 3D coin spin interpolation
-        const spinRotate = animValue.interpolate({
-          inputRange: [0, 1],
-          outputRange: [`${(i * 32.7).toFixed(1)}deg`, `${(i * 32.7 + 360).toFixed(1)}deg`],
-        });
+        // 3D Depth Scale (front coins ~1.02, back coins ~0.68)
+        const scale = 0.7 + (Math.sin(currentAngle) + 1) * 0.16;
+        const zIndex = Math.round(scale * 100);
 
         return (
-          <Animated.View
-            key={`coin-${i}`}
+          <View
+            key={`orbit-coin-${i}`}
             style={[
               styles.coinWrapper,
               {
+                zIndex,
                 transform: [
-                  { translateX },
-                  { translateY },
+                  { translateX: x - 16 },
+                  { translateY: y - 16 },
                   { scale },
-                  { rotateZ: '18deg' }, // Cross horizontal tilt
-                  { rotateY: spinRotate }, // 3D axial rotation
+                  { rotateZ: '18deg' },
                 ],
               },
             ]}
@@ -110,12 +83,16 @@ export const GtCoinOrbit: React.FC<GtCoinOrbitProps> = ({
               end={{ x: 0.9, y: 0.9 }}
               style={styles.coinFace}
             >
-              {/* Inner ring */}
+              {/* Inner ring with GT Crystal Logo */}
               <View style={styles.coinInnerRing}>
-                <Text style={styles.coinText}>GT</Text>
+                <Image
+                  source={require('../../assets/gt-logo.png')}
+                  style={styles.coinLogo}
+                  resizeMode="contain"
+                />
               </View>
             </LinearGradient>
-          </Animated.View>
+          </View>
         );
       })}
     </View>
@@ -151,21 +128,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   coinInnerRing: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 23,
+    height: 23,
+    borderRadius: 11.5,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: 'rgba(255, 255, 255, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(10, 52, 27, 0.2)',
   },
-  coinText: {
-    fontSize: 8.5,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    fontStyle: 'italic',
-    letterSpacing: -0.5,
+  coinLogo: {
+    width: 17,
+    height: 17,
   },
 });
-

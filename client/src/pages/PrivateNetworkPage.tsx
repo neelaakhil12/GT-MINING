@@ -219,7 +219,7 @@ export const PrivateNetworkPage: React.FC = () => {
   };
 
   const handleNudgeAllIdle = async () => {
-    const idleCount = data?.stats.idleCount || 0;
+    const idleCount = data?.stats?.idleCount || 0;
     if (idleCount === 0) {
       showToast('All your circle members are currently active miners!', 'info');
       return;
@@ -305,7 +305,7 @@ export const PrivateNetworkPage: React.FC = () => {
 
   const renderMessageText = (text: string, isHost: boolean) => {
     const memberNames = [
-      user?.fullName || 'Alex Reynolds',
+      user?.fullName || 'Network Host',
       ...(data?.members || []).map((m) => m.name),
     ];
 
@@ -471,9 +471,9 @@ export const PrivateNetworkPage: React.FC = () => {
 
   const hostName = user?.fullName || data?.circleHost?.fullName || 'Network Host';
   const refCode = user?.referralCode || data?.circleHost?.referralCode || 'GTMINING';
-  const totalCount = data?.stats.totalMembers || data?.members.length || 0;
-  const activeCount = data?.stats.activeMiningCount || 0;
-  const idleCount = data?.stats.idleCount || 0;
+  const totalCount = data?.stats?.totalMembers ?? data?.members?.length ?? 0;
+  const activeCount = data?.stats?.activeMiningCount ?? 0;
+  const idleCount = data?.stats?.idleCount ?? 0;
 
   const mentionCandidates = [
     // Include all circle referred members first
@@ -819,8 +819,27 @@ export const PrivateNetworkPage: React.FC = () => {
               })}
 
               {filteredMembers.length === 0 && (
-                <div className="text-center py-8 text-xs text-[#1E5E36]">
-                  No members found matching this filter.
+                <div className="text-center py-10 px-4 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center text-[#16A34A] mx-auto">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-[#0A341B]">No miners in circle</h4>
+                    <p className="text-xs text-neutral-500 max-w-xs mx-auto">
+                      {totalCount === 0
+                        ? "You haven't referred any miners yet. Share your referral code to invite miners to your circle!"
+                        : "No members found matching this filter."}
+                    </p>
+                  </div>
+                  {totalCount === 0 && (
+                    <button
+                      onClick={copyCode}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-white text-xs font-black transition-all shadow-sm cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      {copiedCode ? 'Code Copied!' : 'Copy Referral Code'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -836,6 +855,19 @@ export const PrivateNetworkPage: React.FC = () => {
           <div className="flex-1 min-h-0 rounded-2xl sm:rounded-3xl bg-white/85 border border-white shadow-sm flex flex-col overflow-hidden relative">
             {/* Messages Stream - ONLY THIS SCROLLS! Background & Header stay 100% still */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3.5 p-3 sm:p-4 touch-pan-y">
+              {(data?.messages || []).length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center py-12 px-4 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center text-[#16A34A] mx-auto">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-[#0A341B]">No circle messages yet</h4>
+                    <p className="text-xs text-neutral-500 max-w-xs mx-auto">
+                      Send a message or a quick mining reminder to your circle miners using the input box below.
+                    </p>
+                  </div>
+                </div>
+              )}
               {(data?.messages || []).map((msg) => {
                 const isHost = msg.senderRole === 'HOST' || msg.senderId === user?.id;
                 const isReminder = msg.type === 'REMINDER';

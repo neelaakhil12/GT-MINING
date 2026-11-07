@@ -70,13 +70,46 @@
   backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
 }
 
-.glass-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.9);
+.glass-input:focus,
+.glass-input:focus-visible {
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  background: rgba(255, 255, 255, 0.95);
   border-color: #22C55E;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+}
+
+/* Universal clean input focus reset */
+input, textarea, select, button {
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+input:focus, textarea:focus, select:focus, button:focus,
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+}
+
+/* Remove default browser autofill background and outline */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 100px rgba(255, 255, 255, 0.95) inset !important;
+  -webkit-text-fill-color: #0A341B !important;
+  outline: none !important;
+  outline-style: none !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* 3D Glossy Spheres inspired by user vector image */
@@ -437,5 +470,50 @@
 .animate-pulse-glow {
   animation: pulse-glow-slow 3.5s ease-in-out infinite;
 }
+
+/* ==============================================================================
+   ADMIN CYBER GREEN UNIFIED THEME (REMOVES ALL WHITE CARDS / LIGHT PANELS)
+   ============================================================================== */
+.admin-theme {
+  background-color: #04110A !important;
+  color: #FFFFFF !important;
+}
+
+.admin-theme .glass-panel {
+  background: rgba(11, 37, 22, 0.92) !important;
+  border: 1px solid rgba(134, 239, 172, 0.22) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  color: #FFFFFF !important;
+}
+
+.admin-theme .glass-input {
+  background: #05160E !important;
+  border: 1px solid rgba(134, 239, 172, 0.25) !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+
+.admin-theme .glass-input::placeholder {
+  color: #A7C9B1 !important;
+  opacity: 0.65;
+}
+
+.admin-theme .glass-input:focus {
+  background: #071F14 !important;
+  border-color: #FBBF24 !important;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.25) !important;
+}
+
+.admin-theme select {
+  background-color: #05160E !important;
+  color: #FFFFFF !important;
+  border-color: rgba(134, 239, 172, 0.25) !important;
+}
+
+.admin-theme select option {
+  background-color: #05160E !important;
+  color: #FFFFFF !important;
+}
+
 
 

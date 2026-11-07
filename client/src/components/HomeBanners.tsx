@@ -12,42 +12,75 @@ import {
 } from 'lucide-react';
 import { GtLogo } from './GtLogo';
 import { GtCoinStream3D } from './GtCoinStream3D';
+import { GtCoinOrbitWeb } from './GtCoinOrbitWeb';
+import { api } from '../services/api';
+
+const defaultSlides = [
+  {
+    id: 1,
+    image: '/banners/slide1.jpg',
+    tag: 'GT ECOSYSTEM',
+    title: 'Join the Future of Mining',
+    description: 'Experience the GT network.',
+    ctaText: 'Explore Now',
+    ctaLink: '/mining',
+    accentColor: '#22C55E',
+  },
+  {
+    id: 2,
+    image: '/banners/slide2.jpg',
+    tag: 'GLOBAL ALLIANCE',
+    title: 'Exclusive Rewards',
+    description: 'Invite your circle and multiply your GT mining hashpower.',
+    ctaText: 'Invite Friends',
+    ctaLink: '/referrals',
+    accentColor: '#38BDF8',
+  },
+  {
+    id: 3,
+    image: '/banners/slide3.jpg',
+    tag: 'DECENTRALIZED VAULT',
+    title: 'Next-Gen Asset Security',
+    description: 'Fair allocation protocol locked by 4-hour cryptographic epochs.',
+    ctaText: 'View Wallet',
+    ctaLink: '/wallet',
+    accentColor: '#A855F7',
+  },
+];
 
 export const HomeBanners: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState(defaultSlides);
 
-  const slides = [
-    {
-      id: 1,
-      image: '/banners/slide1.jpg',
-      tag: 'GT ECOSYSTEM',
-      title: 'Join the Future of Mining',
-      description: 'Experience the GT network.',
-      ctaText: 'Explore Now',
-      ctaLink: '/mining',
-      accentColor: '#22C55E',
-    },
-    {
-      id: 2,
-      image: '/banners/slide2.jpg',
-      tag: 'GLOBAL ALLIANCE',
-      title: 'Exclusive Rewards',
-      description: 'Invite your circle and multiply your GT mining hashpower.',
-      ctaText: 'Invite Friends',
-      ctaLink: '/referrals',
-      accentColor: '#38BDF8',
-    },
-    {
-      id: 3,
-      image: '/banners/slide3.jpg',
-      tag: 'DECENTRALIZED VAULT',
-      title: 'Next-Gen Asset Security',
-      description: 'Fair allocation protocol locked by 4-hour cryptographic epochs.',
-      ctaText: 'View Wallet',
-      ctaLink: '/wallet',
-      accentColor: '#A855F7',
-    },
-  ];
+  const loadBanners = async () => {
+    try {
+      const res = await api.getPublicHomeBanners();
+      if (res.success && res.banners && res.banners.length > 0) {
+        const mapped = res.banners
+          .filter((b: any) => b.isActive !== false)
+          .map((b: any) => ({
+            id: b.id,
+            image: b.imageUrl || '/banners/slide1.jpg',
+            tag: b.tag || 'GT ECOSYSTEM',
+            title: b.title,
+            description: b.description,
+            ctaText: b.ctaText || 'Explore Now',
+            ctaLink: b.targetRoute || '/mining',
+            accentColor: b.accentColor || '#22C55E',
+          }));
+        if (mapped.length > 0) {
+          setSlides(mapped);
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadBanners();
+    const handleUpdate = () => loadBanners();
+    window.addEventListener('gt_db_updated', handleUpdate);
+    return () => window.removeEventListener('gt_db_updated', handleUpdate);
+  }, []);
 
   // Auto stream slides (1 image per 1.5 seconds as requested)
   useEffect(() => {
@@ -149,9 +182,9 @@ export const HomeBanners: React.FC = () => {
           
           {/* Card 1: GT with 3D Animated Coin Stream */}
           <div className="relative overflow-hidden w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/95 border border-white shadow-sm flex flex-col justify-between gap-2.5 group">
-            {/* 3D Animated GT Coins Cascade matching reference video */}
+            {/* 3D Animated GT Coins Orbit with continuous loop & crystal logo */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-              <GtCoinStream3D className="w-full h-full" />
+              <GtCoinOrbitWeb width={150} height={110} />
             </div>
 
             {/* Subtle ambient corner glow */}
@@ -284,90 +317,72 @@ export const HomeBanners: React.FC = () => {
           </div>
         </div>
 
-        {/* Exclusive Rewards Referral Card matching homepage slider size */}
-        <div className="relative h-[165px] sm:h-[210px] md:h-[260px] rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(16,185,129,0.22)] border-2 border-white/90 group bg-[#06180E] select-none">
+        {/* Exclusive Rewards Referral Card matching app's sleek design */}
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(16,185,129,0.22)] border-2 border-white/90 group bg-[#06180E] select-none p-5 sm:p-6 flex flex-col justify-between min-h-[175px] sm:min-h-[210px]">
           {/* Animated Multi-Color Aurora Mesh Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#05160E] via-[#0B1528] to-[#180B2B] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#071A12] via-[#0A1526] to-[#1A0B2C] pointer-events-none" />
 
           {/* Flowing animated color orbs */}
-          {/* Emerald / Mint Neon Aurora */}
-          <div className="absolute -top-12 -left-10 w-60 h-60 sm:w-80 sm:h-80 bg-gradient-to-br from-[#10B981] via-[#22C55E] to-[#4ADE80] rounded-full blur-[55px] sm:blur-[70px] opacity-80 animate-aurora-1 pointer-events-none" />
+          <div className="absolute -top-6 -left-6 w-40 h-40 rounded-full bg-[#10B981]/35 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-8 -right-4 w-48 h-48 rounded-full bg-[#A855F7]/35 blur-2xl pointer-events-none" />
+          <div className="absolute top-2 right-12 w-32 h-32 rounded-full bg-[#06B6D4]/25 blur-xl pointer-events-none" />
 
-          {/* Electric Violet / Fuchsia Aurora */}
-          <div className="absolute -bottom-10 right-0 sm:right-16 w-60 h-60 sm:w-80 sm:h-80 bg-gradient-to-tl from-[#7C3AED] via-[#A855F7] to-[#EC4899] rounded-full blur-[50px] sm:blur-[65px] opacity-75 animate-aurora-2 pointer-events-none" />
+          {/* Top Badges Row */}
+          <div className="relative z-10 flex items-center justify-between w-full">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/25 text-white shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C084FC] animate-ping" />
+              <span className="text-[9.5px] sm:text-[10.5px] font-black tracking-widest uppercase text-[#A7F3D0]">
+                REFERRAL BONUS
+              </span>
+            </div>
 
-          {/* Cyber Cyan / Aqua Glow */}
-          <div className="absolute top-4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 bg-gradient-to-r from-[#06B6D4] via-[#0EA5E9] to-[#3B82F6] rounded-full blur-[45px] sm:blur-[60px] opacity-65 animate-aurora-3 pointer-events-none" />
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/35 text-white text-[10px] sm:text-xs font-black shadow-sm">
+              <Zap className="w-3 h-3 text-[#FBBF24] fill-[#FBBF24]" />
+              <span>+10%</span>
+            </div>
+          </div>
 
-          {/* Golden Sunburst Sparkle Glow */}
-          <div className="absolute -top-6 right-8 w-36 h-36 sm:w-48 sm:h-48 bg-gradient-to-bl from-[#F59E0B] via-[#FBBF24] to-transparent rounded-full blur-[40px] opacity-50 animate-pulse-glow pointer-events-none" />
+          {/* Content & Orbital Graphic Row */}
+          <div className="relative z-10 flex items-center justify-between gap-3 mt-3">
+            <div className="flex-1 space-y-1.5 max-w-[230px] sm:max-w-md">
+              <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                Exclusive Rewards
+              </h3>
+              <p className="text-[11px] sm:text-xs text-white/90 line-clamp-2 font-medium">
+                Refer your friends and earn 10% more GT mining power per hour.
+              </p>
+              <div className="pt-1.5">
+                <Link
+                  to="/referrals"
+                  className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-white hover:bg-white/95 text-[#0A341B] font-black text-xs shadow-[0_4px_14px_rgba(0,0,0,0.25)] hover:shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 group/btn"
+                >
+                  <span>Invite Now</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
 
-          {/* Futuristic subtle grid matrix */}
-          <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-
-          {/* Light Sweep Shimmer Animation */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none animate-aurora-sweep" />
-
-          {/* Contrast vignette for maximum legibility */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
-
-          {/* Right Side: Animated 3D Reward Orb & Orbital Rings */}
-          <div className="absolute right-3 sm:right-8 md:right-12 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 scale-[0.75] sm:scale-100 origin-right">
-            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 flex items-center justify-center animate-float-gentle">
-              {/* Outer Cyan/Emerald Orbital Ring */}
-              <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#34D399]/60 animate-orbit-ring" />
+            {/* 3D Glowing Orbital Gift Gem Graphic */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center shrink-0">
+              {/* Outer Dashed Orbit Ring */}
+              <div className="absolute w-[88px] h-[70px] sm:w-[98px] sm:h-[78px] rounded-[36px] border-[1.5px] border-dashed border-[#34D399]/60 -rotate-20 pointer-events-none" />
               
-              {/* Inner Violet/Magenta Orbital Ring */}
-              <div className="absolute inset-2 sm:inset-3 rounded-full border-2 border-[#C084FC]/70 animate-orbit-ring-rev" />
+              {/* Inner Violet Orbit Ring */}
+              <div className="absolute w-[76px] h-[58px] sm:w-[84px] sm:h-[66px] rounded-[30px] border-[1.5px] border-[#C084FC]/70 rotate-25 pointer-events-none" />
 
               {/* Glowing Core Gem Orb */}
-              <div className="relative w-14 h-14 sm:w-18 sm:h-18 md:w-22 md:h-22 rounded-2xl bg-gradient-to-tr from-[#10B981] via-[#8B5CF6] to-[#EC4899] p-[2px] shadow-[0_0_35px_rgba(139,92,246,0.65)] group-hover:scale-110 transition-transform duration-500">
-                <div className="w-full h-full rounded-2xl bg-[#09151D]/90 backdrop-blur-md flex flex-col items-center justify-center text-white">
-                  <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-[#A7F3D0] animate-bounce" />
-                  <span className="text-[9px] sm:text-[10px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] to-[#E9D5FF] tracking-wider mt-0.5">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#10B981] via-[#8B5CF6] to-[#EC4899] p-[2px] shadow-[0_0_25px_rgba(139,92,246,0.65)] hover:scale-105 transition-transform duration-300">
+                <div className="w-full h-full rounded-[14px] bg-[#09151D]/90 backdrop-blur-md flex flex-col items-center justify-center text-white">
+                  <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-[#A7F3D0]" />
+                  <span className="text-[8.5px] sm:text-[9.5px] font-black text-[#A7F3D0] tracking-wider mt-0.5">
                     BONUS
                   </span>
                 </div>
               </div>
 
-              {/* Floating +10% Boost Chip */}
-              <div className="absolute -top-1 -right-1 sm:top-0 sm:right-0 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 shadow-lg text-[9px] sm:text-[11px] font-black text-white flex items-center gap-1 animate-pulse">
-                <Zap className="w-2.5 h-2.5 text-[#FBBF24] fill-[#FBBF24]" />
-                <span>+10%</span>
-              </div>
-
               {/* Sparkle accents */}
-              <Sparkles className="absolute -bottom-1 -left-1 w-4 h-4 text-[#FDE047] animate-pulse" />
-              <div className="absolute top-3 left-1 w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-ping" />
-            </div>
-          </div>
-
-          {/* Slide Foreground Content */}
-          <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-[220px] sm:max-w-xl space-y-1.5 sm:space-y-2 z-20">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/25 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#C084FC] animate-ping" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A7F3D0] via-[#DDD6FE] to-white font-extrabold">
-                REFERRAL BONUS
-              </span>
-            </div>
-
-            <h3 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
-              Exclusive Rewards
-            </h3>
-
-            <p className="text-[11px] sm:text-xs text-white/90 line-clamp-2 font-medium max-w-[210px] sm:max-w-md drop-shadow">
-              Refer your friends and earn 10% more GT mining power per hour.
-            </p>
-
-            <div className="pt-1">
-              <Link
-                to="/referrals"
-                className="inline-flex items-center gap-1.5 px-4 sm:px-6 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-white via-white/95 to-[#E0F2FE] hover:from-white hover:to-white text-[#0A341B] font-black text-xs sm:text-sm shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:shadow-[0_10px_28px_rgba(34,197,94,0.4)] transition-all active:scale-95 group/btn"
-              >
-                <span>Invite Now</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-              </Link>
+              <Sparkles className="absolute -bottom-1 -left-1 w-4 h-4 text-[#FDE047] pointer-events-none" />
+              <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#38BDF8] pointer-events-none" />
             </div>
           </div>
         </div>

@@ -33,7 +33,6 @@ export const Navbar: React.FC = () => {
     { label: 'Wallet', path: '/wallet', icon: WalletIcon },
     { label: 'Referrals', path: '/referrals', icon: Users },
     { label: 'Node', path: '/community', icon: EarthGlobeIcon },
-    ...(isAdmin ? [{ label: 'Admin', path: '/admin/dashboard', icon: ShieldAlert }] : []),
   ];
 
   return (

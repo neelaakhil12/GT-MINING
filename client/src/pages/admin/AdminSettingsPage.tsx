@@ -3,7 +3,7 @@ import { Settings, Save, ShieldAlert } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminSettingsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -61,7 +61,7 @@ export const AdminSettingsPage: React.FC = () => {
     <div className="space-y-8 pb-16 max-w-4xl mx-auto">
       <AdminNav />
 
-      <GlassCard glow className="space-y-6">
+      <AdminCard glow className="space-y-6">
         <div className="border-b border-[#86EFAC]/15 pb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#86EFAC]" />
@@ -81,7 +81,7 @@ export const AdminSettingsPage: React.FC = () => {
                 required
                 value={appName}
                 onChange={(e) => setAppName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
 
@@ -92,7 +92,7 @@ export const AdminSettingsPage: React.FC = () => {
                 required
                 value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm font-mono"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-sm font-mono focus:border-[#FBBF24] outline-none"
               />
               <p className="text-[11px] text-[#A7C9B1]">
                 Used for constructing shareable referral URLs.
@@ -122,7 +122,7 @@ export const AdminSettingsPage: React.FC = () => {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g. Updating domain configuration"
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-xs"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none"
               />
             </div>
           </div>
@@ -130,13 +130,13 @@ export const AdminSettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 rounded-xl font-bold text-xs text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-6 py-3 rounded-xl font-bold text-xs text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'Saving...' : 'Save Global Settings'}</span>
           </button>
         </form>
-      </GlassCard>
+      </AdminCard>
     </div>
   );
 };

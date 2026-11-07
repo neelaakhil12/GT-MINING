@@ -113,8 +113,8 @@ export const MiningPage: React.FC = () => {
       const res = await apiPromise;
 
       const rewardAmount = res?.rewardAmount ?? 1.0;
-      const currentBal = wallet?.availableBalance ?? status?.availableBalance ?? 3.5;
-      const currentLife = wallet?.lifetimeEarned ?? status?.lifetimeEarned ?? 3.5;
+      const currentBal = wallet?.availableBalance ?? status?.availableBalance ?? 0.0;
+      const currentLife = wallet?.lifetimeEarned ?? status?.lifetimeEarned ?? 0.0;
       const newBal = Number((currentBal + rewardAmount).toFixed(4));
       const newLife = Number((currentLife + rewardAmount).toFixed(4));
 

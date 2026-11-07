@@ -83,10 +83,14 @@ router.get('/dashboard', (req, res) => {
         };
       });
 
+    const oneDayMs = 24 * 3600 * 1000;
+    const dailyActiveMinersCount = nonDeletedUsers.filter(u => u.lastMiningAt && (nowMs - new Date(u.lastMiningAt).getTime()) <= oneDayMs).length;
+
     return res.json({
       success: true,
       metrics: {
         totalUsers,
+        dailyActiveMinersCount,
         activeUsers,
         inactiveUsers,
         totalMiningClaims,
@@ -448,6 +452,8 @@ router.post('/community/posts', (req, res) => {
     isPinned: Boolean(isPinned),
     authorName: req.user.fullName || 'Admin',
     createdBy: req.user.id,
+    likesCount: 0,
+    commentsCount: 0,
     createdAt: now,
     updatedAt: now
   };
@@ -540,6 +546,86 @@ router.get('/audit-logs', (req, res) => {
   const db = readDB();
   const logs = [...db.adminAuditLogs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return res.json({ success: true, logs });
+});
+
+// GET /api/admin/onboarding-banners
+router.get('/onboarding-banners', (req, res) => {
+  const db = readDB();
+  return res.json({ success: true, banners: db.onboardingBanners || [] });
+});
+
+// POST /api/admin/onboarding-banners
+router.post('/onboarding-banners', (req, res) => {
+  const db = readDB();
+  if (!db.onboardingBanners) db.onboardingBanners = [];
+  const newBanner = {
+    id: generateId('ob'),
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  db.onboardingBanners.push(newBanner);
+  writeDB(db);
+  return res.status(201).json({ success: true, banner: newBanner, message: 'Pre-opening banner added.' });
+});
+
+// PATCH /api/admin/onboarding-banners/:id
+router.patch('/onboarding-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.onboardingBanners) db.onboardingBanners = [];
+  const idx = db.onboardingBanners.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
+  db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...req.body };
+  writeDB(db);
+  return res.json({ success: true, banner: db.onboardingBanners[idx], message: 'Banner updated.' });
+});
+
+// DELETE /api/admin/onboarding-banners/:id
+router.delete('/onboarding-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.onboardingBanners) db.onboardingBanners = [];
+  db.onboardingBanners = db.onboardingBanners.filter(b => b.id !== req.params.id);
+  writeDB(db);
+  return res.json({ success: true, message: 'Banner deleted.' });
+});
+
+// GET /api/admin/home-banners
+router.get('/home-banners', (req, res) => {
+  const db = readDB();
+  return res.json({ success: true, banners: db.homeBanners || [] });
+});
+
+// POST /api/admin/home-banners
+router.post('/home-banners', (req, res) => {
+  const db = readDB();
+  if (!db.homeBanners) db.homeBanners = [];
+  const newBanner = {
+    id: generateId('hb'),
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  db.homeBanners.push(newBanner);
+  writeDB(db);
+  return res.status(201).json({ success: true, banner: newBanner, message: 'Home banner added.' });
+});
+
+// PATCH /api/admin/home-banners/:id
+router.patch('/home-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.homeBanners) db.homeBanners = [];
+  const idx = db.homeBanners.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
+  db.homeBanners[idx] = { ...db.homeBanners[idx], ...req.body };
+  writeDB(db);
+  return res.json({ success: true, banner: db.homeBanners[idx], message: 'Home banner updated.' });
+});
+
+// DELETE /api/admin/home-banners/:id
+router.delete('/home-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.homeBanners) db.homeBanners = [];
+  db.homeBanners = db.homeBanners.filter(b => b.id !== req.params.id);
+  writeDB(db);
+  return res.json({ success: true, message: 'Home banner deleted.' });
 });
 
 export default router;

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { api } from '../services/api';
 
 interface OnboardingSlide {
   id: number;
@@ -90,19 +91,50 @@ export const LandingPage: React.FC = () => {
     location.pathname === '/onboarding' ||
     location.pathname === '/tour';
 
-  // If already authenticated and NOT explicitly viewing tour, redirect to dashboard
-  useEffect(() => {
-    if (isAuthenticated && !isTourRequested) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, isTourRequested, navigate]);
-
-  // Stages: 'splash' | 'onboarding' | 'auth'
+  // If tour is requested, open directly in onboarding
+  // Otherwise, start at splash screen
   const [stage, setStage] = useState<'splash' | 'onboarding' | 'auth'>(
     isTourRequested ? 'onboarding' : 'splash'
   );
+
+  const handleProceedFromSplash = () => {
+    if (isAuthenticated && !isTourRequested) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      setStage('onboarding');
+    }
+  };
+  const [slides, setSlides] = useState<OnboardingSlide[]>(onboardingSlides);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [splashProgress, setSplashProgress] = useState(0);
+
+  const loadOnboardingBanners = async () => {
+    try {
+      const res = await api.getPublicOnboardingBanners();
+      if (res.success && res.banners && res.banners.length > 0) {
+        const mapped = res.banners
+          .filter((b: any) => b.isActive !== false)
+          .map((b: any, idx: number) => ({
+            id: idx + 1,
+            title: b.title,
+            subtitle: b.subtitle || '',
+            description: b.description,
+            image: b.imageUrl || '/onboarding/story_1.jpg',
+            theme: 'dark' as const,
+          }));
+        if (mapped.length > 0) {
+          setSlides(mapped);
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadOnboardingBanners();
+    const handleUpdate = () => loadOnboardingBanners();
+    window.addEventListener('gt_db_updated', handleUpdate);
+    return () => window.removeEventListener('gt_db_updated', handleUpdate);
+  }, []);
 
   // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
   const [slideProgress, setSlideProgress] = useState(0);
@@ -119,6 +151,24 @@ export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Prevent browser autofill injection on page load
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    const timer = setTimeout(() => setUnlocked(true), 350);
+    const handleTouch = () => setUnlocked(true);
+    window.addEventListener('click', handleTouch, { once: true });
+    window.addEventListener('keydown', handleTouch, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', handleTouch);
+      window.removeEventListener('keydown', handleTouch);
+    };
+  }, [authMode]);
+
   // Splash Screen Timer & Progress Animation (1.5s)
   useEffect(() => {
     if (stage !== 'splash') return;
@@ -127,7 +177,7 @@ export const LandingPage: React.FC = () => {
       setSplashProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setStage('onboarding');
+          handleProceedFromSplash();
           return 100;
         }
         return prev + 6;
@@ -135,7 +185,7 @@ export const LandingPage: React.FC = () => {
     }, 80);
 
     return () => clearInterval(interval);
-  }, [stage]);
+  }, [stage, isAuthenticated, isTourRequested, navigate]);
 
   // WhatsApp / Instagram Status auto-advance timer (~5.5s per slide)
   useEffect(() => {
@@ -145,7 +195,7 @@ export const LandingPage: React.FC = () => {
     const interval = setInterval(() => {
       setSlideProgress((prev) => {
         if (prev >= 100) {
-          if (currentSlide < onboardingSlides.length - 1) {
+          if (currentSlide < slides.length - 1) {
             setCurrentSlide((curr) => curr + 1);
             return 0;
           } else {
@@ -187,7 +237,7 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleNextSlide = () => {
-    if (currentSlide < onboardingSlides.length - 1) {
+    if (currentSlide < slides.length - 1) {
       setCurrentSlide((prev) => prev + 1);
       setSlideProgress(0);
     } else {
@@ -263,11 +313,12 @@ export const LandingPage: React.FC = () => {
       await googleLogin({
         email: 'google_user@gtmining.com',
         name: 'Google Verified Miner',
+        isSignup: authMode === 'signup',
       });
       showToast('Signed in with Google successfully!', 'success');
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      showToast('Google sign-in error', 'error');
+      showToast(err.message || 'Account not found. Please sign up first.', 'error');
     } finally {
       setLoading(false);
     }
@@ -290,24 +341,21 @@ export const LandingPage: React.FC = () => {
   if (stage === 'splash') {
     return (
       <div
-        onClick={() => setStage('onboarding')}
+        onClick={handleProceedFromSplash}
         className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 bg-gradient-to-b from-[#051B0D] via-[#0A2E18] to-[#04160A] text-white cursor-pointer select-none overflow-hidden"
       >
         {/* Ambient Glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#22C55E]/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#16A34A]/15 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Top brand tag */}
-        <div className="w-full flex justify-between items-center z-10 pt-4">
-          <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest text-[#22C55E] uppercase px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-            v2.6 PROTOCOL
-          </span>
+        {/* Top brand row (Skip button on right, v2.6 protocol removed) */}
+        <div className="w-full flex justify-end items-center z-10 pt-4">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setStage('onboarding');
+              handleProceedFromSplash();
             }}
-            className="text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+            className="text-xs font-bold text-neutral-400 hover:text-white px-3 py-1.5 rounded-full bg-white/5 border border-white/10 transition-colors"
           >
             Skip ›
           </button>
@@ -366,7 +414,7 @@ export const LandingPage: React.FC = () => {
   // 2. ONBOARDING SLIDES (STAGE === 'onboarding')
   // ==========================================
   if (stage === 'onboarding') {
-    const slide = onboardingSlides[currentSlide];
+    const slide = slides[currentSlide] || slides[0];
 
     return (
       <div
@@ -420,7 +468,7 @@ export const LandingPage: React.FC = () => {
           <div className="relative z-20 pt-3 sm:pt-4 px-4 sm:px-5 space-y-3 shrink-0">
             {/* 5 Segmented Story Progress Bars */}
             <div className="flex items-center gap-1.5 w-full">
-              {onboardingSlides.map((_, idx) => (
+              {slides.map((_, idx) => (
                 <div
                   key={idx}
                   className={`flex-1 h-1 rounded-full overflow-hidden cursor-pointer ${
@@ -577,7 +625,11 @@ export const LandingPage: React.FC = () => {
 
         {/* LOGIN FORM */}
         {authMode === 'login' ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
+            {/* Decoy inputs to trap browser autofill */}
+            <input type="text" name="fake_landing_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+            <input type="password" name="fake_landing_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+
             <div className="space-y-1">
               <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
                 Email Address
@@ -586,6 +638,13 @@ export const LandingPage: React.FC = () => {
                 <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="email"
+                  name="gt_landing_usr"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -603,6 +662,13 @@ export const LandingPage: React.FC = () => {
                 <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  name="gt_landing_pwd"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -628,31 +694,14 @@ export const LandingPage: React.FC = () => {
             >
               {loading ? 'Authenticating...' : 'Sign In to Account'}
             </button>
-
-            {/* 1-Tap Quick Demo Credentials */}
-            <div className="p-2.5 rounded-2xl bg-neutral-50 border border-neutral-200/70 flex items-center justify-between text-[11px]">
-              <span className="text-neutral-500 font-medium">Quick Demo:</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('user')}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-neutral-200 font-bold text-[#15803D] hover:bg-neutral-100"
-                >
-                  Demo Miner
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('admin')}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-neutral-200 font-bold text-[#D97706] hover:bg-neutral-100"
-                >
-                  Admin
-                </button>
-              </div>
-            </div>
           </form>
         ) : (
           /* SIGNUP FORM */
-          <form onSubmit={handleSignupSubmit} className="space-y-3">
+          <form onSubmit={handleSignupSubmit} autoComplete="off" className="space-y-3">
+            {/* Decoy inputs to trap browser autofill */}
+            <input type="text" name="fake_landing_signup_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+            <input type="password" name="fake_landing_signup_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+
             <div className="space-y-1">
               <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
                 Full Name
@@ -661,6 +710,10 @@ export const LandingPage: React.FC = () => {
                 <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="text"
+                  name="gt_landing_signup_name"
+                  autoComplete="off"
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -678,6 +731,13 @@ export const LandingPage: React.FC = () => {
                 <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="email"
+                  name="gt_landing_signup_email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -696,6 +756,10 @@ export const LandingPage: React.FC = () => {
                   <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-3 pointer-events-none" />
                   <input
                     type="password"
+                    name="gt_landing_signup_pwd"
+                    autoComplete="new-password"
+                    readOnly={!unlocked}
+                    onFocus={() => setUnlocked(true)}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -713,6 +777,10 @@ export const LandingPage: React.FC = () => {
                   <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-3 pointer-events-none" />
                   <input
                     type="password"
+                    name="gt_landing_signup_conf"
+                    autoComplete="new-password"
+                    readOnly={!unlocked}
+                    onFocus={() => setUnlocked(true)}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -731,6 +799,10 @@ export const LandingPage: React.FC = () => {
                 <Gift className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
                   type="text"
+                  name="gt_landing_signup_ref"
+                  autoComplete="off"
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   placeholder="GT-VIP-779"

@@ -75,3 +75,4 @@ CREATE TABLE IF NOT EXISTS system_settings (
 -- Grant schema privileges
 GRANT ALL ON ALL TABLES IN SCHEMA public TO gtadmin;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO gtadmin;
+

@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { readDB, writeDB, generateId, generateReferralCode, lockManager } from '../db.js';
 import { generateToken, requireAuth } from '../middleware/auth.js';
+import { sendPasswordResetEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -163,11 +164,16 @@ router.post('/signup', async (req, res) => {
     lockManager.release('signup_lock');
 
     const token = generateToken(newUser);
+    const wallet = db.wallets.find(w => w.userId === newUser.id) || { availableBalance: 0.0, lifetimeEarned: 0.0 };
     return res.status(201).json({
       success: true,
       message: 'Account created successfully! Welcome to GT Mining.',
       token,
-      user: sanitizeUser(newUser)
+      user: sanitizeUser(newUser),
+      wallet: {
+        availableBalance: wallet.availableBalance,
+        lifetimeEarned: wallet.lifetimeEarned
+      }
     });
   } catch (err) {
     lockManager.release('signup_lock');
@@ -189,7 +195,11 @@ router.post('/login', async (req, res) => {
   const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
 
   if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    return res.status(404).json({
+      success: false,
+      message: 'Account not found. Please sign up first.',
+      notFound: true
+    });
   }
 
   if (user.accountStatus === 'DELETED') {
@@ -202,30 +212,52 @@ router.post('/login', async (req, res) => {
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    return res.status(401).json({ success: false, message: 'Invalid password. Please check your credentials.' });
   }
 
   const token = generateToken(user);
+  const wallet = db.wallets.find(w => w.userId === user.id) || { availableBalance: 0.0, lifetimeEarned: 0.0 };
   return res.json({
     success: true,
     message: 'Welcome back!',
     token,
-    user: sanitizeUser(user)
+    user: sanitizeUser(user),
+    wallet: {
+      availableBalance: wallet.availableBalance,
+      lifetimeEarned: wallet.lifetimeEarned
+    }
   });
 });
 
-// Google OAuth Login / Simulation
+// Google OAuth Login / Registration
 router.post('/google', async (req, res) => {
-  const { credential, email, name, googleId } = req.body;
-  const targetEmail = (email || 'google_user@gtmining.com').toLowerCase();
-  const targetName = name || 'Google Mining User';
+  const { credential, email, name, googleId, isSignup } = req.body;
+  const targetEmail = (email || '').toLowerCase().trim();
+
+  if (!targetEmail) {
+    return res.status(400).json({ success: false, message: 'Google email is required.' });
+  }
+  const targetName = name || 'Google Miner';
 
   await lockManager.acquire('google_auth_lock');
   try {
     const db = readDB();
     let user = db.users.find(u => u.email.toLowerCase() === targetEmail && !u.deletedAt);
 
+    // If user does NOT exist in database
     if (!user) {
+      // If this is a login attempt, DO NOT auto-create account. Require registration!
+      if (!isSignup) {
+        lockManager.release('google_auth_lock');
+        return res.status(404).json({
+          success: false,
+          message: 'No account registered with this Google email. Please sign up first.',
+          notFound: true,
+          notRegistered: true
+        });
+      }
+
+      // If user is explicitly signing up with Google -> register them
       const userId = generateId('usr');
       const userReferralCode = generateReferralCode(db.users);
       const now = new Date().toISOString();
@@ -250,8 +282,8 @@ router.post('/google', async (req, res) => {
       db.wallets.push({
         id: generateId('wal'),
         userId: userId,
-        availableBalance: 0.0,
-        lifetimeEarned: 0.0,
+        availableBalance: 1.0,
+        lifetimeEarned: 1.0,
         createdAt: now,
         updatedAt: now
       });
@@ -261,11 +293,16 @@ router.post('/google', async (req, res) => {
 
     lockManager.release('google_auth_lock');
     const token = generateToken(user);
+    const wallet = db.wallets.find(w => w.userId === user.id) || { availableBalance: 0.0, lifetimeEarned: 0.0 };
     return res.json({
       success: true,
       message: 'Signed in successfully with Google',
       token,
-      user: sanitizeUser(user)
+      user: sanitizeUser(user),
+      wallet: {
+        availableBalance: wallet.availableBalance,
+        lifetimeEarned: wallet.lifetimeEarned
+      }
     });
   } catch (err) {
     lockManager.release('google_auth_lock');
@@ -289,34 +326,101 @@ router.get('/session', requireAuth, (req, res) => {
   });
 });
 
-// Forgot Password
-router.post('/forgot-password', (req, res) => {
-  const { email } = req.body;
-  if (!email) {
+// Forgot Password - Dispatches Real OTP Email via Gmail SMTP / Nodemailer
+router.post('/forgot-password', async (req, res) => {
+  const { email, isAdmin } = req.body;
+  if (!email || !email.trim()) {
     return res.status(400).json({ success: false, message: 'Please enter your email address.' });
   }
 
-  const db = readDB();
-  const user = db.users.find(u => u.email.toLowerCase() === email.trim().toLowerCase() && !u.deletedAt);
+  const cleanEmail = email.trim().toLowerCase();
 
-  // Return generic success message for privacy
-  return res.json({
-    success: true,
-    message: 'If an account with that email exists, password reset instructions have been dispatched.'
+  // If this is an admin recovery request, ensure email is gtmining2026@gmail.com
+  if (isAdmin && cleanEmail !== 'gtmining2026@gmail.com') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied: Only authorized Master Admin (gtmining2026@gmail.com) can request password reset for the admin gateway.'
+    });
+  }
+
+  const db = readDB();
+  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
+
+  // Generate 6-digit cryptographic OTP code
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins validity
+
+  if (!db.passwordResets) {
+    db.passwordResets = [];
+  }
+
+  // Clear previous resets for this email
+  db.passwordResets = db.passwordResets.filter(r => r.email !== cleanEmail);
+
+  db.passwordResets.push({
+    id: generateId('rst'),
+    email: cleanEmail,
+    otpCode,
+    expiresAt,
+    used: false,
+    createdAt: new Date().toISOString()
   });
+
+  writeDB(db);
+
+  // Send real email using Nodemailer & Gmail App Password
+  try {
+    await sendPasswordResetEmail({
+      toEmail: cleanEmail,
+      otpCode,
+      recipientName: user ? user.fullName : (cleanEmail === 'gtmining2026@gmail.com' ? 'Master Administrator' : 'GT Pioneer'),
+      isAdmin: Boolean(isAdmin || cleanEmail === 'gtmining2026@gmail.com'),
+    });
+
+    return res.json({
+      success: true,
+      message: `A password reset link and 6-digit verification code have been dispatched to ${cleanEmail}. Please check your inbox or spam folder.`
+    });
+  } catch (emailErr) {
+    console.error('[Email Dispatch Error]', emailErr);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send recovery email. Please verify the email address and try again.'
+    });
+  }
 });
 
-// Reset Password
+// Reset Password - Verifies OTP and updates user passwordHash
 router.post('/reset-password', async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { email, newPassword, otpCode } = req.body;
   if (!email || !newPassword || newPassword.length < 6) {
     return res.status(400).json({ success: false, message: 'Valid email and new password (min 6 chars) required.' });
   }
 
+  const cleanEmail = email.trim().toLowerCase();
   const db = readDB();
-  const user = db.users.find(u => u.email.toLowerCase() === email.trim().toLowerCase() && !u.deletedAt);
+  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
+
   if (!user) {
-    return res.status(404).json({ success: false, message: 'Account not found.' });
+    return res.status(404).json({ success: false, message: 'No registered account found with this email address.' });
+  }
+
+  // If OTP code is provided, verify against database
+  if (otpCode && otpCode.trim()) {
+    const cleanOtp = otpCode.trim();
+    const resetRecord = (db.passwordResets || []).find(
+      r => r.email === cleanEmail && r.otpCode === cleanOtp && !r.used
+    );
+
+    if (!resetRecord) {
+      return res.status(400).json({ success: false, message: 'Invalid verification code. Please check your email.' });
+    }
+
+    if (new Date(resetRecord.expiresAt) < new Date()) {
+      return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
+    }
+
+    resetRecord.used = true;
   }
 
   user.passwordHash = await bcrypt.hash(newPassword, 10);

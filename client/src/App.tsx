@@ -32,10 +32,15 @@ import { AdminTransactionsPage } from './pages/admin/AdminTransactionsPage';
 import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
+import { AdminOnboardingBannersPage } from './pages/admin/AdminOnboardingBannersPage';
+import { AdminHomeBannersPage } from './pages/admin/AdminHomeBannersPage';
+import { AdminLayout } from './pages/admin/AdminLayout';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+
+  const isAdminPanel = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
 
   // Check if current route is landing or auth page
   const isPublicStandalone = [
@@ -46,6 +51,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     '/signup',
     '/forgot-password',
     '/admin/login',
+    '/admin/reset-password',
     '/terms',
     '/privacy',
   ].includes(location.pathname);
@@ -72,6 +78,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       document.documentElement.style.overscrollBehavior = '';
     };
   }, [isChatScreen]);
+
+  if (isAdminPanel) {
+    return <AdminLayout>{children}</AdminLayout>;
+  }
 
   return (
     <div
@@ -138,6 +148,7 @@ export const App: React.FC = () => {
               <Route path="/terms" element={<LegalPage />} />
               <Route path="/privacy" element={<LegalPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin/reset-password" element={<AdminLoginPage />} />
 
               {/* Authenticated User Routes */}
               <Route
@@ -223,10 +234,30 @@ export const App: React.FC = () => {
 
               {/* Admin Protected Routes */}
               <Route
+                path="/admin"
+                element={<Navigate to="/admin/dashboard" replace />}
+              />
+              <Route
                 path="/admin/dashboard"
                 element={
                   <AdminRoute>
                     <AdminDashboardPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/onboarding-banners"
+                element={
+                  <AdminRoute>
+                    <AdminOnboardingBannersPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/home-banners"
+                element={
+                  <AdminRoute>
+                    <AdminHomeBannersPage />
                   </AdminRoute>
                 }
               />

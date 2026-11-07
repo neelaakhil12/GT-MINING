@@ -71,4 +71,19 @@ router.get('/posts/:id', (req, res) => {
   }
 });
 
+// DELETE /api/community/posts/:id
+router.delete('/posts/:id', (req, res) => {
+  try {
+    const db = readDB();
+    const index = db.communityPosts.findIndex(p => p.id === req.params.id);
+    if (index !== -1) {
+      db.communityPosts.splice(index, 1);
+      writeDB(db);
+    }
+    return res.json({ success: true, message: 'Post removed from community feed.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to delete post.' });
+  }
+});
+
 export default router;

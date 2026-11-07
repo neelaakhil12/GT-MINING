@@ -37,6 +37,9 @@ export type RootTabParamList = {
 };
 
 export type RootStackParamList = {
+  Splash: undefined;
+  Onboarding: undefined;
+  Auth: undefined;
   MainTabs: undefined;
   Wallet: undefined;
   Tasks: undefined;

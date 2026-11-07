@@ -42,40 +42,22 @@ const initialComments: Record<string, PostComment[]> = {
 
 const hardcodedNodePosts: CommunityPost[] = [
   {
-    id: 'post_001',
-    title: 'Welcome to GT Mining: Next Phase of Virtual Web3 Hash Power',
-    content: 'We are thrilled to officially launch the GT Mining network! Every participant can mine 1 GT coin every 4 hours with zero hardware consumption. Invite friends to multiply network engagement, earn referral bonuses, and secure your place on the global ledger. Check back for frequent node updates and ecosystem milestones.',
-    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
+    id: 'post_live_004',
+    title: 'esrdhjkl',
+    content: `Once upon a time, there was a small village surrounded by beautiful green forests. A young boy named Rahul lived in that village. Rahul was a kind and curious boy who loved exploring nature. Every evening, he went for a walk near the forest. One day, he discovered a strange tree with magic green crystals.
+
+Rahul learned that true happiness comes from helping people.
+
+And he lived happily ever after.`,
+    imageUrl: '/gt-logo.png',
     category: 'Announcement',
     status: 'PUBLISHED',
-    isPinned: true,
+    isPinned: false,
     authorName: 'GT Foundation',
-    createdAt: '2026-10-15T11:12:45.081Z',
-    updatedAt: '2026-10-15T11:12:45.081Z',
-  },
-  {
-    id: 'post_002',
-    title: 'Mining Integrity & The 4-Hour Cooldown Protocol',
-    content: 'To preserve network fairness, the 4-hour cooldown rule is strictly verified on-chain and through our atomic backend ledger. Timestamps are synchronized in UTC. Double claims or tab tampering are intercepted automatically. Happy mining!',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-    category: 'Update',
-    status: 'PUBLISHED',
-    isPinned: false,
-    authorName: 'Tech Lead',
-    createdAt: '2026-10-17T11:12:45.081Z',
-    updatedAt: '2026-10-17T11:12:45.081Z',
-  },
-  {
-    id: 'post_003',
-    title: 'Referral Rewards Program is Live',
-    content: 'Share your custom referral code or one-click invite link across WhatsApp, Telegram, and social channels. Friends who register through your link become part of your mining circle.',
-    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
-    category: 'Ecosystem',
-    status: 'PUBLISHED',
-    isPinned: false,
-    authorName: 'Growth Team',
-    createdAt: '2026-10-18T11:12:45.081Z',
-    updatedAt: '2026-10-18T11:12:45.081Z',
+    likesCount: 0,
+    commentsCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
@@ -96,11 +78,7 @@ export const CommunityPage: React.FC = () => {
     }
   });
 
-  const [likesCount, setLikesCount] = useState<Record<string, number>>({
-    post_001: 42,
-    post_002: 29,
-    post_003: 56,
-  });
+  const [likesCount, setLikesCount] = useState<Record<string, number>>({});
 
   const [comments, setComments] = useState<Record<string, PostComment[]>>(() => {
     try {
@@ -116,6 +94,13 @@ export const CommunityPage: React.FC = () => {
 
   const categories = ['All', 'Latest'];
 
+  const isWithin24Hours = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    if (isNaN(t)) return false;
+    return (Date.now() - t) <= 24 * 60 * 60 * 1000;
+  };
+
   useEffect(() => {
     fetchPosts();
   }, [selectedCategory]);
@@ -123,12 +108,12 @@ export const CommunityPage: React.FC = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const res = await api.getCommunityPosts(
-        selectedCategory === 'All' ? undefined : selectedCategory
-      );
+      const res = await api.getCommunityPosts();
       if (res.success && res.posts) {
         let loaded = res.posts;
         if (selectedCategory === 'Latest') {
+          const recent = loaded.filter((p: CommunityPost) => isWithin24Hours(p.createdAt || p.updatedAt));
+          loaded = recent.length > 0 ? recent : loaded;
           loaded = [...loaded].sort((a, b) => {
             const timeA = new Date(a.updatedAt || a.createdAt).getTime();
             const timeB = new Date(b.updatedAt || b.createdAt).getTime();
@@ -138,17 +123,17 @@ export const CommunityPage: React.FC = () => {
         setPosts(loaded);
       }
     } catch (err: any) {
+      let loaded = hardcodedNodePosts;
       if (selectedCategory === 'Latest') {
-        setPosts(
-          [...hardcodedNodePosts].sort((a, b) => {
-            const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-            const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-            return timeB - timeA;
-          })
-        );
-      } else {
-        setPosts(hardcodedNodePosts);
+        const recent = loaded.filter((p: CommunityPost) => isWithin24Hours(p.createdAt || p.updatedAt));
+        loaded = recent.length > 0 ? recent : loaded;
+        loaded = [...loaded].sort((a, b) => {
+          const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+          const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+          return timeB - timeA;
+        });
       }
+      setPosts(loaded);
     } finally {
       setLoading(false);
     }
@@ -166,10 +151,13 @@ export const CommunityPage: React.FC = () => {
       localStorage.setItem('gt_liked_posts', JSON.stringify(updated));
     } catch {}
 
-    setLikesCount(prev => ({
-      ...prev,
-      [postId]: (prev[postId] || 0) + (isLiked ? 1 : -1),
-    }));
+    setLikesCount(prev => {
+      const baseLikes = prev[postId] !== undefined ? prev[postId] : Number(posts.find(p => p.id === postId)?.likesCount || 0);
+      return {
+        ...prev,
+        [postId]: Math.max(0, baseLikes + (isLiked ? 1 : -1)),
+      };
+    });
 
     if (isLiked) {
       showToast('Liked post! ❤️', 'success');
@@ -271,7 +259,7 @@ export const CommunityPage: React.FC = () => {
             const isExpanded = expandedPostIds[post.id];
             const isLong = post.content.length > 280;
             const isLiked = !!likedPostIds[post.id];
-            const currentLikes = likesCount[post.id] ?? 24;
+            const currentLikes = likesCount[post.id] !== undefined ? likesCount[post.id] : Number(post.likesCount || 0);
             const postCommentsList = comments[post.id] || [];
             const isCommentsOpen = openCommentPostId === post.id;
 
@@ -301,9 +289,16 @@ export const CommunityPage: React.FC = () => {
                         <span>Pinned</span>
                       </span>
                     )}
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30 uppercase">
-                      {post.category}
-                    </span>
+                    {isWithin24Hours(post.createdAt || post.updatedAt) ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/20 text-[#15803D] border border-[#22C55E]/40 uppercase flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5 text-[#16A34A]" />
+                        <span>LATEST (24H)</span>
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E2E8F0] text-[#475569] border border-[#CBD5E1] uppercase">
+                        NODE POST
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -323,18 +318,18 @@ export const CommunityPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Post Content */}
-                <div className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed space-y-2 whitespace-pre-line font-medium">
-                  <p>
+                {/* Post Content with Pointwise & Paragraph Formatting */}
+                <div className="text-xs sm:text-sm text-[#1E5E36] leading-relaxed font-medium">
+                  <div className="whitespace-pre-wrap break-words leading-relaxed">
                     {isLong && !isExpanded
                       ? `${post.content.slice(0, 280)}...`
                       : post.content}
-                  </p>
+                  </div>
 
                   {isLong && (
                     <button
                       onClick={() => toggleExpand(post.id)}
-                      className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+                      className="text-xs font-bold text-[#16A34A] hover:underline flex items-center gap-1 pt-2 cursor-pointer"
                     >
                       <span>{isExpanded ? 'Show less' : 'Read more'}</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}

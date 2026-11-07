@@ -3,7 +3,7 @@ import { Pickaxe, Clock, ShieldCheck, Save, ToggleLeft, ToggleRight, Sparkles } 
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminMiningPage: React.FC = () => {
   const { showToast } = useToast();
@@ -70,7 +70,7 @@ export const AdminMiningPage: React.FC = () => {
     <div className="space-y-8 pb-16 max-w-4xl mx-auto">
       <AdminNav />
 
-      <GlassCard glow className="space-y-6">
+      <AdminCard glow className="space-y-6">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -101,7 +101,7 @@ export const AdminMiningPage: React.FC = () => {
                 required
                 value={miningReward}
                 onChange={(e) => setMiningReward(parseFloat(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm font-mono font-bold"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
 
@@ -121,7 +121,7 @@ export const AdminMiningPage: React.FC = () => {
                 required
                 value={cooldownHours}
                 onChange={(e) => setCooldownHours(parseInt(e.target.value, 10))}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm font-mono font-bold"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
           </div>
@@ -158,7 +158,7 @@ export const AdminMiningPage: React.FC = () => {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Halving adjustment or scheduled network maintenance"
-              className="w-full px-4 py-2.5 rounded-xl glass-input text-xs"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none"
             />
           </div>
 
@@ -171,7 +171,7 @@ export const AdminMiningPage: React.FC = () => {
             <span>{saving ? 'Saving Settings...' : 'Save Mining Parameters'}</span>
           </button>
         </form>
-      </GlassCard>
+      </AdminCard>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { Gift, Users, Save, CheckCircle2, ShieldCheck, Clock } from 'lucide-reac
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminReferralsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -63,7 +63,7 @@ export const AdminReferralsPage: React.FC = () => {
       <AdminNav />
 
       {/* Referral Settings Card */}
-      <GlassCard glow className="space-y-6">
+      <AdminCard glow className="space-y-6">
         <div className="border-b border-[#86EFAC]/15 pb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Gift className="w-5 h-5 text-[#86EFAC]" />
@@ -90,7 +90,7 @@ export const AdminReferralsPage: React.FC = () => {
                 required
                 value={referralReward}
                 onChange={(e) => setReferralReward(parseFloat(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm font-mono font-bold"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
 
@@ -109,7 +109,7 @@ export const AdminReferralsPage: React.FC = () => {
                 required
                 value={activeThresholdDays}
                 onChange={(e) => setActiveThresholdDays(parseInt(e.target.value, 10))}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-sm font-mono font-bold"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
           </div>
@@ -123,7 +123,7 @@ export const AdminReferralsPage: React.FC = () => {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Campaign reward increase"
-              className="w-full px-4 py-2.5 rounded-xl glass-input text-xs"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none"
             />
           </div>
 
@@ -136,10 +136,10 @@ export const AdminReferralsPage: React.FC = () => {
             <span>{saving ? 'Updating...' : 'Save Referral Configuration'}</span>
           </button>
         </form>
-      </GlassCard>
+      </AdminCard>
 
       {/* Referrals Table */}
-      <GlassCard className="space-y-4">
+      <AdminCard className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Users className="w-5 h-5 text-[#86EFAC]" />
@@ -191,7 +191,7 @@ export const AdminReferralsPage: React.FC = () => {
             </table>
           </div>
         )}
-      </GlassCard>
+      </AdminCard>
     </div>
   );
 };

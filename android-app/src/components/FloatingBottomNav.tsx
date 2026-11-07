@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Home, Users } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -15,11 +15,23 @@ const EarthGlobeSvg: React.FC<{ size?: number; color?: string }> = ({
   </Svg>
 );
 
-export const FloatingBottomNav: React.FC<BottomTabBarProps> = ({
+export interface FloatingBottomNavProps {
+  state?: any;
+  navigation?: any;
+  descriptors?: any;
+  insets?: any;
+  activeTab?: 'Home' | 'Node' | 'Mine' | 'Referrals' | 'Wallet';
+}
+
+export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
   state,
-  navigation,
+  navigation: propNav,
+  activeTab,
 }) => {
-  const currentRouteName = state.routes[state.index].name;
+  const hookNav = useNavigation<any>();
+  const nav = propNav || hookNav;
+
+  const currentRouteName = state ? state.routes[state.index].name : (activeTab || 'Wallet');
 
   const navigateTo = (routeName: string) => {
     try {
@@ -27,7 +39,11 @@ export const FloatingBottomNav: React.FC<BottomTabBarProps> = ({
     } catch (e) {
       // Haptics fallback
     }
-    navigation.navigate(routeName);
+    if (state) {
+      nav.navigate(routeName);
+    } else {
+      nav.navigate('MainTabs', { screen: routeName });
+    }
   };
 
   return (
@@ -221,4 +237,3 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
 });
-

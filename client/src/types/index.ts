@@ -92,6 +92,8 @@ export interface CommunityPost {
   status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
   isPinned: boolean;
   authorName: string;
+  likesCount?: number;
+  commentsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

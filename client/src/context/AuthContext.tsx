@@ -61,6 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(res.token);
       setUser(res.user);
       await refreshSession();
+      return res;
+    } else {
+      throw new Error(res.message || 'Account not found. Please sign up first.');
     }
   };
 
@@ -70,6 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(res.token);
       setUser(res.user);
       await refreshSession();
+      return res;
+    } else {
+      throw new Error(res.message || 'No account found with this Google email. Please sign up first.');
     }
   };
 
@@ -79,6 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(res.token);
       setUser(res.user);
       await refreshSession();
+      return res;
+    } else {
+      throw new Error(res.message || 'Registration failed');
     }
   };
 

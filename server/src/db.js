@@ -2,6 +2,24 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import pg from 'pg';
+
+const { Pool } = pg;
+
+// AWS PostgreSQL Connection Pool
+export const pool = new Pool({
+  host: process.env.DB_HOST || '13.210.13.49',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  database: process.env.DB_NAME || 'gt_mining',
+  user: process.env.DB_USER || 'gtadmin',
+  password: process.env.DB_PASSWORD || 'GtMiningPass2026!',
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+});
+
+pool.on('error', (err) => {
+  console.warn('[PostgreSQL Pool Notice]', err.message);
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,8 +73,8 @@ const getInitialData = () => {
     users: [
       {
         id: 'usr_admin_001',
-        fullName: 'GT Administrator',
-        email: 'admin@gtmining.com',
+        fullName: 'GT Master Administrator',
+        email: 'gtmining2026@gmail.com',
         passwordHash: adminPasswordHash,
         referralCode: 'GTADMIN',
         referredByUserId: null,

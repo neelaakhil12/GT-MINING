@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogIn, Mail, Lock, Sparkles, AlertCircle } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GtLogo } from '../components/GtLogo';
@@ -14,8 +14,24 @@ export const LoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent browser autofill injection on page load
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    const handleTouch = () => setUnlocked(true);
+    window.addEventListener('click', handleTouch, { once: true });
+    window.addEventListener('keydown', handleTouch, { once: true });
+    return () => {
+      window.removeEventListener('click', handleTouch);
+      window.removeEventListener('keydown', handleTouch);
+    };
+  }, []);
 
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
@@ -42,26 +58,17 @@ export const LoginPage: React.FC = () => {
       await googleLogin({
         email: 'google_user@gtmining.com',
         name: 'Google Verified Miner',
+        isSignup: false,
       });
       showToast('Signed in with Google successfully!', 'success');
       navigate(from, { replace: true });
     } catch (err: any) {
-      showToast('Google sign-in error', 'error');
+      showToast(err.message || 'No registered account found with Google. Please sign up first.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemoAccount = (role: 'user' | 'admin') => {
-    if (role === 'admin') {
-      setEmail('admin@gtmining.com');
-      setPassword('Admin@123456');
-    } else {
-      setEmail('demo@gtmining.com');
-      setPassword('User@123456');
-    }
-    setError(null);
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
@@ -84,18 +91,29 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
+            {/* Decoy inputs to trap browser autofill */}
+            <input type="text" name="fake_email_decoy" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+            <input type="password" name="fake_password_decoy" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#1E5E36]">Email Address</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#1E5E36] absolute left-3.5 top-3.5 pointer-events-none" />
+                <Mail className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="email"
+                  name="gt_login_usr"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
                 />
               </div>
             </div>
@@ -104,19 +122,33 @@ export const LoginPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-[#1E5E36]">Password</label>
                 <Link to="/forgot-password" className="text-xs font-bold text-[#16A34A] hover:underline">
-                  Forgot?
+                  Forgot Password?
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#1E5E36] absolute left-3.5 top-3.5 pointer-events-none" />
+                <Lock className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="gt_login_pwd"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  readOnly={!unlocked}
+                  onFocus={() => setUnlocked(true)}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-sm"
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-[#16A34A] hover:text-[#0A341B] cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -163,30 +195,6 @@ export const LoginPage: React.FC = () => {
               </svg>
               <span>Continue with Google</span>
             </button>
-          </div>
-
-          {/* Quick Demo Credentials Shortcut */}
-          <div className="pt-2 border-t border-black/5 space-y-2">
-            <p className="text-[11px] font-bold text-[#1E5E36] text-center flex items-center justify-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#16A34A]" />
-              <span>Instant Test Fill:</span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('user')}
-                className="py-1.5 px-2 rounded-xl bg-white/70 hover:bg-white text-[11px] font-bold text-[#15803D] border border-white text-center shadow-sm"
-              >
-                Demo Miner
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('admin')}
-                className="py-1.5 px-2 rounded-xl bg-white/70 hover:bg-white text-[11px] font-bold text-[#B45309] border border-white text-center shadow-sm"
-              >
-                Admin Account
-              </button>
-            </div>
           </div>
         </GlassCard>
 

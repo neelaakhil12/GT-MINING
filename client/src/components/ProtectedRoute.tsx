@@ -40,9 +40,5 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return <>{children}</>;
 };

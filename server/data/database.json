@@ -1,7 +1,7 @@
 {
   "settings": {
     "appName": "GT Mining",
-    "websiteUrl": "http://localhost:5174",
+    "websiteUrl": "https://gtnetwork.in",
     "miningReward": 1,
     "cooldownSeconds": 14400,
     "referralReward": 0.5,
@@ -14,8 +14,8 @@
   "users": [
     {
       "id": "usr_admin_001",
-      "fullName": "GT Administrator",
-      "email": "admin@gtmining.com",
+      "fullName": "GT Master Administrator",
+      "email": "gtmining2026@gmail.com",
       "passwordHash": "$2b$10$RBVsHlApX5p0Fhzd5YUgPOQXRstPDiVXqPWOJawoGayLuR9wDfXrq",
       "referralCode": "GTADMIN",
       "referredByUserId": null,
@@ -41,6 +41,36 @@
       "createdAt": "2026-10-16T11:12:45.081Z",
       "updatedAt": "2026-10-21T13:34:38.998Z",
       "deletedAt": null
+    },
+    {
+      "id": "usr_mw5634kx_h06dk4",
+      "fullName": "Akhil kumar",
+      "email": "neelaakhilkumar50@gmail.com",
+      "passwordHash": "$2b$10$rdN.JelOosPNz3JDScEhaeSUh/HlDpuiwQDPd4fK0EgGU./OxIpv6",
+      "referralCode": "GTAKNATH",
+      "referredByUserId": null,
+      "role": "USER",
+      "accountStatus": "ACTIVE",
+      "emailVerifiedAt": "2026-11-06T16:06:39.425Z",
+      "lastMiningAt": null,
+      "createdAt": "2026-11-06T16:06:39.425Z",
+      "updatedAt": "2026-11-06T16:06:39.425Z",
+      "deletedAt": null
+    },
+    {
+      "id": "usr_mw573yqx_sr0oyq",
+      "fullName": "rajesh",
+      "email": "neelaakhilharish@gmail.com",
+      "passwordHash": "$2b$10$C8/FWCtaL4usRaLCKyR2r.QAt9uyjlWNizwkq8jRLRItGSgpK3w.O",
+      "referralCode": "GTGLJXMK",
+      "referredByUserId": null,
+      "role": "USER",
+      "accountStatus": "ACTIVE",
+      "emailVerifiedAt": "2026-11-06T16:35:18.137Z",
+      "lastMiningAt": null,
+      "createdAt": "2026-11-06T16:35:18.137Z",
+      "updatedAt": "2026-11-06T16:36:59.505Z",
+      "deletedAt": null
     }
   ],
   "wallets": [
@@ -59,6 +89,22 @@
       "lifetimeEarned": 4.5,
       "createdAt": "2026-10-18T11:12:45.081Z",
       "updatedAt": "2026-10-21T13:34:38.998Z"
+    },
+    {
+      "id": "wal_mw5634n5_0q2o92",
+      "userId": "usr_mw5634kx_h06dk4",
+      "availableBalance": 0,
+      "lifetimeEarned": 0,
+      "createdAt": "2026-11-06T16:06:39.425Z",
+      "updatedAt": "2026-11-06T16:06:39.425Z"
+    },
+    {
+      "id": "wal_mw573yt5_buqp18",
+      "userId": "usr_mw573yqx_sr0oyq",
+      "availableBalance": 0,
+      "lifetimeEarned": 0,
+      "createdAt": "2026-11-06T16:35:18.137Z",
+      "updatedAt": "2026-11-06T16:35:18.137Z"
     }
   ],
   "walletTransactions": [
@@ -167,43 +213,19 @@
   ],
   "communityPosts": [
     {
-      "id": "post_001",
-      "title": "Welcome to GT Mining: Next Phase of Virtual Web3 Hash Power",
-      "content": "We are thrilled to officially launch the GT Mining network! Every participant can mine 1 GT coin every 4 hours with zero hardware consumption. Invite friends to multiply network engagement, earn referral bonuses, and secure your place on the global ledger. Check back for frequent node updates and ecosystem milestones.",
-      "imageUrl": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop",
+      "id": "post_live_004",
+      "title": "esrdhjkl",
+      "content": "Once upon a time, there was a small village surrounded by beautiful green forests. A young boy named Rahul lived in that village. Rahul was a kind and curious boy who loved exploring nature. Every evening, he went for a walk near the forest. One day, he discovered a strange tree with magic green crystals.\n\nRahul learned that true happiness comes from helping people.\n\nAnd he lived happily ever after.",
+      "imageUrl": "/gt-logo.png",
       "category": "Announcement",
       "status": "PUBLISHED",
-      "isPinned": true,
+      "isPinned": false,
       "authorName": "GT Foundation",
       "createdBy": "usr_admin_001",
-      "createdAt": "2026-10-15T11:12:45.081Z",
-      "updatedAt": "2026-10-15T11:12:45.081Z"
-    },
-    {
-      "id": "post_002",
-      "title": "Mining Integrity & The 4-Hour Cooldown Protocol",
-      "content": "To preserve network fairness, the 4-hour cooldown rule is strictly verified on-chain and through our atomic backend ledger. Timestamps are synchronized in UTC. Double claims or tab tampering are intercepted automatically. Happy mining!",
-      "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop",
-      "category": "Update",
-      "status": "PUBLISHED",
-      "isPinned": false,
-      "authorName": "Tech Lead",
-      "createdBy": "usr_admin_001",
-      "createdAt": "2026-10-17T11:12:45.081Z",
-      "updatedAt": "2026-10-17T11:12:45.081Z"
-    },
-    {
-      "id": "post_003",
-      "title": "Referral Rewards Program is Live",
-      "content": "Share your custom referral code or one-click invite link across WhatsApp, Telegram, and social channels. Friends who register through your link become part of your mining circle.",
-      "imageUrl": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop",
-      "category": "Ecosystem",
-      "status": "PUBLISHED",
-      "isPinned": false,
-      "authorName": "Growth Team",
-      "createdBy": "usr_admin_001",
-      "createdAt": "2026-10-18T11:12:45.081Z",
-      "updatedAt": "2026-10-18T11:12:45.081Z"
+      "likesCount": 0,
+      "commentsCount": 0,
+      "createdAt": "2026-11-07T09:47:00.000Z",
+      "updatedAt": "2026-11-07T09:47:00.000Z"
     }
   ],
   "notifications": [
@@ -242,6 +264,33 @@
       "type": "MINING",
       "readAt": null,
       "createdAt": "2026-10-21T13:34:38.998Z"
+    },
+    {
+      "id": "notif_mw5634n5_3uu10l",
+      "userId": "usr_mw5634kx_h06dk4",
+      "title": "Welcome to GT Mining!",
+      "message": "Your account is active. You are now ready to start your first 4-hour mining session!",
+      "type": "SYSTEM",
+      "readAt": null,
+      "createdAt": "2026-11-06T16:06:39.425Z"
+    },
+    {
+      "id": "notif_mw570iri_bqrhzu",
+      "userId": "usr_mw570ipp_6gbgqx",
+      "title": "Welcome to GT Mining!",
+      "message": "Your account is active. You are now ready to start your first 4-hour mining session!",
+      "type": "SYSTEM",
+      "readAt": null,
+      "createdAt": "2026-11-06T16:32:37.374Z"
+    },
+    {
+      "id": "notif_mw573yt5_qionrm",
+      "userId": "usr_mw573yqx_sr0oyq",
+      "title": "Welcome to GT Mining!",
+      "message": "Your account is active. You are now ready to start your first 4-hour mining session!",
+      "type": "SYSTEM",
+      "readAt": null,
+      "createdAt": "2026-11-06T16:35:18.137Z"
     }
   ],
   "adminAuditLogs": [
@@ -258,5 +307,38 @@
       },
       "createdAt": "2026-10-18T11:12:45.081Z"
     }
-  ]
+  ],
+  "passwordResets": [
+    {
+      "id": "rst_mw50uhjh_ycspn5",
+      "email": "gtmining2026@gmail.com",
+      "otpCode": "741035",
+      "expiresAt": "2026-11-06T13:54:58.157Z",
+      "used": false,
+      "createdAt": "2026-11-06T13:39:58.157Z"
+    },
+    {
+      "id": "rst_mw56t5j4_410025",
+      "email": "neelaakhilkumar50@gmail.com",
+      "otpCode": "714283",
+      "expiresAt": "2026-11-06T16:41:53.632Z",
+      "used": false,
+      "createdAt": "2026-11-06T16:26:53.632Z"
+    },
+    {
+      "id": "rst_mw5751g6_3wng66",
+      "email": "neelaakhilharish@gmail.com",
+      "otpCode": "173272",
+      "expiresAt": "2026-11-06T16:51:08.214Z",
+      "used": true,
+      "createdAt": "2026-11-06T16:36:08.214Z"
+    }
+  ],
+  "privateNetworks": {
+    "usr_mw573yqx_sr0oyq": {
+      "circleHostId": "usr_mw573yqx_sr0oyq",
+      "messages": [],
+      "createdAt": "2026-11-07T10:31:18.675Z"
+    }
+  }
 }

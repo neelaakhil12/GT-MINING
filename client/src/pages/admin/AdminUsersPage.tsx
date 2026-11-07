@@ -13,7 +13,7 @@ import {
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminUsersPage: React.FC = () => {
   const { showToast } = useToast();
@@ -77,7 +77,7 @@ export const AdminUsersPage: React.FC = () => {
       <AdminNav />
 
       {/* Search and Filters */}
-      <GlassCard className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <AdminCard className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-[#A7C9B1] absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -85,7 +85,7 @@ export const AdminUsersPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users by name, email, or referral code..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none"
           />
         </div>
 
@@ -104,10 +104,10 @@ export const AdminUsersPage: React.FC = () => {
             </button>
           ))}
         </div>
-      </GlassCard>
+      </AdminCard>
 
       {/* Users Table */}
-      <GlassCard className="space-y-4">
+      <AdminCard className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Users className="w-5 h-5 text-[#86EFAC]" />
@@ -186,12 +186,12 @@ export const AdminUsersPage: React.FC = () => {
             </table>
           </div>
         )}
-      </GlassCard>
+      </AdminCard>
 
       {/* Suspend / Reactivate Reason Modal */}
       {modalUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-md glass-panel p-6 rounded-2xl border-[#FBBF24]/40 space-y-4">
+          <div className="w-full max-w-md p-6 rounded-2xl bg-[#092215] border-2 border-[#FBBF24]/50 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-[#FBBF24]" />
               <span>Modify Account Status: {modalUser.fullName}</span>
@@ -212,7 +212,7 @@ export const AdminUsersPage: React.FC = () => {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="e.g. Account suspended due to detected automated multi-accounting scripts."
-                  className="w-full p-3 rounded-xl glass-input text-xs"
+                  className="w-full p-3 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none resize-none"
                 />
               </div>
 

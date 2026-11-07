@@ -3,7 +3,7 @@ import { Coins, Filter, PlusCircle, CheckCircle2, AlertCircle, ShieldAlert } fro
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminTransactionsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -81,7 +81,7 @@ export const AdminTransactionsPage: React.FC = () => {
       <AdminNav />
 
       {/* Header with Adjustment Trigger */}
-      <GlassCard className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <AdminCard className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Coins className="w-5 h-5 text-[#86EFAC]" />
@@ -94,17 +94,17 @@ export const AdminTransactionsPage: React.FC = () => {
 
         <button
           onClick={() => setAdjustModal(true)}
-          className="px-4 py-2.5 rounded-xl font-bold text-xs text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] shadow-[0_0_20px_rgba(251,191,36,0.35)] flex items-center gap-2 self-start sm:self-auto"
+          className="px-4 py-2.5 rounded-xl font-bold text-xs text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] shadow-[0_0_20px_rgba(251,191,36,0.35)] flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Manual Balance Adjustment</span>
         </button>
-      </GlassCard>
+      </AdminCard>
 
       {/* Adjustment Modal */}
       {adjustModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-md glass-panel p-6 rounded-2xl border-[#FBBF24]/40 space-y-4">
+          <div className="w-full max-w-md p-6 rounded-2xl bg-[#092215] border-2 border-[#FBBF24]/50 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-[#FBBF24]" />
               <span>Manual Wallet Adjustment</span>
@@ -121,11 +121,11 @@ export const AdminTransactionsPage: React.FC = () => {
                   required
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-xs"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-xs focus:border-[#FBBF24] outline-none"
                 >
-                  <option value="" className="bg-[#07130D]">Select a registered user...</option>
+                  <option value="" className="bg-[#05160E] text-white">Select a registered user...</option>
                   {users.map((u) => (
-                    <option key={u.id} value={u.id} className="bg-[#07130D]">
+                    <option key={u.id} value={u.id} className="bg-[#05160E] text-white">
                       {u.fullName} ({u.email}) — Current: {Number(u.walletBalance || 0).toFixed(2)} GT
                     </option>
                   ))}
@@ -143,7 +143,7 @@ export const AdminTransactionsPage: React.FC = () => {
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(parseFloat(e.target.value))}
                   placeholder="e.g. 5.0"
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono font-bold"
+                  className="w-full px-3 py-2 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-xs font-mono font-bold focus:border-[#FBBF24] outline-none"
                 />
               </div>
 
@@ -157,7 +157,7 @@ export const AdminTransactionsPage: React.FC = () => {
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
                   placeholder="e.g. Community contest bounty winner verification"
-                  className="w-full p-2.5 rounded-xl glass-input text-xs"
+                  className="w-full p-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-xs placeholder-[#A7C9B1]/60 focus:border-[#FBBF24] outline-none resize-none"
                 />
               </div>
 
@@ -165,14 +165,14 @@ export const AdminTransactionsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAdjustModal(false)}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#A7C9B1] bg-white/5 hover:bg-white/10"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-[#A7C9B1] bg-white/5 hover:bg-white/10 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={processing}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] disabled:opacity-50 cursor-pointer"
                 >
                   {processing ? 'Applying...' : 'Apply Ledger Adjustment'}
                 </button>
@@ -183,7 +183,7 @@ export const AdminTransactionsPage: React.FC = () => {
       )}
 
       {/* Transactions Table */}
-      <GlassCard className="space-y-4">
+      <AdminCard className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <h3 className="text-base font-bold text-white">All System Transactions</h3>
           <span className="text-xs text-[#A7C9B1]">{transactions.length} Records</span>
@@ -235,7 +235,7 @@ export const AdminTransactionsPage: React.FC = () => {
             </table>
           </div>
         )}
-      </GlassCard>
+      </AdminCard>
     </div>
   );
 };

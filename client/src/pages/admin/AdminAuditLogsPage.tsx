@@ -3,7 +3,7 @@ import { ShieldCheck, History, Calendar, User } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-import { GlassCard } from '../../components/GlassCard';
+import { AdminCard } from '../../components/AdminCard';
 
 export const AdminAuditLogsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -29,7 +29,7 @@ export const AdminAuditLogsPage: React.FC = () => {
     <div className="space-y-8 pb-16 max-w-6xl mx-auto">
       <AdminNav />
 
-      <GlassCard className="space-y-4">
+      <AdminCard className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[#FBBF24]" />
@@ -41,7 +41,7 @@ export const AdminAuditLogsPage: React.FC = () => {
         {loading ? (
           <div className="space-y-3 animate-pulse py-8">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-16 rounded-xl bg-white/5" />
+              <div key={i} className="h-16 rounded-xl bg-[#0B2516]/80 border border-[#86EFAC]/20" />
             ))}
           </div>
         ) : logs.length === 0 ? (
@@ -78,7 +78,7 @@ export const AdminAuditLogsPage: React.FC = () => {
             ))}
           </div>
         )}
-      </GlassCard>
+      </AdminCard>
     </div>
   );
 };

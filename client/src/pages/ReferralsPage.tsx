@@ -16,6 +16,7 @@ import {
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { api } from '../services/api';
 
 interface ReferralFriendRecord {
   id: string;
@@ -26,45 +27,6 @@ interface ReferralFriendRecord {
   earnedGT: string;
   isActive: boolean;
 }
-
-const defaultFriendsList: ReferralFriendRecord[] = [
-  {
-    id: 'f1',
-    name: 'Arjun Reddy',
-    initials: 'AR',
-    maskedId: 'GT-90****12',
-    date: 'Mar 12',
-    earnedGT: '+10.00 GT',
-    isActive: true,
-  },
-  {
-    id: 'f2',
-    name: 'Priya Sharma',
-    initials: 'PS',
-    maskedId: 'GT-44****89',
-    date: 'Mar 10',
-    earnedGT: '+5.00 GT',
-    isActive: true,
-  },
-  {
-    id: 'f3',
-    name: 'Rahul Kumar',
-    initials: 'RK',
-    maskedId: 'GT-12****43',
-    date: 'Feb 28',
-    earnedGT: '0.00 GT',
-    isActive: false,
-  },
-  {
-    id: 'f4',
-    name: 'Elena Rostova',
-    initials: 'ER',
-    maskedId: 'GT-77****91',
-    date: 'Feb 24',
-    earnedGT: '+34.50 GT',
-    isActive: true,
-  },
-];
 
 const dividendSlides = [
   {
@@ -93,11 +55,48 @@ export const ReferralsPage: React.FC = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [instagramModal, setInstagramModal] = useState(false);
 
+  // Dynamic Referral Statistics loaded from Database
+  const [stats, setStats] = useState({
+    totalReferrals: 0,
+    activeFriends: 0,
+    inactiveFriends: 0,
+    totalReferralRewardsEarned: 0,
+  });
+  const [friendsList, setFriendsList] = useState<any[]>([]);
+
   // Commission claim state
-  const [claimableAmount, setClaimableAmount] = useState<number>(42.8);
-  const [claimedAmount, setClaimedAmount] = useState<number>(225.7);
-  const [totalEarned, setTotalEarned] = useState<number>(268.5);
+  const [claimableAmount, setClaimableAmount] = useState<number>(0.0);
+  const [claimedAmount, setClaimedAmount] = useState<number>(0.0);
+  const [totalEarned, setTotalEarned] = useState<number>(0.0);
   const [isClaiming, setIsClaiming] = useState(false);
+
+  // Fetch real referral summary & friends from Database
+  useEffect(() => {
+    const fetchReferralData = async () => {
+      try {
+        const [sumRes, histRes] = await Promise.all([
+          api.getReferralSummary(),
+          api.getReferralHistory(),
+        ]);
+        if (sumRes && sumRes.success) {
+          const s = sumRes.statistics || sumRes.stats || sumRes;
+          setStats({
+            totalReferrals: Number(s.totalReferrals || 0),
+            activeFriends: Number(s.activeFriends || 0),
+            inactiveFriends: Number(s.inactiveFriends || 0),
+            totalReferralRewardsEarned: Number(s.totalReferralRewardsEarned || 0),
+          });
+          setTotalEarned(Number(s.totalReferralRewardsEarned || 0));
+        }
+        if (histRes && histRes.success && Array.isArray(histRes.referrals)) {
+          setFriendsList(histRes.referrals);
+        }
+      } catch (err) {
+        console.warn('Failed to load referral data:', err);
+      }
+    };
+    fetchReferralData();
+  }, []);
 
   // Auto-cycle top dividend slides every 5s
   useEffect(() => {
@@ -108,7 +107,7 @@ export const ReferralsPage: React.FC = () => {
   }, []);
 
   const referralCode = user?.referralCode || 'GT-VIP-779';
-  const referralLink = `https://gtnetwork.app/invite/${referralCode}`;
+  const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(referralCode);
@@ -243,7 +242,7 @@ export const ReferralsPage: React.FC = () => {
               <Users className="w-4 h-4 text-[#15803D]" />
             </div>
             <div className="text-3xl font-black text-[#0A341B] tracking-tight">
-              28
+              {stats.totalReferrals}
             </div>
             <div className="text-xs text-[#15803D] font-medium">
               Registered peer nodes
@@ -257,7 +256,7 @@ export const ReferralsPage: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
             </div>
             <div className="text-3xl font-black text-[#0A341B] tracking-tight">
-              22
+              {stats.activeFriends}
             </div>
             <div className="text-xs text-[#15803D] font-medium">
               Confirmed mining cycle
@@ -271,7 +270,7 @@ export const ReferralsPage: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
             </div>
             <div className="text-3xl font-black text-[#0A341B] tracking-tight">
-              6
+              {stats.inactiveFriends}
             </div>
             <div className="text-xs text-[#15803D] font-medium">
               Standby allocation
@@ -285,7 +284,7 @@ export const ReferralsPage: React.FC = () => {
               <Coins className="w-4 h-4 text-[#15803D]" />
             </div>
             <div className="text-3xl font-black text-[#0A341B] tracking-tight">
-              324.50
+              {stats.totalReferralRewardsEarned.toFixed(2)}
             </div>
             <div className="text-xs text-[#15803D] font-medium">
               Accumulated net yield
@@ -544,59 +543,93 @@ export const ReferralsPage: React.FC = () => {
             </p>
           </div>
           <div className="px-3 py-1 rounded-full text-xs font-bold text-[#15803D] bg-white border border-[#22C55E]/30 shadow-xs">
-            Showing 4 of 28
+            Showing {friendsList.length} of {stats.totalReferrals}
           </div>
         </div>
 
-        {/* Friend Cards List */}
-        <div className="space-y-2.5">
-          {defaultFriendsList.map((friend) => (
-            <div
-              key={friend.id}
-              className="p-4 rounded-2xl bg-white border border-neutral-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between transition-all hover:bg-neutral-50/50"
-            >
-              {/* Left Side: Avatar + Details */}
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-full bg-neutral-100 border border-neutral-200/70 flex items-center justify-center text-xs font-black text-neutral-700 shrink-0">
-                  {friend.initials}
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-[#0A341B]">
-                    {friend.name}
-                  </h4>
-                  <p className="text-xs text-neutral-400 font-mono tracking-tight">
-                    {friend.maskedId} • {friend.date}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Side: Amount + Status */}
-              <div className="text-right space-y-0.5">
-                <div
-                  className={`text-sm font-black font-mono ${
-                    friend.isActive ? 'text-[#0A341B]' : 'text-neutral-400'
-                  }`}
-                >
-                  {friend.earnedGT}
-                </div>
-                <div className="flex items-center justify-end gap-1.5">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      friend.isActive ? 'bg-[#22C55E]' : 'bg-neutral-300'
-                    }`}
-                  />
-                  <span
-                    className={`text-[10px] font-black tracking-wider uppercase ${
-                      friend.isActive ? 'text-[#15803D]' : 'text-neutral-400'
-                    }`}
-                  >
-                    {friend.isActive ? 'ACTIVE' : 'INACTIVE'}
-                  </span>
-                </div>
-              </div>
+        {/* Friend Cards List or Empty State */}
+        {friendsList.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-white border border-neutral-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center text-[#16A34A] mx-auto">
+              <Users className="w-6 h-6" />
             </div>
-          ))}
-        </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-black text-[#0A341B]">No referrals yet</h4>
+              <p className="text-xs text-neutral-500 max-w-xs mx-auto">
+                Share your personal invitation code or link to expand your mining circle and earn GT dividends together.
+              </p>
+            </div>
+            <button
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-white text-xs font-black transition-all shadow-sm cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy Invite Link
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {friendsList.map((friend) => {
+              const name = friend.friendName || 'GT Miner';
+              const initials = name
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2);
+              const dateStr = friend.registeredAt
+                ? new Date(friend.registeredAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                : 'Recent';
+              const isFriendActive = friend.activityStatus === 'ACTIVE' || friend.isActive;
+              return (
+                <div
+                  key={friend.id}
+                  className="p-4 rounded-2xl bg-white border border-neutral-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between transition-all hover:bg-neutral-50/50"
+                >
+                  {/* Left Side: Avatar + Details */}
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-full bg-neutral-100 border border-neutral-200/70 flex items-center justify-center text-xs font-black text-neutral-700 shrink-0">
+                      {initials}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-[#0A341B]">
+                        {name}
+                      </h4>
+                      <p className="text-xs text-neutral-400 font-mono tracking-tight">
+                        {friend.friendEmail || 'Peer Node'} • {dateStr}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Amount + Status */}
+                  <div className="text-right space-y-0.5">
+                    <div
+                      className={`text-sm font-black font-mono ${
+                        isFriendActive ? 'text-[#0A341B]' : 'text-neutral-400'
+                      }`}
+                    >
+                      {friend.rewardAmount ? `+${Number(friend.rewardAmount).toFixed(2)} GT` : '0.00 GT'}
+                    </div>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isFriendActive ? 'bg-[#22C55E]' : 'bg-neutral-300'
+                        }`}
+                      />
+                      <span
+                        className={`text-[10px] font-black tracking-wider uppercase ${
+                          isFriendActive ? 'text-[#15803D]' : 'text-neutral-400'
+                        }`}
+                      >
+                        {friend.activityStatus || (isFriendActive ? 'ACTIVE' : 'INACTIVE')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Instagram Story Share Modal */}

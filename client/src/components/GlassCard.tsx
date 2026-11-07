@@ -5,6 +5,7 @@ interface GlassCardProps {
   className?: string;
   interactive?: boolean;
   glow?: boolean;
+  dark?: boolean;
   onClick?: () => void;
 }
 
@@ -13,8 +14,27 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   className = '',
   interactive = false,
   glow = false,
+  dark = false,
   onClick,
 }) => {
+  const isDark = dark || className.includes('bg-[#0') || className.includes('bg-[#1') || className.includes('dark');
+
+  if (isDark) {
+    return (
+      <div
+        onClick={onClick}
+        className={`rounded-3xl backdrop-blur-2xl p-6 md:p-8 transition-all duration-300 bg-[#0B2516]/90 border border-[#86EFAC]/20 shadow-[0_12px_32px_rgba(0,0,0,0.35)] text-white ${
+          interactive
+            ? 'hover:bg-[#0E301D] hover:border-[#86EFAC]/40 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(34,197,94,0.18)] cursor-pointer'
+            : ''
+        } ${
+          glow ? 'border-[#22C55E]/40 shadow-[0_12px_32px_rgba(34,197,94,0.25)]' : ''
+        } ${className}`}
+      >
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       onClick={onClick}
