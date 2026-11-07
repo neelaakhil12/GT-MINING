@@ -16,12 +16,10 @@ import {
   ArrowRight,
   CheckCircle2,
   User as UserIcon,
-  KeyRound,
   Mail,
   AlertTriangle,
   LogOut,
   Save,
-  Lock,
   Trash2,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
@@ -40,20 +38,10 @@ export const ProfileScreen: React.FC = () => {
       setFullName(user.fullName);
     }
   }, [user]);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
 
   const handleSaveProfile = () => {
     Alert.alert('Profile Updated!', 'Your display name has been saved.');
-  };
-
-  const handleUpdatePassword = () => {
-    Alert.alert('Password Updated!', 'Your new password is now active.');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
   };
 
   const handleRequestEmail = () => {
@@ -162,60 +150,7 @@ export const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* 3. Change Account Password Card */}
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeaderRow}>
-              <KeyRound size={16} color="#16A34A" />
-              <Text style={styles.sectionHeaderTitle}>Change Account Password</Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Current Password</Text>
-              <TextInput
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
-                style={styles.textInput}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>New Password (min 6 chars)</Text>
-              <TextInput
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
-                style={styles.textInput}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Confirm New Password</Text>
-              <TextInput
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
-                style={styles.textInput}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={handleUpdatePassword}
-              style={styles.saveBtn}
-              activeOpacity={0.85}
-            >
-              <Lock size={14} color="#FFFFFF" />
-              <Text style={styles.saveBtnText}>Update Password</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 4. Request Email Change Card */}
+          {/* 3. Request Email Change Card */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeaderRow}>
               <Mail size={16} color="#16A34A" />

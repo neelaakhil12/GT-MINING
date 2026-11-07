@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   User,
-  KeyRound,
   Mail,
   ShieldCheck,
   ShieldAlert,
   AlertTriangle,
   Save,
   Trash2,
-  Lock,
   LogOut,
   Sparkles,
   CheckCircle2
@@ -25,9 +23,6 @@ export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
 
   const [deleteModal, setDeleteModal] = useState(false);
@@ -35,7 +30,6 @@ export const ProfilePage: React.FC = () => {
   const [deletePassword, setDeletePassword] = useState('');
 
   const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
   const [requestingEmail, setRequestingEmail] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -54,33 +48,6 @@ export const ProfilePage: React.FC = () => {
       showToast(err.message || 'Failed to update profile', 'error');
     } finally {
       setSavingProfile(false);
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      showToast('New password must be at least 6 characters', 'error');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showToast('New passwords do not match', 'error');
-      return;
-    }
-
-    setSavingPassword(true);
-    try {
-      const res = await api.changePassword({ currentPassword, newPassword });
-      if (res.success) {
-        showToast('Password changed successfully!', 'success');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Password update failed', 'error');
-    } finally {
-      setSavingPassword(false);
     }
   };
 
@@ -205,61 +172,6 @@ export const ProfilePage: React.FC = () => {
           >
             <Save className="w-4 h-4" />
             <span>{savingProfile ? 'Saving...' : 'Save Profile Changes'}</span>
-          </button>
-        </form>
-      </GlassCard>
-
-      {/* Security: Change Password */}
-      <GlassCard className="space-y-4">
-        <h2 className="text-base font-black text-[#0A341B] flex items-center gap-2">
-          <KeyRound className="w-4.5 h-4.5 text-[#16A34A]" />
-          <span>Change Account Password</span>
-        </h2>
-
-        <form onSubmit={handleChangePassword} className="space-y-3.5 max-w-md">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#1E5E36]">Current Password</label>
-            <input
-              type="password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#0A341B] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#1E5E36]">New Password (min 6 chars)</label>
-            <input
-              type="password"
-              required
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#0A341B] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#1E5E36]">Confirm New Password</label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#0A341B] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={savingPassword}
-            className="px-6 py-3 rounded-2xl font-bold text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_6px_20px_rgba(34,197,94,0.35)] hover:shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
-          >
-            <Lock className="w-4 h-4" />
-            <span>{savingPassword ? 'Updating...' : 'Update Password'}</span>
           </button>
         </form>
       </GlassCard>
