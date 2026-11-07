@@ -606,10 +606,10 @@ export const AdminTasksPage: React.FC = () => {
 
       {/* Modal: Create or Edit Task */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-xl rounded-3xl bg-[#092215] border-2 border-[#86EFAC]/40 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+          <div className="w-full max-w-xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3.5rem)] flex flex-col rounded-3xl bg-[#092215] border-2 border-[#86EFAC]/40 shadow-2xl my-auto overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-[#092215] shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-[#22C55E]/20 text-[#86EFAC] flex items-center justify-center">
                   <Video className="w-4 h-4" />
@@ -619,6 +619,7 @@ export const AdminTasksPage: React.FC = () => {
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white cursor-pointer"
               >
@@ -626,7 +627,9 @@ export const AdminTasksPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveTask} className="space-y-4">
+            <form onSubmit={handleSaveTask} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               {/* Task Category Selection */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-[#A7C9B1]">Task Category *</label>
@@ -804,25 +807,26 @@ export const AdminTasksPage: React.FC = () => {
                   Make task live immediately across app & website
                 </label>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 rounded-xl text-xs font-black text-[#07130D] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] hover:brightness-110 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? 'Publishing...' : editingTask ? 'Update Task' : 'Publish Task 🚀'}
-                </button>
-              </div>
-            </form>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10 bg-[#092215] shrink-0 sticky bottom-0 z-10">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl text-xs font-black text-[#07130D] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] hover:brightness-110 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+              >
+                {saving ? 'Publishing...' : editingTask ? 'Update Task' : 'Publish Task 🚀'}
+              </button>
+            </div>
+          </form>
           </div>
         </div>
       )}

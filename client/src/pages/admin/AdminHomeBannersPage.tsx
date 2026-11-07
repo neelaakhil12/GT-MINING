@@ -308,9 +308,10 @@ export const AdminHomeBannersPage: React.FC = () => {
 
       {/* CREATE / EDIT HOME BANNER MODAL */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-          <div className="w-full max-w-xl p-6 sm:p-7 rounded-3xl bg-[#092215] border-2 border-[#FBBF24]/50 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-white/15 pb-3">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3.5rem)] flex flex-col rounded-3xl bg-[#092215] border-2 border-[#FBBF24]/50 shadow-2xl my-auto overflow-hidden animate-in fade-in duration-200">
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between border-b border-white/15 px-6 py-4 bg-[#092215] shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-xl bg-[#FBBF24]/20 text-[#FBBF24] flex items-center justify-center font-bold">
                   {editingBanner ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -320,6 +321,7 @@ export const AdminHomeBannersPage: React.FC = () => {
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
               >
@@ -327,7 +329,9 @@ export const AdminHomeBannersPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveBanner} className="space-y-4">
+            <form onSubmit={handleSaveBanner} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               {/* Tag & Display Order */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -489,25 +493,26 @@ export const AdminHomeBannersPage: React.FC = () => {
                   Active (show this banner in Home carousel)
                 </label>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/15">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2.5 rounded-xl text-xs font-black text-[#07130D] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] hover:brightness-110 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : editingBanner ? 'Update Banner' : 'Add Banner 🚀'}
-                </button>
-              </div>
-            </form>
+            {/* Sticky Actions Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/15 bg-[#092215] shrink-0 sticky bottom-0 z-10">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl text-xs font-black text-[#07130D] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] hover:brightness-110 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : editingBanner ? 'Update Banner' : 'Add Banner 🚀'}
+              </button>
+            </div>
+          </form>
           </div>
         </div>
       )}
