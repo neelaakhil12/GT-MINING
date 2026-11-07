@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ImagePlus,
   Plus,
@@ -9,19 +9,12 @@ import {
   Eye,
   CheckCircle2,
   X,
-  Palette,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
-
-const COLOR_PRESETS = [
-  { name: 'Emerald Green', accent: '#22C55E', start: '#0A2A18', end: '#05180E' },
-  { name: 'Cyan Sky', accent: '#38BDF8', start: '#07241C', end: '#041611' },
-  { name: 'Royal Purple', accent: '#A855F7', start: '#121829', end: '#060A14' },
-  { name: 'Amber Gold', accent: '#F59E0B', start: '#2A1A07', end: '#140D04' },
-  { name: 'Rose Red', accent: '#F43F5E', start: '#2A0A12', end: '#140509' },
-];
 
 export const AdminHomeBannersPage: React.FC = () => {
   const { showToast } = useToast();
@@ -39,10 +32,11 @@ export const AdminHomeBannersPage: React.FC = () => {
   const [accentColor, setAccentColor] = useState('#22C55E');
   const [gradientStart, setGradientStart] = useState('#0A2A18');
   const [gradientEnd, setGradientEnd] = useState('#05180E');
-  const [imageUrl, setImageUrl] = useState('/banners/slide1.jpg');
+  const [imageUrl, setImageUrl] = useState('');
   const [order, setOrder] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchBanners();
@@ -50,6 +44,23 @@ export const AdminHomeBannersPage: React.FC = () => {
     window.addEventListener('gt_db_updated', handleUpdate);
     return () => window.removeEventListener('gt_db_updated', handleUpdate);
   }, []);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size should be less than 5MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setImageUrl(reader.result);
+        showToast('Banner image selected successfully!', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchBanners = async () => {
     try {
@@ -74,7 +85,7 @@ export const AdminHomeBannersPage: React.FC = () => {
     setAccentColor('#22C55E');
     setGradientStart('#0A2A18');
     setGradientEnd('#05180E');
-    setImageUrl('/banners/slide1.jpg');
+    setImageUrl('');
     setOrder(banners.length + 1);
     setIsActive(true);
     setModalOpen(true);
@@ -90,22 +101,20 @@ export const AdminHomeBannersPage: React.FC = () => {
     setAccentColor(banner.accentColor || '#22C55E');
     setGradientStart(banner.gradientStart || '#0A2A18');
     setGradientEnd(banner.gradientEnd || '#05180E');
-    setImageUrl(banner.imageUrl || '/banners/slide1.jpg');
+    setImageUrl(banner.imageUrl || '');
     setOrder(banner.order || 1);
     setIsActive(banner.isActive !== false);
     setModalOpen(true);
-  };
-
-  const handleApplyPreset = (preset: typeof COLOR_PRESETS[0]) => {
-    setAccentColor(preset.accent);
-    setGradientStart(preset.start);
-    setGradientEnd(preset.end);
   };
 
   const handleSaveBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       showToast('Title and description are required', 'error');
+      return;
+    }
+    if (!imageUrl.trim()) {
+      showToast('Please upload a banner background image', 'error');
       return;
     }
 
@@ -401,37 +410,70 @@ export const AdminHomeBannersPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Color Themes & Palette Presets */}
+              {/* Banner Background Image Upload */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-[#A7C9B1] flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-[#FBBF24]" />
-                    <span>Card Color Theme Presets</span>
+                    <ImageIcon className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Banner Background Image *</span>
                   </label>
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove Image</span>
+                    </button>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {COLOR_PRESETS.map((p, i) => (
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+
+                {/* Choose Image to Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#0F3520] hover:bg-[#16492C] border-2 border-dashed border-[#22C55E]/50 hover:border-[#22C55E] text-[#86EFAC] text-xs font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md group"
+                >
+                  <Upload className="w-4 h-4 text-[#22C55E] group-hover:scale-110 transition-transform" />
+                  <span>Choose Banner Image to Upload</span>
+                  <span className="text-[10px] text-[#A7C9B1] font-normal font-mono">(PNG, JPG, WebP up to 5MB)</span>
+                </button>
+
+                {/* Live Image Preview */}
+                {imageUrl && (
+                  <div className="w-full h-36 rounded-xl overflow-hidden bg-black/70 border-2 border-[#22C55E]/50 mt-2 relative shadow-lg">
+                    <img
+                      src={imageUrl}
+                      alt="Banner Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 pointer-events-none" />
+                    <span className="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2.5 py-0.5 rounded text-[#86EFAC] font-mono border border-white/10">
+                      Live Banner Image Preview
+                    </span>
                     <button
-                      key={i}
                       type="button"
-                      onClick={() => handleApplyPreset(p)}
-                      className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
-                        accentColor === p.accent
-                          ? 'border-white bg-white/10 ring-2 ring-[#22C55E]'
-                          : 'border-white/10 bg-black/30 hover:border-white/30'
-                      }`}
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 text-red-400 hover:text-white hover:bg-red-600 transition-colors cursor-pointer"
+                      title="Remove image"
                     >
-                      <div
-                        className="w-4 h-4 rounded-full mx-auto mb-1 border border-white/20"
-                        style={{ backgroundColor: p.accent }}
-                      />
-                      <span className="text-[10px] font-bold text-white block truncate">
-                        {p.name}
-                      </span>
+                      <X className="w-4 h-4" />
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Active Toggle */}
