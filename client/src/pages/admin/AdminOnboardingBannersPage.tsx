@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sliders,
   Plus,
@@ -13,6 +13,7 @@ import {
   Smartphone,
   Sparkles,
   X,
+  Upload,
   ExternalLink,
 } from 'lucide-react';
 import { api } from '../../services/api';
@@ -111,6 +112,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
   const [stepNumber, setStepNumber] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchBanners();
@@ -183,6 +185,10 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       showToast('Title and description are required', 'error');
+      return;
+    }
+    if (!imageUrl.trim()) {
+      showToast('Please upload a slide image or select a preset', 'error');
       return;
     }
 
@@ -529,56 +535,90 @@ export const AdminOnboardingBannersPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Image URL & Sample presets */}
+              {/* Slide Background Image Upload & Presets (URL text input removed) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#A7C9B1]">Slide Background Image URL</label>
-                  <span className="text-[10px] text-[#86EFAC]">Pick sample or paste URL</span>
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="/onboarding/story_1.jpg or https://..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-mono text-[11px]"
-                />
-
-                {/* Upload File button & presets */}
-                <div className="flex items-center gap-2 pt-1">
-                  <label className="px-3 py-1.5 rounded-xl bg-[#22C55E]/20 hover:bg-[#22C55E]/30 text-[#86EFAC] text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-[#22C55E]/40 transition-all">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Upload Custom Image</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFileChange}
-                      className="hidden"
-                    />
+                  <label className="text-xs font-bold text-[#A7C9B1] flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Slide Background Image *</span>
                   </label>
                   {imageUrl && (
-                    <span className="text-[10px] text-[#86EFAC] truncate max-w-[240px]">
-                      Selected: {imageUrl.startsWith('data:') ? 'Custom Uploaded' : imageUrl}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove Image</span>
+                    </button>
                   )}
                 </div>
 
-                {/* Preset Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  {ONBOARDING_SAMPLE_IMAGES.map((preset, i) => (
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+
+                {/* Main Choose Image to Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#0F3520] hover:bg-[#16492C] border-2 border-dashed border-[#22C55E]/50 hover:border-[#22C55E] text-[#86EFAC] text-xs font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md group"
+                >
+                  <Upload className="w-4 h-4 text-[#22C55E] group-hover:scale-110 transition-transform" />
+                  <span>Choose Slide Image to Upload</span>
+                  <span className="text-[10px] text-[#A7C9B1] font-normal font-mono">(PNG, JPG, WebP up to 5MB)</span>
+                </button>
+
+                {/* Image Live Preview */}
+                {imageUrl && (
+                  <div className="w-full h-44 rounded-xl overflow-hidden bg-black/70 border-2 border-[#22C55E]/50 mt-2 relative shadow-lg">
+                    <img
+                      src={imageUrl}
+                      alt="Slide Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 pointer-events-none" />
+                    <span className="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2.5 py-0.5 rounded text-[#86EFAC] font-mono border border-white/10">
+                      Live Slide Image Preview
+                    </span>
                     <button
-                      key={i}
                       type="button"
-                      onClick={() => setImageUrl(preset.url)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                        imageUrl === preset.url
-                          ? 'bg-[#22C55E]/30 text-[#86EFAC] border-[#22C55E]'
-                          : 'bg-white/5 text-[#A7C9B1] border-white/10 hover:border-white/30'
-                      }`}
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 text-red-400 hover:text-white hover:bg-red-600 transition-colors cursor-pointer"
+                      title="Remove image"
                     >
-                      {preset.name}
+                      <X className="w-4 h-4" />
                     </button>
-                  ))}
+                  </div>
+                )}
+
+                {/* Optional Preset Chips */}
+                <div className="pt-1 space-y-1">
+                  <span className="text-[10px] text-[#A7C9B1] block">Or pick an official slide preset:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {ONBOARDING_SAMPLE_IMAGES.map((preset, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setImageUrl(preset.url)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          imageUrl === preset.url
+                            ? 'bg-[#22C55E]/30 text-[#86EFAC] border-[#22C55E]'
+                            : 'bg-white/5 text-[#A7C9B1] border-white/10 hover:border-white/30'
+                        }`}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
