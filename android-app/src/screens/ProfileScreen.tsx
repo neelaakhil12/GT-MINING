@@ -26,30 +26,88 @@ import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE_URL } from '../config/api';
+import { appStorage } from '../services/storage';
 
 export const ProfileScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUserData, logout } = useAuth();
   const navigation = useNavigation();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
+  const [newEmail, setNewEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingRequest, setPendingRequest] = useState<any>(null);
 
   useEffect(() => {
     if (user?.fullName) {
       setFullName(user.fullName);
     }
   }, [user]);
-  const [newEmail, setNewEmail] = useState('');
+
+  const fetchEmailStatus = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const res = await fetch(`${API_BASE_URL}/profile/email-change-status`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (data && data.success && data.request) {
+        setPendingRequest(data.request);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    refreshUserData?.();
+    fetchEmailStatus();
+  }, []);
 
   const handleSaveProfile = () => {
     Alert.alert('Profile Updated!', 'Your display name has been saved.');
   };
 
-  const handleRequestEmail = () => {
-    Alert.alert('Verification Sent!', `Link sent to ${newEmail || 'new email'}.`);
-    setNewEmail('');
-  };
+  const handleRequestEmail = async () => {
+    const clean = newEmail.trim().toLowerCase();
+    if (!clean || !clean.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (user?.email && clean === user.email.toLowerCase()) {
+      Alert.alert('Notice', 'New email cannot be the same as your current email.');
+      return;
+    }
 
-  const { logout } = useAuth();
+    setSubmitting(true);
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const res = await fetch(`${API_BASE_URL}/profile/request-email-change`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ newEmail: clean }),
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        Alert.alert(
+          'Request Submitted!',
+          data.message || 'Administrator will review and approve your email change.'
+        );
+        setNewEmail('');
+        await fetchEmailStatus();
+      } else {
+        Alert.alert('Request Failed', data.message || 'Unable to submit email change request.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Network error submitting request.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -86,7 +144,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={{ gap: 2 }}>
                 <Text style={styles.userNameTitle}>{fullName}</Text>
                 <Text style={styles.userEmailSubtitle}>
-                  {user?.email || 'demo@gtmining.com'}
+                  {user?.email || ''}
                 </Text>
                 <View style={styles.statusBadge}>
                   <ShieldCheck size={12} color="#16A34A" />
@@ -158,8 +216,17 @@ export const ProfileScreen: React.FC = () => {
             </View>
 
             <Text style={styles.emailNoticeText}>
-              Current email is <Text style={{ fontWeight: '800' }}>{user?.email || 'demo@gtmining.com'}</Text>. Entering a new email sends a verification link to confirm ownership.
+              Current email is <Text style={{ fontWeight: '800' }}>{user?.email || 'your registered email'}</Text>. Submit a new email address to request an email change. Once approved by the administrator, your login email will be updated.
             </Text>
+
+            {pendingRequest && pendingRequest.status === 'PENDING' && (
+              <View style={{ backgroundColor: '#FEF3C7', borderColor: '#F59E0B', borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>Pending Admin Approval</Text>
+                <Text style={{ fontSize: 11, color: '#78350F', marginTop: 2, fontFamily: 'monospace' }}>
+                  Requested: {pendingRequest.requestedNewEmail}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>New Email Address</Text>
@@ -170,15 +237,19 @@ export const ProfileScreen: React.FC = () => {
                 placeholderTextColor="#9CA3AF"
                 style={styles.textInput}
                 keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
 
             <TouchableOpacity
               onPress={handleRequestEmail}
-              style={styles.sendEmailBtn}
+              disabled={submitting}
+              style={[styles.sendEmailBtn, submitting ? { opacity: 0.6 } : null]}
               activeOpacity={0.85}
             >
-              <Text style={styles.sendEmailBtnText}>Send Verification Request</Text>
+              <Text style={styles.sendEmailBtnText}>
+                {submitting ? 'Submitting Request...' : 'Send Change Request'}
+              </Text>
             </TouchableOpacity>
           </View>
 

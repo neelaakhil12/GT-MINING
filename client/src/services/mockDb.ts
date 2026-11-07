@@ -83,6 +83,7 @@ export interface MockDatabase {
   posts: CommunityPostItem[];
   onboardingBanners: OnboardingBannerItem[];
   homeBanners: HomeBannerItem[];
+  emailChangeRequests?: Array<any>;
   privateNetworks?: Record<string, any>;
   referrals?: Array<any>;
 }
@@ -142,6 +143,7 @@ const defaultDb: MockDatabase = {
   },
   claims: [],
   transactions: [],
+  emailChangeRequests: [],
   posts: [
     {
       id: "post_live_004",
@@ -1044,6 +1046,70 @@ export const handleMockApi = (endpoint: string, options: RequestInit = {}): any 
       user: currentUser,
       wallet: currentWallet,
     };
+  }
+
+  // Email Change Requests (User & Admin)
+  if (endpoint === '/profile/request-email-change' && method === 'POST') {
+    if (!db.emailChangeRequests) db.emailChangeRequests = [];
+    const newEmail = (body.newEmail || '').toLowerCase().trim();
+    const existing = db.users.find(u => u.email.toLowerCase() === newEmail && u.id !== currentUser.id);
+    if (existing) {
+      return { success: false, message: 'This email is already in use by another account.' };
+    }
+    const newReq = {
+      id: `emr_${Date.now()}`,
+      userId: currentUser.id,
+      userFullName: currentUser.fullName,
+      currentEmail: currentUser.email,
+      requestedNewEmail: newEmail,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    db.emailChangeRequests.push(newReq);
+    saveMockDb(db);
+    return {
+      success: true,
+      message: `Email change request submitted! Administrator will review and approve your request for ${newEmail}.`,
+      request: newReq,
+    };
+  }
+
+  if (endpoint === '/profile/email-change-status') {
+    const list = (db.emailChangeRequests || []).filter(r => r.userId === currentUser.id);
+    return { success: true, request: list[list.length - 1] || null };
+  }
+
+  if (endpoint === '/admin/email-change-requests') {
+    return { success: true, requests: (db.emailChangeRequests || []).slice().reverse() };
+  }
+
+  if (endpoint.startsWith('/admin/email-change-requests/') && endpoint.endsWith('/approve') && method === 'POST') {
+    const parts = endpoint.split('/');
+    const reqId = parts[3];
+    if (!db.emailChangeRequests) db.emailChangeRequests = [];
+    const reqItem = db.emailChangeRequests.find(r => r.id === reqId);
+    if (!reqItem) return { success: false, message: 'Request not found' };
+    const usr = db.users.find(u => u.id === reqItem.userId);
+    if (usr) {
+      usr.email = reqItem.requestedNewEmail.toLowerCase();
+    }
+    reqItem.status = 'APPROVED';
+    reqItem.reviewedAt = new Date().toISOString();
+    saveMockDb(db);
+    return { success: true, message: `Email change approved! User will now log in with ${reqItem.requestedNewEmail}`, request: reqItem };
+  }
+
+  if (endpoint.startsWith('/admin/email-change-requests/') && endpoint.endsWith('/reject') && method === 'POST') {
+    const parts = endpoint.split('/');
+    const reqId = parts[3];
+    if (!db.emailChangeRequests) db.emailChangeRequests = [];
+    const reqItem = db.emailChangeRequests.find(r => r.id === reqId);
+    if (!reqItem) return { success: false, message: 'Request not found' };
+    reqItem.status = 'REJECTED';
+    reqItem.reason = body.reason || 'Rejected by administrator';
+    reqItem.reviewedAt = new Date().toISOString();
+    saveMockDb(db);
+    return { success: true, message: 'Email change request rejected', request: reqItem };
   }
 
   // Fallback

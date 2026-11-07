@@ -24,6 +24,7 @@ export const ProfilePage: React.FC = () => {
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [newEmail, setNewEmail] = useState('');
+  const [pendingRequest, setPendingRequest] = useState<any>(null);
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -32,6 +33,19 @@ export const ProfilePage: React.FC = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [requestingEmail, setRequestingEmail] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const fetchEmailStatus = async () => {
+    try {
+      const res = await api.getEmailChangeStatus();
+      if (res.success && res.request) {
+        setPendingRequest(res.request);
+      }
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    fetchEmailStatus();
+  }, []);
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +76,9 @@ export const ProfilePage: React.FC = () => {
     try {
       const res = await api.requestEmailChange(newEmail.trim());
       if (res.success) {
-        showToast(res.message || 'Verification link sent to new email.', 'success');
+        showToast(res.message || 'Email change request submitted! Admin will review and approve.', 'success');
         setNewEmail('');
+        await fetchEmailStatus();
       }
     } catch (err: any) {
       showToast(err.message || 'Email change request failed', 'error');
@@ -183,8 +198,20 @@ export const ProfilePage: React.FC = () => {
           <span>Request Email Change</span>
         </h2>
         <p className="text-xs text-[#1E5E36] font-medium leading-relaxed">
-          Current email is <strong className="text-[#0A341B]">{user?.email}</strong>. Entering a new email sends a verification link to confirm ownership.
+          Current registered email is <strong className="text-[#0A341B]">{user?.email}</strong>. Submit a new email address to request an account email change. Once approved by the administrator, your login email will be updated.
         </p>
+
+        {pendingRequest && pendingRequest.status === 'PENDING' && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-800 flex items-center justify-between">
+            <div>
+              <span className="font-bold block text-amber-900">Pending Admin Approval</span>
+              <span className="text-[11px] font-mono">Requested: {pendingRequest.requestedNewEmail}</span>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-200 text-amber-900 uppercase">
+              Under Review
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleRequestEmailChange} className="space-y-3.5 max-w-md">
           <div className="space-y-1.5">
@@ -202,9 +229,9 @@ export const ProfilePage: React.FC = () => {
           <button
             type="submit"
             disabled={requestingEmail}
-            className="px-6 py-3 rounded-2xl font-bold text-xs text-[#15803D] bg-white hover:bg-white/80 border border-white shadow-sm flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
+            className="px-6 py-3 rounded-2xl font-bold text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_6px_20px_rgba(34,197,94,0.35)] hover:shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
           >
-            <span>{requestingEmail ? 'Sending...' : 'Send Verification Request'}</span>
+            <span>{requestingEmail ? 'Submitting Request...' : 'Send Change Request'}</span>
           </button>
         </form>
       </GlassCard>

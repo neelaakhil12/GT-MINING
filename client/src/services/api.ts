@@ -95,6 +95,7 @@ export const api = {
   updateProfile: (body: any) => request<any>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   changePassword: (body: any) => request<any>('/profile/change-password', { method: 'POST', body: JSON.stringify(body) }),
   requestEmailChange: (newEmail: string) => request<any>('/profile/request-email-change', { method: 'POST', body: JSON.stringify({ newEmail }) }),
+  getEmailChangeStatus: () => request<any>('/profile/email-change-status'),
   deleteAccount: (body: any) => request<any>('/profile', { method: 'DELETE', body: JSON.stringify(body) }),
 
   // Notifications
@@ -118,6 +119,9 @@ export const api = {
     return request<any>(`/admin/users?${params.toString()}`);
   },
   updateUserStatus: (id: string, body: any) => request<any>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  getAdminEmailRequests: () => request<any>('/admin/email-change-requests'),
+  approveEmailRequest: (id: string) => request<any>(`/admin/email-change-requests/${id}/approve`, { method: 'POST' }),
+  rejectEmailRequest: (id: string, reason?: string) => request<any>(`/admin/email-change-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
   getMiningSettings: () => request<any>('/admin/mining-settings'),
   updateMiningSettings: (body: any) => request<any>('/admin/mining-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getAdminReferrals: () => request<any>('/admin/referrals'),

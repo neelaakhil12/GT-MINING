@@ -703,4 +703,86 @@ router.delete('/tasks/:id', (req, res) => {
   return res.json({ success: true, message: 'Task deleted successfully.' });
 });
 
+// ---------------------------------------------------------------------------
+// EMAIL CHANGE REQUESTS MANAGEMENT
+// ---------------------------------------------------------------------------
+// GET /api/admin/email-change-requests
+router.get('/email-change-requests', (req, res) => {
+  const db = readDB();
+  const requests = (db.emailChangeRequests || []).slice().reverse();
+  return res.json({ success: true, requests });
+});
+
+// POST /api/admin/email-change-requests/:id/approve
+router.post('/email-change-requests/:id/approve', (req, res) => {
+  const db = readDB();
+  if (!db.emailChangeRequests) db.emailChangeRequests = [];
+  const request = db.emailChangeRequests.find(r => r.id === req.params.id);
+  if (!request) {
+    return res.status(404).json({ success: false, message: 'Request not found' });
+  }
+  if (request.status !== 'PENDING') {
+    return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+  }
+
+  const targetUser = db.users.find(u => u.id === request.userId);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: 'Associated user account not found' });
+  }
+
+  const requestedClean = request.requestedNewEmail.toLowerCase();
+  const emailConflict = db.users.find(u => u.id !== targetUser.id && u.email.toLowerCase() === requestedClean && !u.deletedAt);
+  if (emailConflict) {
+    return res.status(400).json({ success: false, message: 'Requested email is already registered to another account' });
+  }
+
+  const oldEmail = targetUser.email;
+  targetUser.email = requestedClean;
+  targetUser.emailVerifiedAt = new Date().toISOString();
+  targetUser.updatedAt = new Date().toISOString();
+
+  request.status = 'APPROVED';
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = req.user ? req.user.email : 'Master Admin';
+
+  createAuditLog(db, req.user?.id || 'usr_admin_001', 'APPROVE_EMAIL_CHANGE', 'USER', targetUser.id, `Email changed from ${oldEmail} to ${targetUser.email}`);
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: `Email change approved! User will now log in with ${targetUser.email}`,
+    request,
+    user: { id: targetUser.id, email: targetUser.email }
+  });
+});
+
+// POST /api/admin/email-change-requests/:id/reject
+router.post('/email-change-requests/:id/reject', (req, res) => {
+  const db = readDB();
+  if (!db.emailChangeRequests) db.emailChangeRequests = [];
+  const request = db.emailChangeRequests.find(r => r.id === req.params.id);
+  if (!request) {
+    return res.status(404).json({ success: false, message: 'Request not found' });
+  }
+  if (request.status !== 'PENDING') {
+    return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+  }
+
+  request.status = 'REJECTED';
+  request.reason = req.body.reason || 'Rejected by administrator';
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = req.user ? req.user.email : 'Master Admin';
+
+  createAuditLog(db, req.user?.id || 'usr_admin_001', 'REJECT_EMAIL_CHANGE', 'USER', request.userId, `Email change request for ${request.requestedNewEmail} rejected: ${request.reason}`);
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: 'Email change request rejected',
+    request
+  });
+});
+
 export default router;

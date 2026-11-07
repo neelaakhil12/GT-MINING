@@ -111,16 +111,60 @@ router.post('/request-email-change', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, message: 'A valid new email address is required.' });
   }
 
+  const cleanNewEmail = newEmail.trim().toLowerCase();
+  if (req.user.email.toLowerCase() === cleanNewEmail) {
+    return res.status(400).json({ success: false, message: 'New email cannot be the same as your current email.' });
+  }
+
   const db = readDB();
-  const existing = db.users.find(u => u.email.toLowerCase() === newEmail.trim().toLowerCase() && !u.deletedAt);
+  const existing = db.users.find(u => u.email.toLowerCase() === cleanNewEmail && !u.deletedAt && u.id !== req.user.id);
   if (existing) {
     return res.status(400).json({ success: false, message: 'This email is already in use by another account.' });
   }
 
+  if (!db.emailChangeRequests) db.emailChangeRequests = [];
+
+  // Check if user already has a pending request
+  const existingReq = db.emailChangeRequests.find(r => r.userId === req.user.id && r.status === 'PENDING');
+  if (existingReq) {
+    existingReq.requestedNewEmail = cleanNewEmail;
+    existingReq.updatedAt = new Date().toISOString();
+    writeDB(db);
+    return res.json({
+      success: true,
+      message: `Pending email change request updated to ${cleanNewEmail}. Waiting for Administrator approval.`,
+      request: existingReq
+    });
+  }
+
+  const newRequest = {
+    id: generateId('emr'),
+    userId: req.user.id,
+    userFullName: req.user.fullName,
+    currentEmail: req.user.email,
+    requestedNewEmail: cleanNewEmail,
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+    reviewedAt: null,
+    reviewedBy: null
+  };
+
+  db.emailChangeRequests.push(newRequest);
+  writeDB(db);
+
   return res.json({
     success: true,
-    message: `Verification link has been sent to ${newEmail.trim()}. Please verify to finalize your email change.`
+    message: `Email change request submitted! Administrator will review and approve your request for ${cleanNewEmail}.`,
+    request: newRequest
   });
+});
+
+// GET /api/profile/email-change-status
+router.get('/email-change-status', requireAuth, (req, res) => {
+  const db = readDB();
+  const requests = (db.emailChangeRequests || []).filter(r => r.userId === req.user.id);
+  const latest = requests[requests.length - 1] || null;
+  return res.json({ success: true, request: latest });
 });
 
 // DELETE /api/profile - True Account Deletion with Anonymization & Ledger Protection

@@ -18,6 +18,7 @@ import {
   Gift,
   ShieldAlert,
   Video,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -51,6 +52,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       heading: 'NETWORK MANAGEMENT',
       items: [
         { label: 'Users Directory', path: '/admin/users', icon: Users },
+        { label: 'Email Change Requests', path: '/admin/email-requests', icon: Mail },
         { label: 'Mining Settings', path: '/admin/mining-settings', icon: Pickaxe },
         { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
         { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
@@ -78,6 +80,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/home-banners')) return 'Home Page Carousel Banners';
     if (p.includes('/tasks')) return 'Daily & Video Tasks Quests';
     if (p.includes('/users')) return 'Users Directory';
+    if (p.includes('/email-requests')) return 'Email Change Requests';
     if (p.includes('/mining-settings')) return 'Mining Protocol Settings';
     if (p.includes('/referrals')) return 'Referral Commissions & Dividends';
     if (p.includes('/transactions')) return 'Transactions & Balances';
