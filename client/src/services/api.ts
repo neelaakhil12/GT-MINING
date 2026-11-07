@@ -141,6 +141,14 @@ export const api = {
   updateAdminHomeBanner: (id: string, body: any) => request<any>(`/admin/home-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAdminHomeBanner: (id: string) => request<any>(`/admin/home-banners/${id}`, { method: 'DELETE' }),
   getPublicHomeBanners: () => request<any>('/home-banners'),
+
+  // Tasks & Video Quests
+  getAdminTasks: () => request<any>('/admin/tasks'),
+  createAdminTask: (body: any) => request<any>('/admin/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  updateAdminTask: (id: string, body: any) => request<any>(`/admin/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminTask: (id: string) => request<any>(`/admin/tasks/${id}`, { method: 'DELETE' }),
+  getPublicTasks: () => request<any>('/tasks'),
+
   getAdminSettings: () => request<any>('/admin/settings'),
   updateAdminSettings: (body: any) => request<any>('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getAdminAuditLogs: () => request<any>('/admin/audit-logs'),

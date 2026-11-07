@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Check, Play, Sparkles } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { api } from '../services/api';
 
 interface TaskItem {
   id: string;
@@ -223,9 +224,23 @@ export const TasksPage: React.FC = () => {
     }
   });
 
-  // Video watching simulation state (10s demo countdown)
+  // Video watching simulation state
+  const [tasksList, setTasksList] = useState<TaskItem[]>(TASKS_DATA);
+  const [activeVideoTask, setActiveVideoTask] = useState<TaskItem | null>(null);
   const [videoTimer, setVideoTimer] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await api.getPublicTasks();
+        if (res && res.success && Array.isArray(res.tasks) && res.tasks.length > 0) {
+          setTasksList(res.tasks);
+        }
+      } catch {}
+    };
+    fetchTasks();
+  }, []);
 
   // Sync state to localStorage
   useEffect(() => {
@@ -236,17 +251,19 @@ export const TasksPage: React.FC = () => {
   // Video demo timer effect
   useEffect(() => {
     let interval: any = null;
-    if (videoTimer !== null && videoTimer > 0) {
+    if (activeVideoTask && videoTimer !== null && videoTimer > 0) {
       interval = setInterval(() => {
         setVideoTimer((prev) => {
           if (prev === null || prev <= 1) {
             clearInterval(interval);
-            handleCompleteTask('task_video', 2);
+            handleCompleteTask(activeVideoTask.id, activeVideoTask.reward || 2);
             setVideoProgress(100);
+            setActiveVideoTask(null);
             return null;
           }
           const next = prev - 1;
-          setVideoProgress(Math.round(((10 - next) / 10) * 100));
+          const totalSec = (activeVideoTask as any).duration || 15;
+          setVideoProgress(Math.round(((totalSec - next) / totalSec) * 100));
           return next;
         });
       }, 1000);
@@ -254,7 +271,7 @@ export const TasksPage: React.FC = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [videoTimer]);
+  }, [videoTimer, activeVideoTask]);
 
   const handleCompleteTask = (taskId: string, rewardAmount: number) => {
     if (completedTasks.includes(taskId)) return;
@@ -270,11 +287,16 @@ export const TasksPage: React.FC = () => {
       return;
     }
 
-    if (task.id === 'task_video') {
+    if (task.category === 'video') {
       if (videoTimer !== null) return;
-      setVideoTimer(10);
+      const watchSec = (task as any).duration || 15;
+      setActiveVideoTask(task);
+      setVideoTimer(watchSec);
       setVideoProgress(0);
-      showToast('Watching demo video (10 seconds)...', 'info');
+      if (task.url && task.url !== '#') {
+        window.open(task.url, '_blank', 'noopener,noreferrer');
+      }
+      showToast(`Watching video quest (${watchSec}s)... GT will be credited after timer!`, 'info');
       return;
     }
 
@@ -284,15 +306,15 @@ export const TasksPage: React.FC = () => {
     }
 
     // Simulate task completion with immediate reward reward
-    handleCompleteTask(task.id, task.reward);
+    handleCompleteTask(task.id, task.reward || 1);
   };
 
-  const filteredTasks = TASKS_DATA.filter((task) => {
+  const filteredTasks = tasksList.filter((task) => {
     if (activeTab === 'all') return true;
     return task.category === activeTab;
   });
 
-  const totalTasks = TASKS_DATA.length;
+  const totalTasks = tasksList.length;
   const completedCount = completedTasks.length;
 
   return (

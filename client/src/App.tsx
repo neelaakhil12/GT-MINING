@@ -34,6 +34,7 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 import { AdminOnboardingBannersPage } from './pages/admin/AdminOnboardingBannersPage';
 import { AdminHomeBannersPage } from './pages/admin/AdminHomeBannersPage';
+import { AdminTasksPage } from './pages/admin/AdminTasksPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -258,6 +259,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminHomeBannersPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/tasks"
+                element={
+                  <AdminRoute>
+                    <AdminTasksPage />
                   </AdminRoute>
                 }
               />

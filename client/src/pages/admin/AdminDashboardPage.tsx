@@ -225,7 +225,7 @@ export const AdminDashboardPage: React.FC = () => {
           <Sparkles className="w-4 h-4 text-[#FBBF24]" />
           <span>Quick Admin Management Actions</span>
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Link
             to="/admin/community"
             className="p-3.5 rounded-2xl bg-[#071F14] border border-[#86EFAC]/20 hover:border-[#86EFAC]/50 flex items-center justify-between group transition-all"
@@ -261,6 +261,19 @@ export const AdminDashboardPage: React.FC = () => {
                 Home Page Carousel Banners
               </span>
               <span className="text-[10px] text-[#A7C9B1]">Add, edit, or delete Home banner slides</span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[#86EFAC] group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          <Link
+            to="/admin/tasks"
+            className="p-3.5 rounded-2xl bg-[#071F14] border border-[#86EFAC]/20 hover:border-[#86EFAC]/50 flex items-center justify-between group transition-all"
+          >
+            <div>
+              <span className="text-xs font-bold text-white group-hover:text-[#86EFAC] transition-colors block">
+                Daily & Video Tasks Quests
+              </span>
+              <span className="text-[10px] text-[#A7C9B1]">Upload videos & social quests</span>
             </div>
             <ArrowRight className="w-4 h-4 text-[#86EFAC] group-hover:translate-x-1 transition-transform" />
           </Link>

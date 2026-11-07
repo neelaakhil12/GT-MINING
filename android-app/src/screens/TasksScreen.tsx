@@ -21,6 +21,7 @@ import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 interface TaskItem {
   id: string;
@@ -137,6 +138,7 @@ export const TasksScreen: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
   const [taskRewards, setTaskRewards] = useState<number>(0);
+  const [tasksList, setTasksList] = useState<TaskItem[]>(TASKS_DATA);
 
   // Auto-cycle slider
   useEffect(() => {
@@ -144,6 +146,27 @@ export const TasksScreen: React.FC = () => {
       setCurrentSlide((prev) => (prev + 1) % TASK_SLIDES.length);
     }, 4000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch live tasks from backend API
+  useEffect(() => {
+    const fetchLiveTasks = async () => {
+      const endpoints = [
+        'http://localhost:5050/api/tasks',
+        `${API_BASE_URL}/tasks`,
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint);
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
+            setTasksList(data.tasks);
+            break;
+          }
+        } catch {}
+      }
+    };
+    fetchLiveTasks();
   }, []);
 
   const filterTabs = [
@@ -162,7 +185,7 @@ export const TasksScreen: React.FC = () => {
     Alert.alert('Task Completed!', `${task.rewardLabel} added to your task rewards.`);
   };
 
-  const filteredTasks = TASKS_DATA.filter((t) => {
+  const filteredTasks = tasksList.filter((t) => {
     if (selectedTab === 'all') return true;
     return t.category === selectedTab;
   });

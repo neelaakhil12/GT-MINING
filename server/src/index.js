@@ -73,6 +73,13 @@ app.get('/api/home-banners', (req, res) => {
   return res.json({ success: true, banners });
 });
 
+// Public Tasks Endpoint
+app.get('/api/tasks', (req, res) => {
+  const db = readDB();
+  const tasks = (db.tasks || []).filter(t => t.isActive !== false);
+  return res.json({ success: true, tasks });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

@@ -228,6 +228,100 @@
       "updatedAt": "2026-11-07T09:47:00.000Z"
     }
   ],
+  "tasks": [
+    {
+      "id": "task_x",
+      "category": "social",
+      "title": "Follow us on X",
+      "description": "Follow the official GT protocol account for instant announcements",
+      "reward": 2,
+      "rewardLabel": "+2 GT",
+      "buttonLabel": "Follow on X",
+      "url": "https://x.com",
+      "iconType": "x",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_instagram",
+      "category": "social",
+      "title": "Follow on Instagram",
+      "description": "Join our official global community",
+      "reward": 2,
+      "rewardLabel": "+2 GT",
+      "buttonLabel": "Follow",
+      "url": "https://instagram.com",
+      "iconType": "instagram",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_youtube",
+      "category": "social",
+      "title": "Subscribe on YouTube",
+      "description": "Subscribe to the GT channel for node guides",
+      "reward": 2,
+      "rewardLabel": "+2 GT",
+      "buttonLabel": "Subscribe",
+      "url": "https://youtube.com",
+      "iconType": "youtube",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_telegram",
+      "category": "social",
+      "title": "Join Telegram",
+      "description": "Join the official GT announcements channel",
+      "reward": 1,
+      "rewardLabel": "+1 GT",
+      "buttonLabel": "Join",
+      "url": "https://t.me",
+      "iconType": "telegram",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_facebook",
+      "category": "social",
+      "title": "Follow on Facebook",
+      "description": "Stay updated with GT ecosystem news",
+      "reward": 1,
+      "rewardLabel": "+1 GT",
+      "buttonLabel": "Follow",
+      "url": "https://facebook.com",
+      "iconType": "facebook",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_tiktok",
+      "category": "social",
+      "title": "Follow on TikTok",
+      "description": "Discover GT short updates and viral reels",
+      "reward": 1,
+      "rewardLabel": "+1 GT",
+      "buttonLabel": "Follow",
+      "url": "https://tiktok.com",
+      "iconType": "tiktok",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "id": "task_video_001",
+      "category": "video",
+      "title": "Watch GT Introduction Video",
+      "description": "Watch the assigned official video to learn how GT decentralized mining works.",
+      "reward": 2,
+      "rewardLabel": "+2 GT",
+      "buttonLabel": "Watch video",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "duration": 15,
+      "iconType": "video",
+      "isActive": true,
+      "createdAt": "2026-10-18T12:00:00.000Z"
+    }
+  ],
   "onboardingBanners": [
     {
       "id": "ob_001",

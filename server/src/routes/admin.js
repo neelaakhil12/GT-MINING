@@ -628,4 +628,61 @@ router.delete('/home-banners/:id', (req, res) => {
   return res.json({ success: true, message: 'Home banner deleted.' });
 });
 
+// Tasks & Video Quests Management
+// GET /api/admin/tasks
+router.get('/tasks', (req, res) => {
+  const db = readDB();
+  return res.json({ success: true, tasks: db.tasks || [] });
+});
+
+// POST /api/admin/tasks
+router.post('/tasks', (req, res) => {
+  const db = readDB();
+  if (!db.tasks) db.tasks = [];
+  const rewardNum = parseFloat(req.body.reward) || 2;
+  const newTask = {
+    id: generateId('task'),
+    category: req.body.category || 'video',
+    title: req.body.title || 'New Task',
+    description: req.body.description || '',
+    reward: rewardNum,
+    rewardLabel: req.body.rewardLabel || `+${rewardNum} GT`,
+    buttonLabel: req.body.buttonLabel || (req.body.category === 'video' ? 'Watch video' : 'Follow'),
+    url: req.body.url || '#',
+    duration: parseInt(req.body.duration, 10) || (req.body.category === 'video' ? 15 : 0),
+    iconType: req.body.iconType || (req.body.category === 'video' ? 'video' : 'x'),
+    isActive: req.body.isActive !== false,
+    createdAt: new Date().toISOString()
+  };
+  db.tasks.push(newTask);
+  createAuditLog(db, req.user?.id || 'admin', 'CREATE_TASK', 'TASK', newTask.id, `Created task "${newTask.title}"`);
+  writeDB(db);
+  return res.status(201).json({ success: true, task: newTask, message: 'Task created successfully.' });
+});
+
+// PATCH /api/admin/tasks/:id
+router.patch('/tasks/:id', (req, res) => {
+  const db = readDB();
+  if (!db.tasks) db.tasks = [];
+  const idx = db.tasks.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Task not found' });
+  db.tasks[idx] = { ...db.tasks[idx], ...req.body, updatedAt: new Date().toISOString() };
+  createAuditLog(db, req.user?.id || 'admin', 'UPDATE_TASK', 'TASK', db.tasks[idx].id, `Updated task "${db.tasks[idx].title}"`);
+  writeDB(db);
+  return res.json({ success: true, task: db.tasks[idx], message: 'Task updated successfully.' });
+});
+
+// DELETE /api/admin/tasks/:id
+router.delete('/tasks/:id', (req, res) => {
+  const db = readDB();
+  if (!db.tasks) db.tasks = [];
+  const deleted = db.tasks.find(t => t.id === req.params.id);
+  db.tasks = db.tasks.filter(t => t.id !== req.params.id);
+  if (deleted) {
+    createAuditLog(db, req.user?.id || 'admin', 'DELETE_TASK', 'TASK', deleted.id, `Deleted task "${deleted.title}"`);
+  }
+  writeDB(db);
+  return res.json({ success: true, message: 'Task deleted successfully.' });
+});
+
 export default router;
