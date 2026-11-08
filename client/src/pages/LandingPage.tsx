@@ -80,6 +80,34 @@ const onboardingSlides: OnboardingSlide[] = [
   },
 ];
 
+// Instant module-level image cache priming for 0ms transitions
+if (typeof window !== 'undefined') {
+  [
+    '/gt-header-logo.png',
+    '/onboarding/story_1.jpg',
+    '/onboarding/story_2.jpg',
+    '/onboarding/story_3.jpg',
+    '/onboarding/story_4.png',
+    '/onboarding/story_5.jpg',
+  ].forEach((src) => {
+    const img = new Image();
+    img.src = src;
+  });
+}
+
+const getInitialSlides = (): OnboardingSlide[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('gt_cached_onboarding_banners');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return onboardingSlides;
+};
+
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, login, signup, googleLogin } = useAuth();
   const { showToast } = useToast();
@@ -105,7 +133,7 @@ export const LandingPage: React.FC = () => {
       setStage('onboarding');
     }
   };
-  const [slides, setSlides] = useState<OnboardingSlide[]>(onboardingSlides);
+  const [slides, setSlides] = useState<OnboardingSlide[]>(getInitialSlides);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [splashProgress, setSplashProgress] = useState(0);
 
@@ -125,6 +153,16 @@ export const LandingPage: React.FC = () => {
           }));
         if (mapped.length > 0) {
           setSlides(mapped);
+          try {
+            localStorage.setItem('gt_cached_onboarding_banners', JSON.stringify(mapped));
+          } catch {}
+          // Preload updated images
+          mapped.forEach((m: any) => {
+            if (m.image) {
+              const img = new Image();
+              img.src = m.image;
+            }
+          });
         }
       }
     } catch {}
@@ -204,9 +242,14 @@ export const LandingPage: React.FC = () => {
     };
   }, [authMode]);
 
-  // Splash Screen Timer & Progress Animation (1.5s)
+  // Splash Screen Timer & Fast Progress Animation (instant ~200ms node sync)
   useEffect(() => {
     if (stage !== 'splash') return;
+
+    if (isAuthenticated && !isTourRequested) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
 
     const interval = setInterval(() => {
       setSplashProgress((prev) => {
@@ -215,9 +258,9 @@ export const LandingPage: React.FC = () => {
           handleProceedFromSplash();
           return 100;
         }
-        return prev + 6;
+        return prev + 25;
       });
-    }, 80);
+    }, 40);
 
     return () => clearInterval(interval);
   }, [stage, isAuthenticated, isTourRequested, navigate]);
@@ -477,8 +520,8 @@ export const LandingPage: React.FC = () => {
                 src={s.image}
                 alt={s.title}
                 loading="eager"
-                decoding="async"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                decoding="sync"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${
                   idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
                 }`}
               />
