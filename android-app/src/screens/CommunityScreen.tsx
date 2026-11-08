@@ -132,14 +132,18 @@ export const CommunityScreen: React.FC = () => {
                 initialLikes[p.id] = true;
               }
             });
-            setLikesCount(prev => ({ ...initialCounts, ...prev }));
-            setLikedPosts(prev => ({ ...initialLikes, ...prev }));
+            setLikesCount(initialCounts);
+            setLikedPosts(initialLikes);
             break;
           }
         } catch {}
       }
     };
     fetchLivePosts();
+    const interval = setInterval(() => {
+      fetchLivePosts();
+    }, 4000);
+    return () => clearInterval(interval);
   }, [user?.id, user?.email]);
 
   const displayedPosts = (() => {

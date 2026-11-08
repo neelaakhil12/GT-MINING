@@ -74,10 +74,14 @@ export const CommunityPage: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
+    const interval = setInterval(() => {
+      fetchPosts(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, [selectedCategory, user?.id, user?.email]);
 
-  const fetchPosts = async () => {
-    setLoading(true);
+  const fetchPosts = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const res = await api.getCommunityPosts();
       if (res.success && res.posts) {
@@ -93,18 +97,18 @@ export const CommunityPage: React.FC = () => {
         }
         setPosts(loaded);
 
-        // Sync initial likes and likesCount from server database
+        // Sync real likes and likesCount from server database
         const userIdentifier = user?.id || user?.email || '';
-        const initialLikes: Record<string, boolean> = {};
-        const initialCounts: Record<string, number> = {};
+        const serverLikes: Record<string, boolean> = {};
+        const serverCounts: Record<string, number> = {};
         loaded.forEach((p: CommunityPost) => {
-          initialCounts[p.id] = Number(p.likesCount || 0);
+          serverCounts[p.id] = Number(p.likesCount || 0);
           if (userIdentifier && Array.isArray(p.likedBy) && p.likedBy.includes(userIdentifier)) {
-            initialLikes[p.id] = true;
+            serverLikes[p.id] = true;
           }
         });
-        setLikesCount(prev => ({ ...initialCounts, ...prev }));
-        setLikedPostIds(prev => ({ ...initialLikes, ...prev }));
+        setLikesCount(serverCounts);
+        setLikedPostIds(serverLikes);
       }
     } catch (err: any) {
       let loaded = hardcodedNodePosts;

@@ -10,7 +10,22 @@ router.get('/posts', (req, res) => {
     const { category, search } = req.query;
 
     const rawPosts = Array.isArray(db.communityPosts) ? db.communityPosts : [];
+    const allComments = Array.isArray(db.communityComments) ? db.communityComments : [];
     let posts = rawPosts.filter(p => p.status === 'PUBLISHED');
+
+    // Dynamically compute authoritative likesCount and commentsCount for every post
+    posts = posts.map(p => {
+      const postComments = allComments.filter(c => c.postId === p.id);
+      const likedBy = Array.isArray(p.likedBy) ? p.likedBy : [];
+      const likesCount = likedBy.length > 0 ? likedBy.length : Number(p.likesCount || 0);
+      const commentsCount = postComments.length > 0 ? postComments.length : Number(p.commentsCount || 0);
+      return {
+        ...p,
+        likedBy,
+        likesCount,
+        commentsCount
+      };
+    });
 
     if (category && category.toLowerCase() === 'latest') {
       // Latest: Sort strictly newest first by updatedAt or createdAt
@@ -97,12 +112,12 @@ router.post('/posts/:id/like', (req, res) => {
     if (alreadyLikedIndex !== -1) {
       // Unlike
       post.likedBy.splice(alreadyLikedIndex, 1);
-      post.likesCount = Math.max(0, (Number(post.likesCount) || 1) - 1);
+      post.likesCount = post.likedBy.length;
       isLiked = false;
     } else {
       // Like
       post.likedBy.push(userId);
-      post.likesCount = (Number(post.likesCount) || 0) + 1;
+      post.likesCount = post.likedBy.length;
       isLiked = true;
     }
 
