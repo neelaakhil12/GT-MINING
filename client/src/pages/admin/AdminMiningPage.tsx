@@ -49,6 +49,8 @@ export const AdminMiningPage: React.FC = () => {
       if (res.success) {
         showToast('Mining configuration updated successfully!', 'success');
         setReason('');
+        localStorage.setItem('gt_mining_cycle_hours', String(cooldownHours));
+        window.dispatchEvent(new Event('gt_mining_cycle_changed'));
       }
     } catch (err: any) {
       showToast(err.message || 'Update failed', 'error');

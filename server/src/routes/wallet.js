@@ -17,12 +17,14 @@ router.get('/', requireAuth, (req, res) => {
 
     let miningRewardsTotal = 0;
     let referralRewardsTotal = 0;
+    let taskRewardsTotal = 0;
     let adminAdjustmentsTotal = 0;
 
     transactions.forEach(tx => {
       if (tx.status === 'COMPLETED') {
         if (tx.type === 'MINING_REWARD') miningRewardsTotal += Number(tx.amount || 0);
         else if (tx.type === 'REFERRAL_REWARD') referralRewardsTotal += Number(tx.amount || 0);
+        else if (tx.type === 'TASK_REWARD') taskRewardsTotal += Number(tx.amount || 0);
         else if (tx.type === 'ADMIN_ADJUSTMENT') adminAdjustmentsTotal += Number(tx.amount || 0);
       }
     });
@@ -34,6 +36,7 @@ router.get('/', requireAuth, (req, res) => {
         lifetimeEarned: wallet.lifetimeEarned,
         miningRewardsTotal: Number(miningRewardsTotal.toFixed(4)),
         referralRewardsTotal: Number(referralRewardsTotal.toFixed(4)),
+        taskRewardsTotal: Number(taskRewardsTotal.toFixed(4)),
         adminAdjustmentsTotal: Number(adminAdjustmentsTotal.toFixed(4))
       },
       transactions: transactions.slice(0, 20)

@@ -44,6 +44,11 @@ export const MiningPage: React.FC = () => {
         setStatus(statusRes);
         setIsEligible(statusRes.isEligible);
         updateWalletBalance(statusRes.availableBalance, statusRes.lifetimeEarned);
+        if (statusRes.cooldownSeconds) {
+          const hours = Math.max(1, Math.round(Number(statusRes.cooldownSeconds) / 3600));
+          localStorage.setItem('gt_mining_cycle_hours', String(hours));
+          window.dispatchEvent(new Event('gt_mining_cycle_changed'));
+        }
       }
 
       if (historyRes.success) {

@@ -162,10 +162,12 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
             <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#15803D] tracking-tight truncate">
-              +1.00 GT
+              +{Number(data?.mining?.rewardPerClaim ?? 1.0).toFixed(2)} GT
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[#1E5E36] truncate">
-              <span className="truncate">Per 4-hour cycle</span>
+              <span className="truncate">
+                Per {Math.max(1, Math.round(Number(data?.mining?.cooldownSeconds || 14400) / 3600))}-hour cycle
+              </span>
             </div>
           </div>
         </div>

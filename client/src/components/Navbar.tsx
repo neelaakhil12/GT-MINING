@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Home,
@@ -10,6 +10,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 
 const EarthGlobeIcon: React.FC<{ className?: string }> = ({ className = "w-4.5 h-4.5" }) => (
   <svg
@@ -27,9 +28,38 @@ export const Navbar: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
 
+  const [cycleBadge, setCycleBadge] = useState<string>(() => {
+    const saved = localStorage.getItem('gt_mining_cycle_hours');
+    return saved ? `${saved}h Cycle` : '4h Cycle';
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getMiningConfig().then((res: any) => {
+      if (res && res.cycleHours && isMounted) {
+        const badge = `${res.cycleHours}h Cycle`;
+        setCycleBadge(badge);
+        localStorage.setItem('gt_mining_cycle_hours', String(res.cycleHours));
+      }
+    }).catch(() => {});
+
+    const handleCycleChange = () => {
+      const saved = localStorage.getItem('gt_mining_cycle_hours');
+      if (saved) {
+        setCycleBadge(`${saved}h Cycle`);
+      }
+    };
+
+    window.addEventListener('gt_mining_cycle_changed', handleCycleChange);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('gt_mining_cycle_changed', handleCycleChange);
+    };
+  }, []);
+
   const navLinks = [
     { label: 'Home', path: '/dashboard', icon: Home },
-    { label: 'Mining', path: '/mining', icon: Pickaxe, badge: '4h Cycle' },
+    { label: 'Mining', path: '/mining', icon: Pickaxe, badge: cycleBadge },
     { label: 'Wallet', path: '/wallet', icon: WalletIcon },
     { label: 'Referrals', path: '/referrals', icon: Users },
     { label: 'Node', path: '/community', icon: EarthGlobeIcon },

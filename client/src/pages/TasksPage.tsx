@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Check, Play, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Check,
+  Play,
+  Sparkles,
+  Upload,
+  Camera,
+  X,
+  Clock,
+  AlertCircle,
+  FileText,
+  Image as ImageIcon,
+  CheckCircle2,
+  ShieldCheck,
+} from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 
@@ -204,25 +219,16 @@ export const TasksPage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Track completed task IDs in localStorage
-  const [completedTasks, setCompletedTasks] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('gt_completed_tasks');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Backend-tracked task submissions & statuses
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(true);
 
-  // Track total task rewards
-  const [taskRewards, setTaskRewards] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('gt_task_rewards');
-      return saved ? parseFloat(saved) : 0;
-    } catch {
-      return 0;
-    }
-  });
+  // Proof Upload Modal state
+  const [proofModalTask, setProofModalTask] = useState<TaskItem | null>(null);
+  const [proofImage, setProofImage] = useState<string>('');
+  const [proofNote, setProofNote] = useState<string>('');
+  const [submittingProof, setSubmittingProof] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Video watching simulation state
   const [tasksList, setTasksList] = useState<TaskItem[]>(TASKS_DATA);
@@ -230,23 +236,102 @@ export const TasksPage: React.FC = () => {
   const [videoTimer, setVideoTimer] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<number>(0);
 
+  const fetchTasksAndSubmissions = async () => {
+    try {
+      const [tasksRes, subsRes] = await Promise.allSettled([
+        api.getPublicTasks(),
+        api.getMyTaskSubmissions(),
+      ]);
+
+      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success && Array.isArray(tasksRes.value.tasks) && tasksRes.value.tasks.length > 0) {
+        setTasksList(tasksRes.value.tasks);
+      }
+
+      if (subsRes.status === 'fulfilled' && subsRes.value?.success && Array.isArray(subsRes.value.submissions)) {
+        setSubmissions(subsRes.value.submissions);
+      }
+    } catch (err) {
+      console.error('Error fetching tasks data:', err);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await api.getPublicTasks();
-        if (res && res.success && Array.isArray(res.tasks) && res.tasks.length > 0) {
-          setTasksList(res.tasks);
-        }
-      } catch {}
-    };
-    fetchTasks();
+    fetchTasksAndSubmissions();
+    const timer = setInterval(fetchTasksAndSubmissions, 8000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Sync state to localStorage
-  useEffect(() => {
-    localStorage.setItem('gt_completed_tasks', JSON.stringify(completedTasks));
-    localStorage.setItem('gt_task_rewards', taskRewards.toFixed(2));
-  }, [completedTasks, taskRewards]);
+  // Handle proof image upload via canvas compression (<200KB for instant transfer)
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP)', 'error');
+      return;
+    }
+
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image size is too large. Please select a photo under 12MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 900;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setProofImage(dataUrl);
+          showToast('Screenshot loaded! Tap "Submit Proof" to send to admin.', 'info');
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Submit proof to backend
+  const handleSubmitProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proofModalTask) return;
+    if (!proofImage) {
+      showToast('Please upload a screenshot proof of task completion.', 'error');
+      return;
+    }
+
+    setSubmittingProof(true);
+    try {
+      const res = await api.submitTaskProof({
+        taskId: proofModalTask.id,
+        proofImage,
+        proofNote: proofNote.trim(),
+      });
+
+      if (res && res.success) {
+        showToast('🎉 Proof submitted! Sent to admin for verification. Your reward will be credited directly to your wallet upon approval.', 'success');
+        setProofModalTask(null);
+        setProofImage('');
+        setProofNote('');
+        await fetchTasksAndSubmissions();
+      } else {
+        throw new Error(res?.message || 'Failed to submit proof');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to submit task proof', 'error');
+    } finally {
+      setSubmittingProof(false);
+    }
+  };
 
   // Video demo timer effect
   useEffect(() => {
@@ -256,9 +341,12 @@ export const TasksPage: React.FC = () => {
         setVideoTimer((prev) => {
           if (prev === null || prev <= 1) {
             clearInterval(interval);
-            handleCompleteTask(activeVideoTask.id, activeVideoTask.reward || 2);
+            // Once video is watched, open proof modal or submit video task
             setVideoProgress(100);
+            setProofModalTask(activeVideoTask);
+            setProofNote('Video completed');
             setActiveVideoTask(null);
+            showToast('Video watched! Please submit screenshot confirmation to claim reward.', 'info');
             return null;
           }
           const next = prev - 1;
@@ -273,17 +361,18 @@ export const TasksPage: React.FC = () => {
     };
   }, [videoTimer, activeVideoTask]);
 
-  const handleCompleteTask = (taskId: string, rewardAmount: number) => {
-    if (completedTasks.includes(taskId)) return;
-
-    setCompletedTasks((prev) => [...prev, taskId]);
-    setTaskRewards((prev) => prev + rewardAmount);
-    showToast(`🎉 Reward Claimed: +${rewardAmount}.00 GT added to your balance!`, 'success');
-  };
-
   const handleTaskAction = (task: TaskItem) => {
-    if (completedTasks.includes(task.id)) {
-      showToast('You have already completed this task.', 'info');
+    const existingSub = submissions.find((s) => s.taskId === task.id);
+    if (existingSub?.status === 'APPROVED') {
+      showToast('You have already completed this task and claimed your reward.', 'info');
+      return;
+    }
+
+    if (existingSub?.status === 'PENDING') {
+      showToast('Your proof is already submitted and pending admin review. You can re-upload if needed.', 'info');
+      setProofModalTask(task);
+      setProofImage(existingSub.proofImage || '');
+      setProofNote(existingSub.proofNote || '');
       return;
     }
 
@@ -296,17 +385,19 @@ export const TasksPage: React.FC = () => {
       if (task.url && task.url !== '#') {
         window.open(task.url, '_blank', 'noopener,noreferrer');
       }
-      showToast(`Watching video quest (${watchSec}s)... GT will be credited after timer!`, 'info');
+      showToast(`Watching video quest (${watchSec}s)...`, 'info');
       return;
     }
 
-    // For social links: open in new tab and credit reward
+    // Open target social platform in new tab
     if (task.url && task.url !== '#') {
       window.open(task.url, '_blank', 'noopener,noreferrer');
     }
 
-    // Simulate task completion with immediate reward reward
-    handleCompleteTask(task.id, task.reward || 1);
+    // Immediately open proof upload dialog so user submits screenshot upon returning
+    setProofModalTask(task);
+    setProofImage('');
+    setProofNote('');
   };
 
   const filteredTasks = tasksList.filter((task) => {
@@ -315,7 +406,7 @@ export const TasksPage: React.FC = () => {
   });
 
   const totalTasks = tasksList.length;
-  const completedCount = completedTasks.length;
+  const completedCount = submissions.filter((s) => s.status === 'APPROVED').length;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -415,12 +506,19 @@ export const TasksPage: React.FC = () => {
               Complete social tasks, watch videos and grow with the GT community.
             </p>
 
-            <div className="pt-1 flex items-baseline gap-2">
+            <div className="pt-1 flex flex-wrap items-baseline gap-2">
               <span className="text-[11px] font-bold text-[#1E5E36]/80">
                 Your task rewards:
               </span>
               <span className="text-base sm:text-lg font-black text-[#0A341B] tracking-tight">
-                {taskRewards.toFixed(2)} GT
+                {submissions
+                  .filter((s) => s.status === 'APPROVED')
+                  .reduce((acc, s) => acc + Number(s.reward || 1), 0)
+                  .toFixed(2)}{' '}
+                GT
+              </span>
+              <span className="text-[10px] font-bold text-[#15803D] bg-[#DCFCE7] px-2 py-0.5 rounded-full border border-[#22C55E]/30">
+                Credited to Wallet
               </span>
             </div>
           </div>
@@ -446,12 +544,12 @@ export const TasksPage: React.FC = () => {
               DAILY & SOCIAL TASKS
             </h2>
             <p className="text-xs text-[#1E5E36] font-medium">
-              Complete tasks and collect rewards
+              Complete tasks and upload screenshot proof to collect wallet rewards
             </p>
           </div>
 
           <div className="px-4 py-1.5 rounded-full bg-white/90 border border-white text-xs font-black text-[#0A341B] shadow-sm shrink-0">
-            {completedCount} / {totalTasks} DONE
+            {submissions.filter((s) => s.status === 'APPROVED').length} / {tasksList.length} DONE
           </div>
         </div>
 
@@ -492,7 +590,10 @@ export const TasksPage: React.FC = () => {
         {/* Tasks List matching Screenshot 1 - Compact horizontal row on all viewports */}
         <div className="space-y-3">
           {filteredTasks.map((task) => {
-            const isCompleted = completedTasks.includes(task.id);
+            const sub = submissions.find((s) => s.taskId === task.id);
+            const isApproved = sub?.status === 'APPROVED';
+            const isPending = sub?.status === 'PENDING';
+            const isRejected = sub?.status === 'REJECTED';
             const isVideoWatching = task.id === 'task_video' && videoTimer !== null;
 
             return (
@@ -505,9 +606,17 @@ export const TasksPage: React.FC = () => {
                   <TaskIcon type={task.iconType} />
 
                   <div className="space-y-0.5 min-w-0 flex-1">
-                    <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight truncate">
-                      {task.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight truncate">
+                        {task.title}
+                      </h3>
+                      {isPending && (
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#F59E0B]/30">
+                          <Clock className="w-3 h-3 text-[#D97706]" />
+                          <span>Verification in progress</span>
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] sm:text-xs text-[#1E5E36]/80 font-medium truncate">
                       {task.description}
                     </p>
@@ -519,7 +628,7 @@ export const TasksPage: React.FC = () => {
                           <div
                             className="h-full bg-[#22C55E] transition-all duration-300"
                             style={{
-                              width: isCompleted ? '100%' : `${videoProgress}%`,
+                              width: isApproved ? '100%' : `${videoProgress}%`,
                             }}
                           />
                         </div>
@@ -528,17 +637,35 @@ export const TasksPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right Side: Reward Points on Top, Action Button Below (matching Screenshot 1) */}
+                {/* Right Side: Reward Points on Top, Action Button Below */}
                 <div className="flex flex-col items-end justify-center shrink-0 gap-1.5">
                   <span className="text-xs sm:text-sm font-black text-[#0A341B] tracking-tight">
                     {task.rewardLabel}
                   </span>
 
-                  {isCompleted ? (
+                  {isApproved ? (
                     <div className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#DCFCE7] text-[#15803D] font-black text-[11px] sm:text-xs border border-[#22C55E]/30 shrink-0">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       <span>Completed</span>
                     </div>
+                  ) : isPending ? (
+                    <button
+                      onClick={() => handleTaskAction(task)}
+                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FEF3C7] text-[#92400E] font-black text-[11px] sm:text-xs border border-[#F59E0B]/40 shrink-0 cursor-pointer shadow-2xs hover:bg-[#FDE68A] transition-all"
+                      title="Proof submitted. Tap to review or re-upload if needed."
+                    >
+                      <Clock className="w-3.5 h-3.5 text-[#D97706]" />
+                      <span>Under Review</span>
+                    </button>
+                  ) : isRejected ? (
+                    <button
+                      onClick={() => handleTaskAction(task)}
+                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700 font-black text-[11px] sm:text-xs border border-red-300 shrink-0 transition-all cursor-pointer"
+                      title={sub?.adminComment || 'Proof was rejected. Tap to resubmit.'}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Resubmit Proof ↗</span>
+                    </button>
                   ) : isVideoWatching ? (
                     <button
                       disabled
@@ -550,7 +677,7 @@ export const TasksPage: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => handleTaskAction(task)}
-                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 shrink-0"
+                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer"
                     >
                       <span>{task.buttonLabel}</span>
                       <span className="text-xs">↗</span>
@@ -563,11 +690,140 @@ export const TasksPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Task Proof Upload Modal */}
+      {proofModalTask && (
+        <div
+          onClick={() => !submittingProof && setProofModalTask(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 border border-white/80"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-black/5 pb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#15803D]">
+                  Task Verification Required
+                </span>
+                <h3 className="text-lg sm:text-xl font-black text-[#0A341B] tracking-tight">
+                  {proofModalTask.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                disabled={submittingProof}
+                onClick={() => setProofModalTask(null)}
+                className="p-1.5 rounded-xl bg-black/5 hover:bg-black/10 text-neutral-600 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Reward Pill & Instructions */}
+            <div className="p-3.5 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 flex items-center justify-between text-xs">
+              <span className="font-bold text-[#0A341B]">Completion Reward:</span>
+              <span className="font-black text-[#15803D] bg-white px-3 py-1 rounded-full shadow-2xs">
+                +{proofModalTask.reward}.00 GT (Credited to Wallet)
+              </span>
+            </div>
+
+            <p className="text-xs text-[#1E5E36] font-medium leading-relaxed">
+              Please upload a screenshot showing that you completed this task (e.g. following or subscribing). Once reviewed and approved by the admin, your reward will be added directly into your wallet available balance.
+            </p>
+
+            <form onSubmit={handleSubmitProof} className="space-y-4">
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageFileChange}
+                accept="image/png, image/jpeg, image/jpg, image/webp"
+                className="hidden"
+              />
+
+              {/* Screenshot Preview / Drop Area */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full min-h-[140px] rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-4 cursor-pointer relative overflow-hidden ${
+                  proofImage
+                    ? 'border-[#22C55E] bg-[#EAF8EE]/40'
+                    : 'border-neutral-300 hover:border-[#22C55E] bg-neutral-50 hover:bg-[#EAF8EE]/20'
+                }`}
+              >
+                {proofImage ? (
+                  <div className="space-y-2 text-center w-full">
+                    <img
+                      src={proofImage}
+                      alt="Screenshot Proof Preview"
+                      className="max-h-48 mx-auto rounded-xl object-contain shadow-xs border border-white"
+                    />
+                    <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#15803D]">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Screenshot Loaded. Tap to change.</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center mx-auto shadow-2xs">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-[#0A341B] block">
+                        Upload Screenshot Proof
+                      </span>
+                      <span className="text-[11px] text-[#1E5E36]/70">
+                        PNG, JPG, or WebP from your device
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Handle / Profile Link (Optional) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#0A341B] flex justify-between">
+                  <span>Your Social Handle / Username (Optional)</span>
+                  <span className="text-[10px] text-neutral-400">for faster verification</span>
+                </label>
+                <input
+                  type="text"
+                  value={proofNote}
+                  onChange={(e) => setProofNote(e.target.value)}
+                  placeholder="e.g. @your_username or profile link"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs font-semibold text-[#0A341B] focus:outline-none focus:border-[#22C55E] focus:bg-white"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={submittingProof}
+                  onClick={() => setProofModalTask(null)}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingProof || !proofImage}
+                  className="px-6 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_4px_16px_rgba(34,197,94,0.35)] hover:shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>{submittingProof ? 'Submitting Proof...' : 'Submit Proof to Admin'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* 4. Reward Security Disclaimer */}
       <div className="p-4 sm:p-5 rounded-3xl bg-[#EAF8EE]/80 border border-[#86EFAC]/40 text-xs text-[#1E5E36] leading-relaxed">
         <p>
-          <strong className="text-[#0A341B] font-bold">Reward security:</strong>{' '}
-          This HTML is a front-end demo. A production app must verify follows, subscriptions, memberships and video completion with a trusted backend before crediting GT. Returning to this page alone is not proof of completion.
+          <strong className="text-[#0A341B] font-bold">Reward Verification:</strong>{' '}
+          Tasks are verified by administrators via uploaded screenshot proof. Once approved, the reward amount is credited automatically into your wallet balance and lifetime earnings.
         </p>
       </div>
 

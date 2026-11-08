@@ -110,19 +110,6 @@ const DEFAULT_TASKS: AdminTaskItem[] = [
     iconType: 'tiktok',
     isActive: true,
   },
-  {
-    id: 'task_video_001',
-    category: 'video',
-    title: 'Watch GT Introduction Video',
-    description: 'Watch the assigned official video to learn how GT decentralized mining works.',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Watch video',
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    duration: 15,
-    iconType: 'video',
-    isActive: true,
-  },
 ];
 
 const PLATFORM_PRESETS = [
@@ -148,10 +135,10 @@ export const AdminTasksPage: React.FC = () => {
   const [category, setCategory] = useState<'video' | 'social'>('video');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [reward, setReward] = useState<number>(2);
-  const [buttonLabel, setButtonLabel] = useState('Watch video');
+  const [reward, setReward] = useState<number | ''>('');
+  const [buttonLabel, setButtonLabel] = useState('');
   const [url, setUrl] = useState('');
-  const [duration, setDuration] = useState<number>(15);
+  const [duration, setDuration] = useState<number | ''>('');
   const [iconType, setIconType] = useState<AdminTaskItem['iconType']>('video');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -197,23 +184,13 @@ export const AdminTasksPage: React.FC = () => {
   const handleOpenCreate = (presetCategory: 'video' | 'social' = 'video') => {
     setEditingTask(null);
     setCategory(presetCategory);
-    if (presetCategory === 'video') {
-      setTitle('Watch GT Ecosystem Video');
-      setDescription('Watch the official video to earn GT coin mining reward.');
-      setReward(2);
-      setButtonLabel('Watch video');
-      setUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-      setDuration(15);
-      setIconType('video');
-    } else {
-      setTitle('Follow GT on Social');
-      setDescription('Join our official network channel.');
-      setReward(1);
-      setButtonLabel('Follow');
-      setUrl('https://x.com');
-      setDuration(0);
-      setIconType('x');
-    }
+    setTitle('');
+    setDescription('');
+    setReward('');
+    setButtonLabel('');
+    setUrl('');
+    setDuration('');
+    setIconType(presetCategory === 'video' ? 'video' : 'x');
     setIsActive(true);
     setModalOpen(true);
   };
@@ -221,13 +198,13 @@ export const AdminTasksPage: React.FC = () => {
   const handleOpenEdit = (task: AdminTaskItem) => {
     setEditingTask(task);
     setCategory(task.category);
-    setTitle(task.title);
-    setDescription(task.description);
-    setReward(task.reward || 2);
-    setButtonLabel(task.buttonLabel || 'Claim');
+    setTitle(task.title || '');
+    setDescription(task.description || '');
+    setReward(task.reward !== undefined && task.reward !== null ? task.reward : '');
+    setButtonLabel(task.buttonLabel || '');
     setUrl(task.url || '');
-    setDuration(task.duration || (task.category === 'video' ? 15 : 0));
-    setIconType(task.iconType || 'video');
+    setDuration(task.duration !== undefined && task.duration !== null ? task.duration : '');
+    setIconType(task.iconType || (task.category === 'video' ? 'video' : 'x'));
     setIsActive(task.isActive !== false);
     setModalOpen(true);
   };
@@ -235,7 +212,7 @@ export const AdminTasksPage: React.FC = () => {
   const handleSaveTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) {
-      showToast('Title and URL are required', 'error');
+      showToast('Task title and URL / Video Source are required', 'error');
       return;
     }
 
@@ -254,15 +231,19 @@ export const AdminTasksPage: React.FC = () => {
         else finalIconType = 'x';
       }
 
+      const numReward = Number(reward) || (category === 'video' ? 2 : 1);
+      const numDuration = category === 'video' ? (Number(duration) || 15) : 0;
+      const finalButtonLabel = buttonLabel.trim() || (category === 'video' ? 'Watch video' : 'Follow');
+
       const payload = {
         category,
         title: title.trim(),
         description: description.trim(),
-        reward: Number(reward) || 2,
-        rewardLabel: `+${Number(reward) || 2} GT`,
-        buttonLabel: buttonLabel.trim() || (category === 'video' ? 'Watch video' : 'Follow'),
+        reward: numReward,
+        rewardLabel: `+${numReward} GT`,
+        buttonLabel: finalButtonLabel,
         url: url.trim(),
-        duration: category === 'video' ? Number(duration) || 15 : 0,
+        duration: numDuration,
         iconType: finalIconType,
         isActive,
       };
@@ -672,7 +653,6 @@ export const AdminTasksPage: React.FC = () => {
                     onClick={() => {
                       setCategory('video');
                       setIconType('video');
-                      setButtonLabel('Watch video');
                     }}
                     className={`py-2.5 px-4 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       category === 'video'
@@ -689,7 +669,6 @@ export const AdminTasksPage: React.FC = () => {
                     onClick={() => {
                       setCategory('social');
                       setIconType('x');
-                      setButtonLabel('Follow');
                     }}
                     className={`py-2.5 px-4 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       category === 'social'
@@ -711,7 +690,7 @@ export const AdminTasksPage: React.FC = () => {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Watch GT Protocol 2.0 Explainer Video"
+                  placeholder="Enter task title (e.g. Watch Video or Follow on X)"
                   className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none"
                 />
               </div>
@@ -816,7 +795,8 @@ export const AdminTasksPage: React.FC = () => {
                       max="100"
                       required
                       value={reward}
-                      onChange={(e) => setReward(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setReward(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      placeholder="e.g. 2"
                       className="w-full pl-4 pr-12 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-black"
                     />
                     <span className="absolute right-3 top-2.5 text-xs font-bold text-[#86EFAC]">GT</span>
@@ -824,13 +804,12 @@ export const AdminTasksPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#A7C9B1]">Button Text *</label>
+                  <label className="text-xs font-bold text-[#A7C9B1]">Button Text</label>
                   <input
                     type="text"
-                    required
                     value={buttonLabel}
                     onChange={(e) => setButtonLabel(e.target.value)}
-                    placeholder="e.g. Watch video, Follow, Subscribe"
+                    placeholder={category === 'video' ? 'e.g. Watch video' : 'e.g. Follow on X'}
                     className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none"
                   />
                 </div>
@@ -841,7 +820,7 @@ export const AdminTasksPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-[#A7C9B1]">
-                      Required Watch Duration (Seconds) *
+                      Required Watch Duration (Seconds)
                     </label>
                     <span className="text-[10px] text-rose-400">User must watch before claiming GT</span>
                   </div>
@@ -850,7 +829,8 @@ export const AdminTasksPage: React.FC = () => {
                     min="5"
                     max="600"
                     value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value, 10) || 15)}
+                    onChange={(e) => setDuration(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    placeholder="e.g. 15"
                     className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-rose-500/40 text-white text-xs focus:border-rose-400 outline-none font-mono"
                   />
                 </div>

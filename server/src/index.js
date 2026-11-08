@@ -13,6 +13,7 @@ import profileRouter from './routes/profile.js';
 import notificationsRouter from './routes/notifications.js';
 import privateNetworkRouter from './routes/privateNetwork.js';
 import adminRouter from './routes/admin.js';
+import tasksRouter from './routes/tasks.js';
 import { readDB } from './db.js';
 
 dotenv.config();
@@ -58,6 +59,7 @@ app.use('/api/community', communityRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/private-network', privateNetworkRouter);
+app.use('/api/tasks', tasksRouter);
 app.use('/api/admin', adminRouter);
 
 // Public Banners Endpoints

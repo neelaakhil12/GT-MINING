@@ -922,7 +922,7 @@ export const PrivateNetworkPage: React.FC = () => {
                         {isReminder && (
                           <div className="pt-2.5 mt-2 border-t border-amber-200/60 flex items-center justify-between gap-2">
                             <span className="text-[10px] text-[#1E5E36] font-bold">
-                              4-Hour cycle yield: +1.00 GT
+                              Mining cycle yield: +1.00 GT
                             </span>
                             <Link
                               to="/mining"

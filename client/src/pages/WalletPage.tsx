@@ -136,7 +136,7 @@ export const WalletPage: React.FC = () => {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {['ALL', 'MINING_REWARD', 'REFERRAL_REWARD'].map((type) => (
+            {['ALL', 'MINING_REWARD', 'REFERRAL_REWARD', 'TASK_REWARD'].map((type) => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}

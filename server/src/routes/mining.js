@@ -49,6 +49,35 @@ export const calculateMiningState = (user, settings) => {
   };
 };
 
+// GET /api/mining/config - Public configuration for dynamic cycle hours and rewards
+router.get('/config', (req, res) => {
+  try {
+    const db = readDB();
+    const cooldownSeconds = Number(db.settings?.cooldownSeconds || 14400);
+    const miningReward = Number(db.settings?.miningReward || 1.0);
+    const miningEnabled = db.settings?.miningEnabled !== false;
+    const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
+
+    return res.json({
+      success: true,
+      cooldownSeconds,
+      cycleHours,
+      miningReward,
+      miningEnabled,
+      cycleBadge: `${cycleHours}h Cycle`
+    });
+  } catch (err) {
+    return res.json({
+      success: true,
+      cooldownSeconds: 14400,
+      cycleHours: 4,
+      miningReward: 1.0,
+      miningEnabled: true,
+      cycleBadge: '4h Cycle'
+    });
+  }
+});
+
 // GET /api/mining/status
 router.get('/status', requireAuth, (req, res) => {
   try {

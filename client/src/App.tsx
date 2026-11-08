@@ -35,6 +35,7 @@ import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 import { AdminOnboardingBannersPage } from './pages/admin/AdminOnboardingBannersPage';
 import { AdminHomeBannersPage } from './pages/admin/AdminHomeBannersPage';
 import { AdminTasksPage } from './pages/admin/AdminTasksPage';
+import { AdminTaskSubmissionsPage } from './pages/admin/AdminTaskSubmissionsPage';
 import { AdminEmailRequestsPage } from './pages/admin/AdminEmailRequestsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 
@@ -268,6 +269,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminTasksPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/task-submissions"
+                element={
+                  <AdminRoute>
+                    <AdminTaskSubmissionsPage />
                   </AdminRoute>
                 }
               />

@@ -734,6 +734,162 @@ router.delete('/tasks/:id', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// TASK SUBMISSIONS & VERIFICATION MANAGEMENT
+// ---------------------------------------------------------------------------
+// GET /api/admin/task-submissions
+router.get('/task-submissions', (req, res) => {
+  const db = readDB();
+  const { status } = req.query;
+  const submissions = (db.taskSubmissions || []).slice().reverse();
+  const pendingCount = submissions.filter(s => s.status === 'PENDING').length;
+
+  let filtered = submissions;
+  if (status && status !== 'all') {
+    filtered = filtered.filter(s => s.status === status.toUpperCase());
+  }
+
+  return res.json({
+    success: true,
+    submissions: filtered,
+    pendingCount
+  });
+});
+
+// POST /api/admin/task-submissions/:id/approve
+router.post('/task-submissions/:id/approve', (req, res) => {
+  const db = readDB();
+  if (!db.taskSubmissions) db.taskSubmissions = [];
+
+  const submission = db.taskSubmissions.find(s => s.id === req.params.id);
+  if (!submission) {
+    return res.status(404).json({ success: false, message: 'Task submission not found.' });
+  }
+
+  if (submission.status === 'APPROVED') {
+    return res.status(400).json({ success: false, message: 'This submission has already been approved.' });
+  }
+
+  const now = new Date().toISOString();
+  const rewardAmount = Number(submission.reward || 1);
+
+  submission.status = 'APPROVED';
+  submission.reviewedAt = now;
+  submission.reviewedBy = req.user?.email || 'Admin';
+
+  // 1. Credit User's Wallet directly
+  if (!db.wallets) db.wallets = [];
+  let wallet = db.wallets.find(w => w.userId === submission.userId);
+  if (!wallet) {
+    wallet = {
+      id: generateId('wal'),
+      userId: submission.userId,
+      availableBalance: 0.0,
+      lifetimeEarned: 0.0,
+      createdAt: now,
+      updatedAt: now
+    };
+    db.wallets.push(wallet);
+  }
+
+  wallet.availableBalance = Number((Number(wallet.availableBalance || 0) + rewardAmount).toFixed(4));
+  wallet.lifetimeEarned = Number((Number(wallet.lifetimeEarned || 0) + rewardAmount).toFixed(4));
+  wallet.updatedAt = now;
+
+  // 2. Record Wallet Transaction
+  if (!db.walletTransactions) db.walletTransactions = [];
+  const tx = {
+    id: generateId('tx'),
+    userId: submission.userId,
+    type: 'TASK_REWARD',
+    amount: rewardAmount,
+    status: 'COMPLETED',
+    idempotencyKey: `task_sub_${submission.id}`,
+    referenceId: submission.id,
+    description: `Task Reward: ${submission.taskTitle}`,
+    createdAt: now,
+    userName: submission.userName,
+    userEmail: submission.userEmail
+  };
+  db.walletTransactions.push(tx);
+
+  // 3. User Notification
+  if (!db.notifications) db.notifications = [];
+  db.notifications.push({
+    id: generateId('notif'),
+    userId: submission.userId,
+    title: 'Task Quest Approved! 🎉',
+    message: `Your proof for task "${submission.taskTitle}" was verified! +${rewardAmount}.00 GT has been credited directly to your wallet available balance.`,
+    type: 'TASK',
+    readAt: null,
+    createdAt: now
+  });
+
+  createAuditLog(
+    db,
+    req.user?.id || 'admin',
+    'APPROVE_TASK_SUBMISSION',
+    'TASK_SUBMISSION',
+    submission.id,
+    `Approved task "${submission.taskTitle}" for user ${submission.userEmail} (+${rewardAmount} GT)`
+  );
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: `Task submission approved! +${rewardAmount}.00 GT credited to user wallet.`,
+    submission
+  });
+});
+
+// POST /api/admin/task-submissions/:id/reject
+router.post('/task-submissions/:id/reject', (req, res) => {
+  const db = readDB();
+  if (!db.taskSubmissions) db.taskSubmissions = [];
+
+  const submission = db.taskSubmissions.find(s => s.id === req.params.id);
+  if (!submission) {
+    return res.status(404).json({ success: false, message: 'Task submission not found.' });
+  }
+
+  const reason = (req.body.reason || 'Screenshot proof could not be verified or was invalid.').trim();
+  const now = new Date().toISOString();
+
+  submission.status = 'REJECTED';
+  submission.adminComment = reason;
+  submission.reviewedAt = now;
+  submission.reviewedBy = req.user?.email || 'Admin';
+
+  if (!db.notifications) db.notifications = [];
+  db.notifications.push({
+    id: generateId('notif'),
+    userId: submission.userId,
+    title: 'Task Verification Notice',
+    message: `Your submission for task "${submission.taskTitle}" was rejected: "${reason}". Please tap and resubmit with clear proof.`,
+    type: 'TASK',
+    readAt: null,
+    createdAt: now
+  });
+
+  createAuditLog(
+    db,
+    req.user?.id || 'admin',
+    'REJECT_TASK_SUBMISSION',
+    'TASK_SUBMISSION',
+    submission.id,
+    `Rejected task "${submission.taskTitle}" for user ${submission.userEmail} (Reason: ${reason})`
+  );
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: 'Task submission rejected.',
+    submission
+  });
+});
+
+// ---------------------------------------------------------------------------
 // EMAIL CHANGE REQUESTS MANAGEMENT
 // ---------------------------------------------------------------------------
 // GET /api/admin/email-change-requests

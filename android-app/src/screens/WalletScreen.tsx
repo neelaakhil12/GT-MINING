@@ -39,6 +39,7 @@ export const WalletScreen: React.FC = () => {
     { key: 'ALL', label: 'All Ledger' },
     { key: 'MINING_REWARD', label: 'MINING REWARD' },
     { key: 'REFERRAL_REWARD', label: 'REFERRAL REWARD' },
+    { key: 'TASK_REWARD', label: 'TASK REWARD' },
   ];
 
   const fetchWallet = async () => {

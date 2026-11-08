@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Video,
   Mail,
+  CheckSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -31,8 +32,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingEmailCount, setPendingEmailCount] = useState<number>(0);
+  const [pendingTaskCount, setPendingTaskCount] = useState<number>(0);
 
-  // Poll for pending email change requests count
+  // Poll for pending email change requests & task submissions count
   useEffect(() => {
     let isMounted = true;
     const fetchPendingCount = async () => {
@@ -44,6 +46,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           } else if (Array.isArray(res.requests)) {
             const count = res.requests.filter((r: any) => r.status === 'PENDING').length;
             setPendingEmailCount(count);
+          }
+        }
+
+        const taskRes = await api.getAdminTaskSubmissions('PENDING');
+        if (taskRes && taskRes.success && isMounted) {
+          if (typeof taskRes.pendingCount === 'number') {
+            setPendingTaskCount(taskRes.pendingCount);
+          } else if (Array.isArray(taskRes.submissions)) {
+            setPendingTaskCount(taskRes.submissions.length);
           }
         }
       } catch (err) {
@@ -73,6 +84,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         { label: 'Pre-Open Sliders', path: '/admin/onboarding-banners', icon: Sliders },
         { label: 'Home Page Banners', path: '/admin/home-banners', icon: ImagePlus },
         { label: 'Tasks & Video Quests', path: '/admin/tasks', icon: Video },
+        {
+          label: 'Task Submissions',
+          path: '/admin/task-submissions',
+          icon: CheckSquare,
+          badge: pendingTaskCount,
+        },
       ],
     },
     {

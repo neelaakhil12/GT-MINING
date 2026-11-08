@@ -20,13 +20,14 @@ export interface Wallet {
   lifetimeEarned: number;
   miningRewardsTotal?: number;
   referralRewardsTotal?: number;
+  taskRewardsTotal?: number;
   adminAdjustmentsTotal?: number;
 }
 
 export interface WalletTransaction {
   id: string;
   userId: string;
-  type: 'MINING_REWARD' | 'REFERRAL_REWARD' | 'ADMIN_ADJUSTMENT' | 'REVERSAL';
+  type: 'MINING_REWARD' | 'REFERRAL_REWARD' | 'ADMIN_ADJUSTMENT' | 'REVERSAL' | 'TASK_REWARD';
   amount: number;
   status: 'COMPLETED' | 'PENDING' | 'REJECTED';
   idempotencyKey: string;

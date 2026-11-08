@@ -88,6 +88,7 @@ export const api = {
   getDashboardSummary: () => request<any>('/dashboard/summary'),
 
   // Mining
+  getMiningConfig: () => request<any>('/mining/config'),
   getMiningStatus: () => request<any>('/mining/status'),
   claimMiningReward: () => request<any>('/mining/claim', { method: 'POST' }),
   getMiningHistory: () => request<any>('/mining/history'),
@@ -184,6 +185,17 @@ export const api = {
   updateAdminTask: (id: string, body: any) => request<any>(`/admin/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAdminTask: (id: string) => request<any>(`/admin/tasks/${id}`, { method: 'DELETE' }),
   getPublicTasks: () => request<any>('/tasks'),
+  submitTaskProof: (body: { taskId: string; proofImage: string; proofNote?: string }) =>
+    request<any>('/tasks/submit-proof', { method: 'POST', body: JSON.stringify(body) }),
+  getMyTaskSubmissions: () => request<any>('/tasks/my-submissions'),
+
+  // Task Submissions Verification (Admin)
+  getAdminTaskSubmissions: (status?: string) =>
+    request<any>(`/admin/task-submissions${status ? `?status=${status}` : ''}`),
+  approveTaskSubmission: (id: string) =>
+    request<any>(`/admin/task-submissions/${id}/approve`, { method: 'POST' }),
+  rejectTaskSubmission: (id: string, reason?: string) =>
+    request<any>(`/admin/task-submissions/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
 
   getAdminSettings: () => request<any>('/admin/settings'),
   updateAdminSettings: (body: any) => request<any>('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
