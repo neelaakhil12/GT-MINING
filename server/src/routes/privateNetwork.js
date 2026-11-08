@@ -64,7 +64,7 @@ function resolveCircle(db, currentUser) {
     return {
       id: `pn_mem_${userObj.id}`,
       userId: userObj.id,
-      name: isHost ? `${name} (Host)` : name,
+      name: name,
       maskedId,
       email,
       initials,

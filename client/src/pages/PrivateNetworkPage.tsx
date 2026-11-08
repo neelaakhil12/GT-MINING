@@ -492,22 +492,8 @@ export const PrivateNetworkPage: React.FC = () => {
       streakDays: m.streakDays,
       isHost: false,
     })),
-    // Include Host if different from current user
-    ...(hostName !== user?.fullName
-      ? [
-          {
-            id: data?.circleHost?.id || 'host',
-            name: hostName,
-            maskedId: 'Circle Leader',
-            isMiningActive: true,
-            initials: hostName.charAt(0).toUpperCase(),
-            avatarColor: 'from-[#22C55E] to-[#16A34A]',
-            streakDays: 1,
-            isHost: true,
-          },
-        ]
-      : []),
-  ].filter((m) => {
+  ].filter((m, index, self) => index === self.findIndex(t => t.name === m.name))
+   .filter((m) => {
     if (!mentionQuery) return true;
     return (
       m.name.toLowerCase().includes(mentionQuery) ||
@@ -901,11 +887,6 @@ export const PrivateNetworkPage: React.FC = () => {
                         }`}
                       >
                         <span className="font-bold text-[#0A341B]">{msg.senderName}</span>
-                        {isHost && (
-                          <span className="px-1.5 py-0.2 rounded bg-[#22C55E]/20 text-[#15803D] font-black text-[9px]">
-                            HOST
-                          </span>
-                        )}
                         <span className="text-[#1E5E36]/70">
                           {new Date(msg.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -1143,11 +1124,6 @@ export const PrivateNetworkPage: React.FC = () => {
                             <span className="text-xs font-black text-[#0A341B] truncate">
                               {member.name}
                             </span>
-                            {member.isHost && (
-                              <span className="px-1 py-0.2 rounded bg-[#22C55E]/20 text-[#15803D] text-[9px] font-black">
-                                HOST
-                              </span>
-                            )}
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-[#1E5E36] font-medium">
                             <span className="font-mono">{member.maskedId}</span>

@@ -111,7 +111,7 @@ export const AdminMiningPage: React.FC = () => {
                 Cycle Cooldown (Hours)
               </label>
               <p className="text-[11px] text-[#A7C9B1]">
-                Default is 4 hours (14,400s). Minimum 1 hour.
+                Default is 4 hours (14,400s). Select or enter 4, 5, 6 or custom hours.
               </p>
               <input
                 type="number"
@@ -123,6 +123,22 @@ export const AdminMiningPage: React.FC = () => {
                 onChange={(e) => setCooldownHours(parseInt(e.target.value, 10))}
                 className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[4, 5, 6, 8, 12, 24].map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => setCooldownHours(h)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                      cooldownHours === h
+                        ? 'bg-[#22C55E] text-[#07130D] shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+                        : 'bg-white/5 text-[#A7C9B1] hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    {h}h
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

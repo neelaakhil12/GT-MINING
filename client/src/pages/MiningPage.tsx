@@ -101,6 +101,11 @@ export const MiningPage: React.FC = () => {
   const handleClaim = async () => {
     if (claiming) return;
 
+    if (!isEligible) {
+      showToast(`Mining cooldown active: ${countdown} remaining`, 'info');
+      return;
+    }
+
     // Smoothly scroll to top so the 3D spinning globe is prominently displayed
     if (globeRef.current) {
       globeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -112,15 +117,16 @@ export const MiningPage: React.FC = () => {
     setClaiming(true);
 
     try {
-      // 1. Trigger API call in background
-      const apiPromise = api.claimMiningReward().catch(() => null);
+      // 1. Authoritative API claim call
+      const res = await api.claimMiningReward();
+      if (!res || !res.success) {
+        throw new Error(res?.message || 'Mining claim failed');
+      }
 
-      // 2. Play 10-15 fast coin rotates (2.6 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2600));
+      // 2. Play fast coin rotations (2.2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2200));
 
-      const res = await apiPromise;
-
-      const rewardAmount = res?.rewardAmount ?? 1.0;
+      const rewardAmount = res.rewardAmount ?? status?.rewardPerClaim ?? 1.0;
       const currentBal = wallet?.availableBalance ?? status?.availableBalance ?? 0.0;
       const currentLife = wallet?.lifetimeEarned ?? status?.lifetimeEarned ?? 0.0;
       const newBal = Number((currentBal + rewardAmount).toFixed(4));
@@ -137,27 +143,31 @@ export const MiningPage: React.FC = () => {
       showToast(`+${rewardAmount} GT mined successfully!`, 'success');
 
       updateWalletBalance(newBal, newLife);
+      setIsEligible(false);
       setStatus(prev => {
         if (!prev) return null;
         return {
           ...prev,
+          isEligible: false,
+          nextEligibleAt: res.nextEligibleAt || new Date(Date.now() + (prev.cooldownSeconds || 14400) * 1000).toISOString(),
+          lastMiningAt: new Date().toISOString(),
           availableBalance: newBal,
           lifetimeEarned: newLife,
         };
       });
 
       const newClaim: MiningClaim = {
-        id: res?.transaction?.referenceId || `claim_${Date.now()}`,
+        id: res.transaction?.referenceId || `claim_${Date.now()}`,
         userId: 'current',
         rewardAmount,
         claimedAt: new Date().toISOString(),
-        nextEligibleAt: new Date(Date.now() + 14400000).toISOString(),
-        transactionId: `tx_${Date.now()}`,
+        nextEligibleAt: res.nextEligibleAt || new Date(Date.now() + (status?.cooldownSeconds || 14400) * 1000).toISOString(),
+        transactionId: res.transaction?.id || `tx_${Date.now()}`,
         status: 'SUCCESS',
       };
       setHistory(prev => [newClaim, ...prev]);
     } catch (err: any) {
-      showToast('Mining block verified!', 'success');
+      showToast(err.message || 'Failed to claim mining reward', 'error');
     } finally {
       setIsFastSpinning(false);
       setClaiming(false);
@@ -173,7 +183,10 @@ export const MiningPage: React.FC = () => {
     );
   }
 
-  const cycleTotalMs = 14400 * 1000;
+  const cycleSeconds = Number(status?.cooldownSeconds || 14400);
+  const cycleHours = Math.max(1, Math.round(cycleSeconds / 3600));
+  const rewardAmount = Number(status?.rewardPerClaim ?? 1.0);
+  const cycleTotalMs = cycleSeconds * 1000;
   const diffMs = status?.nextEligibleAt ? Math.max(0, new Date(status.nextEligibleAt).getTime() - Date.now()) : 0;
   const progressPct = isEligible ? 100 : Math.min(100, Math.max(0, ((cycleTotalMs - diffMs) / cycleTotalMs) * 100));
 
@@ -207,17 +220,20 @@ export const MiningPage: React.FC = () => {
         {/* Top Badges in Glassy Mode - Translucent so animation flows underneath */}
         <div className="flex items-center justify-between w-full relative z-20 px-0.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-[10px] sm:text-[11px] font-bold text-[#0A341B] shadow-[0_2px_8px_rgba(0,0,0,0.03)] whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.7)] shrink-0" />
-            <span>Mining Active</span>
+            <span className={`w-2 h-2 rounded-full ${isEligible ? 'bg-amber-400' : 'bg-[#10B981]'} shadow-[0_0_8px_rgba(16,185,129,0.7)] shrink-0`} />
+            <span>{isEligible ? 'Claim Ready' : 'Mining Active'}</span>
           </div>
 
           <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-[10px] sm:text-[11px] font-bold text-[#15803D] shadow-[0_2px_8px_rgba(0,0,0,0.03)] whitespace-nowrap">
-            <span>Rate: +24.00 GT / 4h</span>
+            <span>Rate: +{rewardAmount.toFixed(2)} GT / {cycleHours}h</span>
           </div>
         </div>
 
-        {/* 3D Segmented Mint-Green Cube Globe - Enriched and enlarged */}
-        <div className="-mt-2 sm:-mt-3 flex justify-center relative z-10 cursor-pointer" onClick={handleClaim}>
+        {/* 3D Segmented Mint-Green Cube Globe */}
+        <div
+          className={`-mt-2 sm:-mt-3 flex justify-center relative z-10 ${isEligible ? 'cursor-pointer' : 'cursor-default'}`}
+          onClick={isEligible ? handleClaim : () => showToast(`Mining active. Cooldown remaining: ${countdown}`, 'info')}
+        >
           <div className="relative w-full max-w-[280px] sm:max-w-[340px]">
             <MiningGlobe3D spinning={isFastSpinning} />
           </div>
@@ -276,7 +292,7 @@ export const MiningPage: React.FC = () => {
           <span className="text-[#1E5E36] font-medium">
             Progress <strong className="font-black text-[#0A341B]">{progressPct.toFixed(1)}%</strong>
           </span>
-          <span className="text-[#15803D] font-bold">Cycle Reward +24.00 GT</span>
+          <span className="text-[#15803D] font-bold">Cycle Reward +{rewardAmount.toFixed(2)} GT</span>
         </div>
 
         <div className="border-t border-dashed border-black/10 pt-2" />
@@ -298,27 +314,38 @@ export const MiningPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Mining Action Button - Always clickable and active to test animation */}
+      {/* 5. Mining Action Button - Disabled during active session */}
       <div className="space-y-2 pt-1">
         <button
           onClick={handleClaim}
-          disabled={claiming}
-          className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] active:scale-95 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white cursor-pointer"
+          disabled={claiming || !isEligible}
+          className={`w-full py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all ${
+            isEligible
+              ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-[0_8px_25px_rgba(34,197,94,0.4)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.6)] active:scale-95 cursor-pointer'
+              : 'bg-[#0A341B]/10 border border-[#10B981]/25 text-[#1E5E36]/70 cursor-not-allowed opacity-80 shadow-none'
+          }`}
         >
           {claiming ? (
             <>
-              <Pickaxe className="w-4 h-4 animate-spin" />
+              <Pickaxe className="w-4 h-4 animate-spin text-white" />
               <span>Mining Virtual Block...</span>
+            </>
+          ) : isEligible ? (
+            <>
+              <Pickaxe className="w-4 h-4 animate-bounce text-white" />
+              <span>Activate {cycleHours}-Hour Mining (+{rewardAmount.toFixed(1)} GT)</span>
             </>
           ) : (
             <>
-              <Pickaxe className="w-4 h-4 animate-bounce" />
-              <span>Activate 4-Hour Mining (+1.0 GT)</span>
+              <Clock className="w-4 h-4 text-[#1E5E36]" />
+              <span>Mining Active ({countdown} Remaining)</span>
             </>
           )}
         </button>
         <p className="text-xs text-[#1E5E36] font-medium text-center">
-          Tap above to activate mining session and test live block animation
+          {isEligible
+            ? `Tap above to start your ${cycleHours}-hour mining session`
+            : `Mining session in progress. Next claim unlock in ${countdown}`}
         </p>
       </div>
 

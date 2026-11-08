@@ -76,7 +76,19 @@ export const MiningScreen: React.FC = () => {
     )}:${String(seconds).padStart(2, '0')}`;
   };
 
+  const isEligible = !isMiningActive || miningStats.cycleRemainingSeconds <= 0;
+
   const handleClaimOrMine = () => {
+    if (!isEligible) {
+      Alert.alert(
+        'Mining Cooldown Active',
+        `Your mining session is currently active. Next claim available in ${formatCountdown(
+          miningStats.cycleRemainingSeconds
+        )}.`
+      );
+      return;
+    }
+
     // Smoothly scroll to the top where the globe animation is located
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     setIsFastSpinning(true);
@@ -222,27 +234,48 @@ export const MiningScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* 5. Mining Action Button matching website real_web_mining.png */}
+          {/* 5. Mining Action Button */}
           <View style={styles.actionBtnSection}>
             <TouchableOpacity
               onPress={handleClaimOrMine}
-              activeOpacity={0.88}
-              style={styles.mainMiningActionBtn}
+              disabled={!isEligible}
+              activeOpacity={isEligible ? 0.88 : 1}
+              style={[
+                styles.mainMiningActionBtn,
+                !isEligible && { opacity: 0.75 }
+              ]}
             >
               <LinearGradient
-                colors={['#22C55E', '#16A34A']}
+                colors={
+                  isEligible
+                    ? ['#22C55E', '#16A34A']
+                    : ['#374151', '#1F2937']
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.mainMiningGradient}
               >
-                <Pickaxe size={18} color="#FFFFFF" />
-                <Text style={styles.mainMiningBtnText}>
-                  Activate 4-Hour Mining (+1.0 GT)
+                {isEligible ? (
+                  <Pickaxe size={18} color="#FFFFFF" />
+                ) : (
+                  <Clock size={18} color="#9CA3AF" />
+                )}
+                <Text
+                  style={[
+                    styles.mainMiningBtnText,
+                    !isEligible && { color: '#E5E7EB' }
+                  ]}
+                >
+                  {isEligible
+                    ? 'Activate 4-Hour Mining (+1.0 GT)'
+                    : `Mining Active (${formatCountdown(miningStats.cycleRemainingSeconds)})`}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
             <Text style={styles.actionHintText}>
-              Tap above to activate mining session and test live block animation
+              {isEligible
+                ? 'Tap above to activate mining session and test live block animation'
+                : `Mining session in progress. Next claim unlock in ${formatCountdown(miningStats.cycleRemainingSeconds)}`}
             </Text>
           </View>
         </ScrollView>

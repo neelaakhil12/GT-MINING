@@ -484,11 +484,6 @@ export const PrivateNetworkScreen: React.FC = () => {
                         ]}
                       >
                         <Text style={styles.senderNameText}>{item.senderName}</Text>
-                        {isHost && (
-                          <View style={styles.hostBadge}>
-                            <Text style={styles.hostBadgeText}>HOST</Text>
-                          </View>
-                        )}
                         <Text style={styles.messageTimeText}>{item.time}</Text>
                       </View>
 
