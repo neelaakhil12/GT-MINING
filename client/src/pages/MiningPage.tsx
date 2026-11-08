@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Pickaxe,
@@ -27,6 +27,7 @@ export const MiningPage: React.FC = () => {
   const [countdown, setCountdown] = useState<string>('00:00:00');
   const [isEligible, setIsEligible] = useState<boolean>(false);
   const [isFastSpinning, setIsFastSpinning] = useState<boolean>(false);
+  const globeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMiningData();
@@ -99,6 +100,13 @@ export const MiningPage: React.FC = () => {
 
   const handleClaim = async () => {
     if (claiming) return;
+
+    // Smoothly scroll to top so the 3D spinning globe is prominently displayed
+    if (globeRef.current) {
+      globeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     setIsFastSpinning(true);
     setClaiming(true);
@@ -192,7 +200,10 @@ export const MiningPage: React.FC = () => {
       </div>
 
       {/* 2. Globe Centerpiece Card (No button inside, clean 3D globe with glassy badges) */}
-      <div className="relative rounded-[28px] overflow-hidden bg-white/70 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(22,101,52,0.06)] p-3.5 sm:p-5">
+      <div
+        ref={globeRef}
+        className="relative rounded-[28px] overflow-hidden bg-white/70 backdrop-blur-xl border border-white/90 shadow-[0_10px_30px_rgba(22,101,52,0.06)] p-3.5 sm:p-5 scroll-mt-4"
+      >
         {/* Top Badges in Glassy Mode - Translucent so animation flows underneath */}
         <div className="flex items-center justify-between w-full relative z-20 px-0.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-[10px] sm:text-[11px] font-bold text-[#0A341B] shadow-[0_2px_8px_rgba(0,0,0,0.03)] whitespace-nowrap">

@@ -31,6 +31,8 @@ export const MiningScreen: React.FC = () => {
   const { user, miningStats, isMiningActive, startMiningSession } = useAuth();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [isFastSpinning, setIsFastSpinning] = useState(false);
 
   useEffect(() => {
     // Pulse animation for active mining node
@@ -75,6 +77,13 @@ export const MiningScreen: React.FC = () => {
   };
 
   const handleClaimOrMine = () => {
+    // Smoothly scroll to the top where the globe animation is located
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    setIsFastSpinning(true);
+    setTimeout(() => {
+      setIsFastSpinning(false);
+    }, 3000);
+
     try {
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -99,6 +108,7 @@ export const MiningScreen: React.FC = () => {
         <AppNavbar activeTab="App" />
 
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -129,7 +139,7 @@ export const MiningScreen: React.FC = () => {
 
             {/* 3D Segmented Mint-Green Cube Globe matching video */}
             <View style={{ marginVertical: -10, alignItems: 'center', justifyContent: 'center' }}>
-              <MiningGlobe3D spinning={false} />
+              <MiningGlobe3D spinning={isFastSpinning} />
             </View>
           </View>
 
