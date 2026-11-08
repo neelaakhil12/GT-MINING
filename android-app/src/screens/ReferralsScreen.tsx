@@ -53,10 +53,11 @@ const dividendSlides = [
 ];
 
 export const ReferralsScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const [claimableAmount, setClaimableAmount] = useState<number>(0.0);
   const [claimedTotal, setClaimedTotal] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
+  const [isClaiming, setIsClaiming] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
   const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -74,57 +75,58 @@ export const ReferralsScreen: React.FC = () => {
   const referralCode = user?.referralCode || '';
   const referralLink = `https://gtnetwork.in/signup?ref=${referralCode}`;
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadReferrals = async () => {
-      try {
-        const token = await appStorage.getItem('gt_mobile_token');
-        const endpoints = [
-          API_BASE_URL,
-          'http://localhost:5050/api',
-        ];
-        for (const base of endpoints) {
-          try {
-            const [sumRes, histRes] = await Promise.all([
-              fetch(`${base}/referrals/summary`, {
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-              }),
-              fetch(`${base}/referrals/history`, {
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-              }),
-            ]);
-            const sumData = await sumRes.json();
-            const histData = await histRes.json();
-            if (sumData && sumData.success && isMounted) {
-              const s = sumData.statistics || sumData;
-              setStats({
-                totalReferrals: Number(s.totalReferrals || 0),
-                activeFriends: Number(s.activeFriends || 0),
-                inactiveFriends: Number(s.inactiveFriends || 0),
-                totalReferralRewardsEarned: Number(s.totalReferralRewardsEarned || 0),
-              });
-              setTotalEarned(Number(s.totalReferralRewardsEarned || 0));
-            }
-            if (histData && histData.success && Array.isArray(histData.referrals) && isMounted) {
-              setFriendsList(histData.referrals);
-            }
-            break;
-          } catch {}
-        }
-      } catch (err) {
-        console.warn('Failed to load mobile referral data:', err);
-      } finally {
-        if (isMounted) setLoading(false);
+  const loadReferrals = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const endpoints = [
+        API_BASE_URL,
+        'http://localhost:5050/api',
+      ];
+      for (const base of endpoints) {
+        try {
+          const [sumRes, histRes] = await Promise.all([
+            fetch(`${base}/referrals/summary`, {
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            }),
+            fetch(`${base}/referrals/history`, {
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            }),
+          ]);
+          const sumData = await sumRes.json();
+          const histData = await histRes.json();
+          if (sumData && sumData.success) {
+            const s = sumData.statistics || sumData;
+            setStats({
+              totalReferrals: Number(s.totalReferrals || 0),
+              activeFriends: Number(s.activeFriends || 0),
+              inactiveFriends: Number(s.inactiveFriends || 0),
+              totalReferralRewardsEarned: Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0),
+            });
+            setTotalEarned(Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0));
+            setClaimableAmount(Number(s.availableToClaim ?? 0));
+            setClaimedTotal(Number(s.totalCommissionClaimed ?? 0));
+          }
+          if (histData && histData.success && Array.isArray(histData.referrals)) {
+            setFriendsList(histData.referrals);
+          }
+          break;
+        } catch {}
       }
-    };
+    } catch (err) {
+      console.warn('Failed to load mobile referral data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadReferrals();
-    return () => { isMounted = false; };
   }, [user]);
 
   useEffect(() => {
@@ -148,11 +150,49 @@ export const ReferralsScreen: React.FC = () => {
     setTimeout(() => setHasCopiedLink(false), 2000);
   };
 
-  const handleClaim = () => {
-    if (claimableAmount <= 0) return;
-    setClaimedTotal((prev) => +(prev + claimableAmount).toFixed(2));
-    setClaimableAmount(0);
-    Alert.alert('Commission Claimed!', `+${claimableAmount} GT added to your balance.`);
+  const handleClaim = async () => {
+    if (claimableAmount <= 0 || isClaiming) return;
+    setIsClaiming(true);
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const endpoints = [
+        API_BASE_URL,
+        'http://localhost:5050/api',
+      ];
+      let claimedSuccess = false;
+      for (const base of endpoints) {
+        try {
+          const res = await fetch(`${base}/referrals/claim`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            claimedSuccess = true;
+            const amt = Number(data.claimedAmount || claimableAmount);
+            setClaimedTotal((prev) => +(prev + amt).toFixed(2));
+            setClaimableAmount(0);
+            await refreshUserData();
+            Alert.alert('Commission Claimed!', `+${amt.toFixed(2)} GT successfully added to your wallet balance.`);
+            await loadReferrals();
+            break;
+          } else if (res.status === 400 || res.status === 404) {
+            Alert.alert('Claim Notice', data.message || 'Unable to claim commission.');
+            return;
+          }
+        } catch {}
+      }
+      if (!claimedSuccess) {
+        Alert.alert('Network Error', 'Unable to reach the server. Please check connection and try again.');
+      }
+    } catch (e: any) {
+      Alert.alert('Claim Error', e.message || 'An error occurred while claiming.');
+    } finally {
+      setIsClaiming(false);
+    }
   };
 
   const handleNativeShare = async () => {
@@ -445,12 +485,17 @@ export const ReferralsScreen: React.FC = () => {
 
                 <TouchableOpacity
                   onPress={handleClaim}
-                  disabled={claimableAmount <= 0}
-                  style={styles.claimBtnPill}
+                  disabled={claimableAmount <= 0 || isClaiming}
+                  style={[
+                    styles.claimBtnPill,
+                    claimableAmount > 0 ? styles.claimBtnPillActive : styles.claimBtnPillDisabled,
+                  ]}
                   activeOpacity={0.85}
                 >
-                  <Sparkles size={13} color="#86EFAC" />
-                  <Text style={styles.claimBtnText}>CLAIM</Text>
+                  <Sparkles size={13} color={claimableAmount > 0 ? "#FDE047" : "#86EFAC"} />
+                  <Text style={styles.claimBtnText}>
+                    {isClaiming ? 'CLAIMING...' : 'CLAIM'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -991,6 +1036,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 3,
+  },
+  claimBtnPillActive: {
+    backgroundColor: '#16A34A',
+    shadowColor: '#22C55E',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  claimBtnPillDisabled: {
+    backgroundColor: '#0A341B',
+    opacity: 0.45,
+    elevation: 0,
   },
   claimBtnText: {
     fontSize: 11.5,

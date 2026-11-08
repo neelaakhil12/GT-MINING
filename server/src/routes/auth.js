@@ -102,50 +102,21 @@ router.post('/signup', async (req, res) => {
         referralCodeUsed: referrerUser.referralCode,
         status: 'ACTIVE',
         rewardAmount: refReward,
-        rewardStatus: refReward > 0 ? 'CREDITED' : 'PENDING',
+        rewardStatus: refReward > 0 ? 'PENDING_CLAIM' : 'PENDING',
         createdAt: now,
-        rewardCreditedAt: refReward > 0 ? now : null
+        rewardCreditedAt: null
       };
       db.referrals.push(refRecord);
 
-      // If referral reward configured > 0, credit referrer's wallet
+      // Do NOT auto-credit referrer's wallet immediately.
+      // The reward is placed in 'PENDING_CLAIM' status and will be claimed when user taps CLAIM in Referrals tab.
       if (refReward > 0) {
-        let referrerWallet = db.wallets.find(w => w.userId === referrerUser.id);
-        if (!referrerWallet) {
-          referrerWallet = {
-            id: generateId('wal'),
-            userId: referrerUser.id,
-            availableBalance: 0.0,
-            lifetimeEarned: 0.0,
-            createdAt: now,
-            updatedAt: now
-          };
-          db.wallets.push(referrerWallet);
-        }
-        referrerWallet.availableBalance = Number((referrerWallet.availableBalance + refReward).toFixed(4));
-        referrerWallet.lifetimeEarned = Number((referrerWallet.lifetimeEarned + refReward).toFixed(4));
-        referrerWallet.updatedAt = now;
-
-        // Add ledger transaction
-        db.walletTransactions.push({
-          id: generateId('tx'),
-          userId: referrerUser.id,
-          type: 'REFERRAL_REWARD',
-          amount: refReward,
-          status: 'COMPLETED',
-          idempotencyKey: `idemp_ref_${referralId}`,
-          referenceId: referralId,
-          description: `Referral bonus: ${newUser.fullName} joined using your code ${referrerUser.referralCode}`,
-          createdAt: now,
-          createdBy: 'SYSTEM'
-        });
-
-        // Notify referrer
+        // Notify referrer that bonus is available to claim
         db.notifications.push({
           id: generateId('notif'),
           userId: referrerUser.id,
-          title: 'Referral Bonus Credited!',
-          message: `Your friend ${newUser.fullName} registered using your referral code. +${refReward} GT has been added to your wallet!`,
+          title: 'Referral Bonus Ready to Claim!',
+          message: `Your friend ${newUser.fullName} registered using your referral code. +${refReward} GT is available to claim in your Referrals tab!`,
           type: 'REFERRAL',
           readAt: null,
           createdAt: now

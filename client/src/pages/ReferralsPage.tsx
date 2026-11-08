@@ -47,7 +47,7 @@ const dividendSlides = [
 ];
 
 export const ReferralsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateWalletBalance } = useAuth();
   const { showToast } = useToast();
 
   const [activeSlide, setActiveSlide] = useState(0);
@@ -71,30 +71,33 @@ export const ReferralsPage: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Fetch real referral summary & friends from Database
-  useEffect(() => {
-    const fetchReferralData = async () => {
-      try {
-        const [sumRes, histRes] = await Promise.all([
-          api.getReferralSummary(),
-          api.getReferralHistory(),
-        ]);
-        if (sumRes && sumRes.success) {
-          const s = sumRes.statistics || sumRes.stats || sumRes;
-          setStats({
-            totalReferrals: Number(s.totalReferrals || 0),
-            activeFriends: Number(s.activeFriends || 0),
-            inactiveFriends: Number(s.inactiveFriends || 0),
-            totalReferralRewardsEarned: Number(s.totalReferralRewardsEarned || 0),
-          });
-          setTotalEarned(Number(s.totalReferralRewardsEarned || 0));
-        }
-        if (histRes && histRes.success && Array.isArray(histRes.referrals)) {
-          setFriendsList(histRes.referrals);
-        }
-      } catch (err) {
-        console.warn('Failed to load referral data:', err);
+  const fetchReferralData = async () => {
+    try {
+      const [sumRes, histRes] = await Promise.all([
+        api.getReferralSummary(),
+        api.getReferralHistory(),
+      ]);
+      if (sumRes && sumRes.success) {
+        const s = sumRes.statistics || sumRes.stats || sumRes;
+        setStats({
+          totalReferrals: Number(s.totalReferrals || 0),
+          activeFriends: Number(s.activeFriends || 0),
+          inactiveFriends: Number(s.inactiveFriends || 0),
+          totalReferralRewardsEarned: Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0),
+        });
+        setClaimableAmount(Number(s.availableToClaim ?? 0));
+        setClaimedAmount(Number(s.totalCommissionClaimed ?? 0));
+        setTotalEarned(Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0));
       }
-    };
+      if (histRes && histRes.success && Array.isArray(histRes.referrals)) {
+        setFriendsList(histRes.referrals);
+      }
+    } catch (err) {
+      console.warn('Failed to load referral data:', err);
+    }
+  };
+
+  useEffect(() => {
     fetchReferralData();
   }, []);
 
@@ -123,29 +126,42 @@ export const ReferralsPage: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2200);
   };
 
-  const handleClaimCommission = () => {
-    if (claimableAmount <= 0) {
+  const handleClaimCommission = async () => {
+    if (claimableAmount <= 0 || isClaiming) {
       showToast('No commission currently pending to claim.', 'info');
       return;
     }
     setIsClaiming(true);
     try {
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#22C55E', '#16A34A', '#FACC15', '#15803D'],
-      });
-    } catch (e) {
-      // Confetti fallback
-    }
+      const res = await api.claimReferralCommissions();
+      if (res && res.success) {
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.7 },
+            colors: ['#22C55E', '#16A34A', '#FACC15', '#15803D'],
+          });
+        } catch (e) {
+          // Confetti fallback
+        }
 
-    setTimeout(() => {
-      setClaimedAmount((prev) => +(prev + claimableAmount).toFixed(2));
-      showToast(`Successfully claimed +${claimableAmount.toFixed(2)} GT to wallet!`, 'success');
-      setClaimableAmount(0);
+        const amt = Number(res.claimedAmount || claimableAmount);
+        if (res.wallet && typeof res.wallet.availableBalance === 'number') {
+          updateWalletBalance(res.wallet.availableBalance, res.wallet.lifetimeEarned);
+        }
+        setClaimedAmount((prev) => +(prev + amt).toFixed(2));
+        setClaimableAmount(0);
+        showToast(res.message || `Successfully claimed +${amt.toFixed(2)} GT to wallet!`, 'success');
+        await fetchReferralData();
+      } else {
+        showToast(res?.message || 'Failed to claim referral reward.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error claiming referral commission.', 'error');
+    } finally {
       setIsClaiming(false);
-    }, 400);
+    }
   };
 
   const shareText = encodeURIComponent(
@@ -482,37 +498,48 @@ export const ReferralsPage: React.FC = () => {
               </span>
 
               {/* Claim Button with Rotating Line Animation */}
-              <div className="relative p-[2px] rounded-full overflow-hidden inline-flex items-center justify-center shrink-0 shadow-md shadow-[#22C55E]/20">
-                {/* Rotating line / border beam */}
-                <span
-                  className="absolute inset-[-150%] animate-[border-beam-spin_2.5s_linear_infinite] pointer-events-none"
-                  style={{
-                    background:
-                      'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 270deg, rgba(34,197,94,0.3) 300deg, #22C55E 335deg, #86EFAC 352deg, #FFFFFF 360deg)',
-                  }}
-                />
-                {/* Neon blur glow layer */}
-                <span
-                  className="absolute inset-[-150%] animate-[border-beam-spin_2.5s_linear_infinite] blur-[3px] pointer-events-none"
-                  style={{
-                    background:
-                      'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 290deg, #22C55E 340deg, #86EFAC 355deg, #FFFFFF 360deg)',
-                  }}
-                />
+              <div className={`relative p-[2px] rounded-full overflow-hidden inline-flex items-center justify-center shrink-0 transition-all ${
+                claimableAmount > 0
+                  ? 'shadow-lg shadow-[#22C55E]/30 scale-105'
+                  : 'shadow-none opacity-50'
+              }`}>
+                {/* Rotating line / border beam when claimable */}
+                {claimableAmount > 0 && (
+                  <>
+                    <span
+                      className="absolute inset-[-150%] animate-[border-beam-spin_2s_linear_infinite] pointer-events-none"
+                      style={{
+                        background:
+                          'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 270deg, rgba(34,197,94,0.4) 300deg, #22C55E 335deg, #86EFAC 352deg, #FFFFFF 360deg)',
+                      }}
+                    />
+                    <span
+                      className="absolute inset-[-150%] animate-[border-beam-spin_2s_linear_infinite] blur-[3px] pointer-events-none"
+                      style={{
+                        background:
+                          'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 290deg, #22C55E 340deg, #86EFAC 355deg, #FFFFFF 360deg)',
+                      }}
+                    />
+                  </>
+                )}
                 <button
                   onClick={handleClaimCommission}
                   disabled={isClaiming || claimableAmount <= 0}
-                  className="relative z-10 px-4 py-2 rounded-full bg-[#0A341B] hover:bg-[#15803D] active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-inner"
+                  className={`relative z-10 px-4 py-2 rounded-full font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-inner ${
+                    claimableAmount > 0
+                      ? 'bg-gradient-to-r from-[#15803D] to-[#22C55E] hover:from-[#16A34A] hover:to-[#4ADE80] text-white cursor-pointer active:scale-95'
+                      : 'bg-[#0A341B]/80 text-neutral-400 cursor-not-allowed pointer-events-none'
+                  }`}
                   aria-label="Claim commission"
                 >
                   {isClaiming ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Claiming</span>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                      <span>Claiming...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5 text-[#86EFAC] animate-pulse" />
+                      <Sparkles className={`w-3.5 h-3.5 ${claimableAmount > 0 ? 'text-yellow-300 animate-bounce' : 'text-[#86EFAC]'}`} />
                       <span>Claim</span>
                     </>
                   )}

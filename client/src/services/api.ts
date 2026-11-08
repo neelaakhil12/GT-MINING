@@ -95,6 +95,7 @@ export const api = {
   // Referrals
   getReferralSummary: () => request<any>('/referrals/summary'),
   getReferralHistory: () => request<any>('/referrals/history'),
+  claimReferralCommissions: () => request<any>('/referrals/claim', { method: 'POST' }),
 
   // Wallet
   getWallet: () => request<any>('/wallet'),
