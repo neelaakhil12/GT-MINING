@@ -91,8 +91,8 @@ export const WalletPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3 Metric Breakdown Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Metric Breakdown Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-2xl bg-white/80 border border-white shadow-sm space-y-1">
             <div className="flex items-center justify-between text-xs font-semibold text-[#1E5E36]">
               <span>Mining Rewards Total</span>
@@ -110,16 +110,6 @@ export const WalletPage: React.FC = () => {
             </div>
             <p className="text-xl font-black text-[#0A341B]">
               {(walletData?.referralRewardsTotal ?? 0).toFixed(2)} GT
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/80 border border-white shadow-sm space-y-1">
-            <div className="flex items-center justify-between text-xs font-semibold text-[#1E5E36]">
-              <span>Admin Adjustments</span>
-              <TrendingUp className="w-4 h-4 text-[#D97706]" />
-            </div>
-            <p className="text-xl font-black text-[#0A341B]">
-              {(walletData?.adminAdjustmentsTotal ?? 0).toFixed(2)} GT
             </p>
           </div>
         </div>
@@ -146,7 +136,7 @@ export const WalletPage: React.FC = () => {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {['ALL', 'MINING_REWARD', 'REFERRAL_REWARD', 'ADMIN_ADJUSTMENT'].map((type) => (
+            {['ALL', 'MINING_REWARD', 'REFERRAL_REWARD'].map((type) => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}

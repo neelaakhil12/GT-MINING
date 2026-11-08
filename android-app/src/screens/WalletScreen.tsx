@@ -21,25 +21,66 @@ import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { FloatingBottomNav } from '../components/FloatingBottomNav';
+import { appStorage } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 
 export const WalletScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletStats, setWalletStats] = useState({
+    miningRewardsTotal: 0,
+    referralRewardsTotal: 0,
+    adminAdjustmentsTotal: 0,
+  });
 
-  useEffect(() => {
-    refreshUserData();
-  }, []);
-
-  // Exact tabs matching user's screenshots
+  // Filter tabs - ADMIN ADJUSTMENT removed
   const filterTabs = [
     { key: 'ALL', label: 'All Ledger' },
     { key: 'MINING_REWARD', label: 'MINING REWARD' },
     { key: 'REFERRAL_REWARD', label: 'REFERRAL REWARD' },
-    { key: 'ADMIN_ADJUSTMENT', label: 'ADMIN ADJUSTMENT' },
   ];
 
-  // Transactions initialized to empty by default (matching user's screenshot 3 & 4)
-  const [transactions] = useState<any[]>([]);
+  const fetchWallet = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const endpoints = [
+        API_BASE_URL,
+        'http://localhost:5050/api',
+      ];
+      for (const base of endpoints) {
+        try {
+          const res = await fetch(`${base}/wallet`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            if (Array.isArray(data.transactions)) {
+              setTransactions(data.transactions);
+            }
+            if (data.wallet) {
+              setWalletStats({
+                miningRewardsTotal: Number(data.wallet.miningRewardsTotal || 0),
+                referralRewardsTotal: Number(data.wallet.referralRewardsTotal || 0),
+                adminAdjustmentsTotal: Number(data.wallet.adminAdjustmentsTotal || 0),
+              });
+            }
+            break;
+          }
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Failed to fetch mobile wallet data:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshUserData();
+    fetchWallet();
+  }, []);
 
   const filtered = filterType === 'ALL'
     ? transactions
@@ -103,7 +144,9 @@ export const WalletScreen: React.FC = () => {
                 <Text style={styles.metricLabel}>Mining Rewards Total</Text>
                 <ArrowUpRight size={16} color="#16A34A" strokeWidth={2.2} />
               </View>
-              <Text style={styles.metricAmount}>0.00 GT</Text>
+              <Text style={styles.metricAmount}>
+                {walletStats.miningRewardsTotal.toFixed(2)} GT
+              </Text>
             </View>
 
             {/* Referral Bonuses Total */}
@@ -112,16 +155,9 @@ export const WalletScreen: React.FC = () => {
                 <Text style={styles.metricLabel}>Referral Bonuses Total</Text>
                 <ArrowUpRight size={16} color="#16A34A" strokeWidth={2.2} />
               </View>
-              <Text style={styles.metricAmount}>0.00 GT</Text>
-            </View>
-
-            {/* Admin Adjustments */}
-            <View style={styles.metricCard}>
-              <View style={styles.metricCardTop}>
-                <Text style={styles.metricLabel}>Admin Adjustments</Text>
-                <TrendingUp size={16} color="#D97706" strokeWidth={2.2} />
-              </View>
-              <Text style={styles.metricAmount}>0.00 GT</Text>
+              <Text style={styles.metricAmount}>
+                {walletStats.referralRewardsTotal.toFixed(2)} GT
+              </Text>
             </View>
           </View>
 
@@ -181,10 +217,9 @@ export const WalletScreen: React.FC = () => {
               <View
                 style={[
                   styles.activeIndicatorBar,
-                  filterType === 'ALL' && { width: '28%', left: '0%' },
-                  filterType === 'MINING_REWARD' && { width: '38%', left: '28%' },
-                  filterType === 'REFERRAL_REWARD' && { width: '42%', left: '50%' },
-                  filterType === 'ADMIN_ADJUSTMENT' && { width: '45%', left: '55%' },
+                  filterType === 'ALL' && { width: '32%', left: '0%' },
+                  filterType === 'MINING_REWARD' && { width: '45%', left: '28%' },
+                  filterType === 'REFERRAL_REWARD' && { width: '48%', left: '55%' },
                 ]}
               />
             </View>
