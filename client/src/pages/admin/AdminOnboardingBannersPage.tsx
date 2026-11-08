@@ -99,8 +99,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [badgeText, setBadgeText] = useState('GT PROTOCOL');
-  const [ctaText, setCtaText] = useState('Next Step →');
-  const [ctaLink, setCtaLink] = useState('/signup');
   const [stepNumber, setStepNumber] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -152,8 +150,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     setDescription('');
     setImageUrl('');
     setBadgeText('GT PROTOCOL');
-    setCtaText('Next Step →');
-    setCtaLink('/signup');
     setStepNumber(banners.length + 1);
     setIsActive(true);
     setModalOpen(true);
@@ -166,8 +162,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     setDescription(banner.description);
     setImageUrl(banner.imageUrl);
     setBadgeText(banner.badgeText || 'GT PROTOCOL');
-    setCtaText(banner.ctaText || 'Get Started →');
-    setCtaLink(banner.ctaLink || '/signup');
     setStepNumber(banner.stepNumber || 1);
     setIsActive(banner.isActive !== false);
     setModalOpen(true);
@@ -193,8 +187,8 @@ export const AdminOnboardingBannersPage: React.FC = () => {
           description: description.trim(),
           imageUrl: imageUrl.trim(),
           badgeText: badgeText.trim(),
-          ctaText: ctaText.trim(),
-          ctaLink: ctaLink.trim(),
+          ctaText: 'Next Step →',
+          ctaLink: '/signup',
           stepNumber: Number(stepNumber),
           isActive,
         });
@@ -208,8 +202,8 @@ export const AdminOnboardingBannersPage: React.FC = () => {
           description: description.trim(),
           imageUrl: imageUrl.trim(),
           badgeText: badgeText.trim(),
-          ctaText: ctaText.trim(),
-          ctaLink: ctaLink.trim(),
+          ctaText: 'Next Step →',
+          ctaLink: '/signup',
           stepNumber: Number(stepNumber),
           isActive,
         });
@@ -330,11 +324,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
                     <p className="text-[11px] text-[#A7C9B1] line-clamp-2 leading-relaxed">
                       {b.description}
                     </p>
-
-                    <div className="flex items-center gap-3 pt-1 text-[10px] text-[#A7C9B1]">
-                      <span>CTA: <strong className="text-white">{b.ctaText}</strong></span>
-                      <span>Link: <strong className="text-[#86EFAC]">{b.ctaLink}</strong></span>
-                    </div>
                   </div>
                 </div>
 
@@ -423,7 +412,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
 
                 {/* Simulated CTA Button */}
                 <div className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs text-center shadow-lg flex items-center justify-center gap-1.5 mt-2">
-                  <span>{currentPreview.ctaText || 'Get Started →'}</span>
+                  <span>Next Step →</span>
                 </div>
 
                 {/* Slider Navigation controls */}
@@ -608,31 +597,6 @@ export const AdminOnboardingBannersPage: React.FC = () => {
                   placeholder="Explain this feature or benefit to new visitors..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none resize-none leading-relaxed"
                 />
-              </div>
-
-              {/* CTA Button Text & Link */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#A7C9B1]">CTA Button Text</label>
-                  <input
-                    type="text"
-                    value={ctaText}
-                    onChange={(e) => setCtaText(e.target.value)}
-                    placeholder="e.g. Next Step →"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#A7C9B1]">CTA Target Link</label>
-                  <input
-                    type="text"
-                    value={ctaLink}
-                    onChange={(e) => setCtaLink(e.target.value)}
-                    placeholder="e.g. /signup or /tour"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none"
-                  />
-                </div>
               </div>
 
               {/* Active Toggle */}

@@ -106,6 +106,15 @@ export const OnboardingScreen: React.FC = () => {
     };
   }, []);
 
+  // Preload and prefetch all slide images into memory
+  useEffect(() => {
+    slides.forEach((s) => {
+      if (typeof s.image === 'object' && s.image && 'uri' in s.image && s.image.uri) {
+        Image.prefetch(s.image.uri).catch(() => {});
+      }
+    });
+  }, [slides]);
+
   // If user is already authenticated, bypass onboarding and go directly to main app
   useEffect(() => {
     if (isAuthenticated) {
@@ -170,12 +179,21 @@ export const OnboardingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Fullscreen Background Image */}
-      <Image
-        source={activeSlide.image}
-        style={styles.bgImage}
-        resizeMode="cover"
-      />
+      {/* Fullscreen Background Images - Pre-mounted to prevent black screen delay */}
+      {slides.map((s, idx) => (
+        <Image
+          key={`bg_${s.id || idx}`}
+          source={s.image}
+          style={[
+            styles.bgImage,
+            {
+              opacity: idx === currentIdx ? 1 : 0,
+              zIndex: idx === currentIdx ? 0 : -1,
+            },
+          ]}
+          resizeMode="cover"
+        />
+      ))}
 
       {/* Dark cyber gradient overlay for perfect readability */}
       <View style={styles.darkGradientOverlay} />

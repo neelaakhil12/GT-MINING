@@ -130,6 +130,16 @@ export const LandingPage: React.FC = () => {
     } catch {}
   };
 
+  // Instant Image Preloading to eliminate black screen delays
+  useEffect(() => {
+    slides.forEach((s) => {
+      if (s.image) {
+        const img = new Image();
+        img.src = s.image;
+      }
+    });
+  }, [slides]);
+
   useEffect(() => {
     loadOnboardingBanners();
     const handleUpdate = () => loadOnboardingBanners();
@@ -459,17 +469,23 @@ export const LandingPage: React.FC = () => {
         {/* Onboarding Container: Full screen mobile view, Centered Phone Frame on Desktop */}
         <div className="relative w-full h-full sm:max-w-[430px] sm:h-[880px] sm:max-h-[92vh] sm:rounded-[44px] sm:border-[6px] sm:border-neutral-800/80 sm:shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col justify-between bg-black">
           
-          {/* Background Visual Layer */}
+          {/* Background Visual Layer - All slides kept loaded in DOM for instantaneous 0ms display */}
           <div className="absolute inset-0 z-0">
-            <img
-              key={slide.image}
-              src={slide.image}
-              alt={slide.title}
-              className="w-full h-full object-cover transition-all duration-500 scale-100"
-            />
+            {slides.map((s, idx) => (
+              <img
+                key={s.image || idx}
+                src={s.image}
+                alt={s.title}
+                loading="eager"
+                decoding="async"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+                }`}
+              />
+            ))}
             {/* Ambient Gradient Overlay for text and button legibility */}
             <div
-              className={`absolute inset-0 pointer-events-none transition-colors duration-500 ${
+              className={`absolute inset-0 pointer-events-none transition-colors duration-500 z-[1] ${
                 slide.theme === 'light'
                   ? 'bg-gradient-to-b from-white/95 via-white/10 to-white/90'
                   : 'bg-gradient-to-b from-black/85 via-black/20 to-black/95'
