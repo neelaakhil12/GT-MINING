@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,34 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [pendingEmailCount, setPendingEmailCount] = useState<number>(0);
+
+  // Poll for pending email change requests count
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPendingCount = async () => {
+      try {
+        const res = await api.getAdminEmailRequests();
+        if (res && res.success && isMounted) {
+          if (typeof res.pendingCount === 'number') {
+            setPendingEmailCount(res.pendingCount);
+          } else if (Array.isArray(res.requests)) {
+            const count = res.requests.filter((r: any) => r.status === 'PENDING').length;
+            setPendingEmailCount(count);
+          }
+        }
+      } catch (err) {
+        // Background poll - silent catch
+      }
+    };
+
+    fetchPendingCount();
+    const timer = setInterval(fetchPendingCount, 8000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [location.pathname]);
 
   const navSections = [
     {
@@ -52,7 +81,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       heading: 'NETWORK MANAGEMENT',
       items: [
         { label: 'Users Directory', path: '/admin/users', icon: Users },
-        { label: 'Email Change Requests', path: '/admin/email-requests', icon: Mail },
+        {
+          label: 'Email Change Requests',
+          path: '/admin/email-requests',
+          icon: Mail,
+          badge: pendingEmailCount,
+        },
         { label: 'Mining Settings', path: '/admin/mining-settings', icon: Pickaxe },
         { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
         { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
@@ -80,7 +114,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/home-banners')) return 'Home Page Carousel Banners';
     if (p.includes('/tasks')) return 'Daily & Video Tasks Quests';
     if (p.includes('/users')) return 'Users Directory';
-    if (p.includes('/email-requests')) return 'Email Change Requests';
+    if (p.includes('/email-requests')) {
+      return pendingEmailCount > 0
+        ? `Email Change Requests (${pendingEmailCount} Pending)`
+        : 'Email Change Requests';
+    }
     if (p.includes('/mining-settings')) return 'Mining Protocol Settings';
     if (p.includes('/referrals')) return 'Referral Commissions & Dividends';
     if (p.includes('/transactions')) return 'Transactions & Balances';
@@ -146,21 +184,32 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <div className="space-y-1">
                   {sec.items.map((item) => {
                     const Icon = item.icon;
+                    const badge = (item as any).badge;
                     return (
                       <NavLink
                         key={item.path}
                         to={item.path}
                         onClick={() => setMobileSidebarOpen(false)}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all group ${
                             isActive
                               ? 'bg-gradient-to-r from-[#22C55E]/20 to-[#22C55E]/5 text-white border-l-4 border-[#22C55E] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
                               : 'text-[#A7C9B1] hover:text-white hover:bg-white/5'
                           }`
                         }
                       >
-                        <Icon className="w-4 h-4 text-[#86EFAC] shrink-0" />
-                        <span className="truncate">{item.label}</span>
+                        <div className="flex items-center gap-3 min-w-0 truncate">
+                          <Icon className="w-4 h-4 text-[#86EFAC] shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {typeof badge === 'number' && badge > 0 && (
+                          <span
+                            title={`${badge} pending email change request${badge > 1 ? 's' : ''}`}
+                            className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EF4444] text-white shadow-md shadow-red-500/50 flex items-center justify-center shrink-0 min-w-[20px] animate-pulse"
+                          >
+                            {badge}
+                          </span>
+                        )}
                       </NavLink>
                     );
                   })}

@@ -86,6 +86,7 @@ router.get('/dashboard', (req, res) => {
 
     const oneDayMs = 24 * 3600 * 1000;
     const dailyActiveMinersCount = nonDeletedUsers.filter(u => u.lastMiningAt && (nowMs - new Date(u.lastMiningAt).getTime()) <= oneDayMs).length;
+    const pendingEmailRequestsCount = (db.emailChangeRequests || []).filter(r => r.status === 'PENDING').length;
 
     return res.json({
       success: true,
@@ -97,6 +98,7 @@ router.get('/dashboard', (req, res) => {
         totalMiningClaims,
         totalCoinsIssued: Number(totalCoinsIssued.toFixed(4)),
         totalReferralRewardsCredited: Number(totalReferralRewardsCredited.toFixed(4)),
+        pendingEmailRequestsCount,
         settings
       },
       recentRegistrations,
@@ -738,7 +740,8 @@ router.delete('/tasks/:id', (req, res) => {
 router.get('/email-change-requests', (req, res) => {
   const db = readDB();
   const requests = (db.emailChangeRequests || []).slice().reverse();
-  return res.json({ success: true, requests });
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  return res.json({ success: true, requests, pendingCount });
 });
 
 // POST /api/admin/email-change-requests/:id/approve
