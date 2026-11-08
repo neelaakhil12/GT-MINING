@@ -67,6 +67,22 @@ export const AdminHomeBannersPage: React.FC = () => {
       const res = await api.getAdminHomeBanners();
       if (res.success) {
         setBanners(res.banners || []);
+        if (Array.isArray(res.banners)) {
+          const mapped = res.banners
+            .filter((b: any) => b.isActive !== false)
+            .map((b: any) => ({
+              id: b.id,
+              image: b.imageUrl,
+              tag: b.tag || 'GT ECOSYSTEM',
+              title: b.title,
+              description: b.description,
+              ctaText: b.ctaText || 'Explore Now',
+              ctaLink: b.targetRoute || '/mining',
+              accentColor: b.accentColor || '#22C55E',
+            }));
+          localStorage.setItem('gt_cached_home_banners', JSON.stringify(mapped));
+          window.dispatchEvent(new Event('gt_db_updated'));
+        }
       }
     } catch (err: any) {
       showToast('Failed to load home page banners', 'error');

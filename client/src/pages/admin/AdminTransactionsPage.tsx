@@ -186,8 +186,8 @@ export const AdminTransactionsPage: React.FC = () => {
         {transactions.length === 0 ? (
           <p className="text-xs text-[#A7C9B1] py-8 text-center">No transactions recorded yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <table className="w-full text-left text-xs min-w-[580px]">
               <thead className="bg-[#071F14]/70 text-[#A7C9B1] uppercase font-semibold">
                 <tr>
                   <th className="p-3 rounded-l-lg">User</th>

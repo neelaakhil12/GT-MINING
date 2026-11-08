@@ -20,12 +20,35 @@ export const MiningPage: React.FC = () => {
   const { wallet, updateWalletBalance } = useAuth();
   const { showToast } = useToast();
 
-  const [status, setStatus] = useState<MiningStatus | null>(null);
-  const [history, setHistory] = useState<MiningClaim[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<MiningStatus | null>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_mining_status');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  });
+  const [history, setHistory] = useState<MiningClaim[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_mining_history');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return !localStorage.getItem('gt_cached_mining_status');
+  });
   const [claiming, setClaiming] = useState(false);
   const [countdown, setCountdown] = useState<string>('00:00:00');
-  const [isEligible, setIsEligible] = useState<boolean>(false);
+  const [isEligible, setIsEligible] = useState<boolean>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_mining_status');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return Boolean(parsed.isEligible);
+      }
+    } catch {}
+    return false;
+  });
   const [isFastSpinning, setIsFastSpinning] = useState<boolean>(false);
   const globeRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +67,9 @@ export const MiningPage: React.FC = () => {
         setStatus(statusRes);
         setIsEligible(statusRes.isEligible);
         updateWalletBalance(statusRes.availableBalance, statusRes.lifetimeEarned);
+        try {
+          localStorage.setItem('gt_cached_mining_status', JSON.stringify(statusRes));
+        } catch {}
         if (statusRes.cooldownSeconds) {
           const hours = Math.max(1, Math.round(Number(statusRes.cooldownSeconds) / 3600));
           localStorage.setItem('gt_mining_cycle_hours', String(hours));
@@ -53,6 +79,9 @@ export const MiningPage: React.FC = () => {
 
       if (historyRes.success) {
         setHistory(historyRes.claims || []);
+        try {
+          localStorage.setItem('gt_cached_mining_history', JSON.stringify(historyRes.claims || []));
+        } catch {}
       }
     } catch (err: any) {
       showToast(err.message || 'Failed to sync mining node data', 'error');

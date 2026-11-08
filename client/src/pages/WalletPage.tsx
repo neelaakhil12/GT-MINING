@@ -22,10 +22,24 @@ export const WalletPage: React.FC = () => {
   const { wallet: authWallet, updateWalletBalance } = useAuth();
   const { showToast } = useToast();
 
-  const [walletData, setWalletData] = useState<any>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [walletData, setWalletData] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_wallet_data');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  });
+  const [transactions, setTransactions] = useState<WalletTransaction[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_wallet_tx');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return [];
+  });
   const [filterType, setFilterType] = useState<string>('ALL');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    return !localStorage.getItem('gt_cached_wallet_data') && !authWallet;
+  });
 
   useEffect(() => {
     fetchWallet();
@@ -38,6 +52,10 @@ export const WalletPage: React.FC = () => {
         setWalletData(res.wallet);
         setTransactions(res.transactions || []);
         updateWalletBalance(res.wallet.availableBalance, res.wallet.lifetimeEarned);
+        try {
+          localStorage.setItem('gt_cached_wallet_data', JSON.stringify(res.wallet));
+          localStorage.setItem('gt_cached_wallet_tx', JSON.stringify(res.transactions || []));
+        } catch {}
       }
     } catch (err: any) {
       showToast(err.message || 'Failed to fetch wallet ledger', 'error');

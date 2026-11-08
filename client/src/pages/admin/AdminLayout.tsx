@@ -262,44 +262,45 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </aside>
 
       {/* RIGHT MAIN CONTENT AREA */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 lg:pl-72 flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 h-16 bg-[#06180E]/90 backdrop-blur-xl border-b border-[#22C55E]/15 px-4 sm:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 h-16 bg-[#06180E]/90 backdrop-blur-xl border-b border-[#22C55E]/15 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 w-full">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-white/5 text-[#86EFAC] hover:bg-white/10 cursor-pointer"
+              className="lg:hidden p-2 rounded-xl bg-white/5 text-[#86EFAC] hover:bg-white/10 cursor-pointer shrink-0"
+              aria-label="Open Admin Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-[#86EFAC] font-mono uppercase">Admin Panel /</span>
-                <span className="text-xs sm:text-sm font-black text-white">{getPageTitle()}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="hidden sm:inline text-[10px] text-[#86EFAC] font-mono uppercase shrink-0">Admin Panel /</span>
+                <span className="text-xs sm:text-sm font-black text-white truncate">{getPageTitle()}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[11px] font-mono text-[#86EFAC]">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[11px] font-mono text-[#86EFAC]">
               <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
               <span>Authority Node Synced</span>
             </div>
 
             <NavLink
               to="/dashboard"
-              className="text-xs font-bold text-[#A7C9B1] hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
+              className="text-xs font-bold text-[#A7C9B1] hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 shrink-0"
               title="Open website dashboard"
             >
-              <span>View Site</span>
-              <ExternalLink className="w-3 h-3" />
+              <span className="hidden xs:inline">View Site</span>
+              <ExternalLink className="w-3.5 h-3.5" />
             </NavLink>
           </div>
         </header>
 
         {/* Page Content Body */}
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden w-full max-w-full min-w-0">
           {children}
         </main>
       </div>

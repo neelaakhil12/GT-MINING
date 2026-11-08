@@ -125,8 +125,8 @@ export const AdminUsersPage: React.FC = () => {
         ) : users.length === 0 ? (
           <p className="text-xs text-[#A7C9B1] py-8 text-center">No matching users found.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <table className="w-full text-left text-xs min-w-[620px]">
               <thead className="bg-[#071F14]/70 text-[#A7C9B1] uppercase font-semibold">
                 <tr>
                   <th className="p-3 rounded-l-lg">User</th>

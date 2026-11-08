@@ -23,8 +23,16 @@ export const DashboardPage: React.FC = () => {
   const { user, wallet } = useAuth();
   const { showToast } = useToast();
 
-  const [data, setData] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardSummary | null>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_dashboard');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    return !localStorage.getItem('gt_cached_dashboard');
+  });
   const [countdownStr, setCountdownStr] = useState<string>('00:00:00');
 
   useEffect(() => {
@@ -36,6 +44,9 @@ export const DashboardPage: React.FC = () => {
       const res = await api.getDashboardSummary();
       if (res.success) {
         setData(res);
+        try {
+          localStorage.setItem('gt_cached_dashboard', JSON.stringify(res));
+        } catch {}
       }
     } catch (err: any) {
       showToast(err.message || 'Failed to load dashboard data', 'error');

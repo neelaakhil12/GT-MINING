@@ -15,52 +15,30 @@ import { GtCoinStream3D } from './GtCoinStream3D';
 import { GtCoinOrbitWeb } from './GtCoinOrbitWeb';
 import { api } from '../services/api';
 
-const defaultSlides = [
-  {
-    id: 1,
-    image: '/banners/slide1.jpg',
-    tag: 'GT ECOSYSTEM',
-    title: 'Join the Future of Mining',
-    description: 'Experience the GT network.',
-    ctaText: 'Explore Now',
-    ctaLink: '/mining',
-    accentColor: '#22C55E',
-  },
-  {
-    id: 2,
-    image: '/banners/slide2.jpg',
-    tag: 'GLOBAL ALLIANCE',
-    title: 'Exclusive Rewards',
-    description: 'Invite your circle and multiply your GT mining hashpower.',
-    ctaText: 'Invite Friends',
-    ctaLink: '/referrals',
-    accentColor: '#38BDF8',
-  },
-  {
-    id: 3,
-    image: '/banners/slide3.jpg',
-    tag: 'DECENTRALIZED VAULT',
-    title: 'Next-Gen Asset Security',
-    description: 'Fair allocation protocol locked by 4-hour cryptographic epochs.',
-    ctaText: 'View Wallet',
-    ctaLink: '/wallet',
-    accentColor: '#A855F7',
-  },
-];
-
 export const HomeBanners: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [slides, setSlides] = useState(defaultSlides);
+  const [slides, setSlides] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_home_banners');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return [];
+  });
 
   const loadBanners = async () => {
     try {
       const res = await api.getPublicHomeBanners();
-      if (res.success && res.banners && res.banners.length > 0) {
+      if (res.success && Array.isArray(res.banners)) {
         const mapped = res.banners
           .filter((b: any) => b.isActive !== false)
           .map((b: any) => ({
             id: b.id,
-            image: b.imageUrl || '/banners/slide1.jpg',
+            image: b.imageUrl,
             tag: b.tag || 'GT ECOSYSTEM',
             title: b.title,
             description: b.description,
@@ -70,6 +48,9 @@ export const HomeBanners: React.FC = () => {
           }));
         if (mapped.length > 0) {
           setSlides(mapped);
+          try {
+            localStorage.setItem('gt_cached_home_banners', JSON.stringify(mapped));
+          } catch {}
         }
       }
     } catch {}
@@ -84,11 +65,24 @@ export const HomeBanners: React.FC = () => {
 
   // Auto stream slides (1 image per 1.5 seconds as requested)
   useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 1500);
     return () => clearInterval(timer);
   }, [slides.length]);
+
+  if (slides.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="relative rounded-3xl overflow-hidden h-[165px] sm:h-[210px] md:h-[260px] w-full bg-[#071F14] border-2 border-white/40 shadow-[0_14px_35px_rgba(0,0,0,0.12)] animate-pulse flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+            <img src="/gt-header-logo.png" alt="Loading" className="w-8 h-8 object-contain opacity-50" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

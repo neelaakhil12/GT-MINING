@@ -49,7 +49,16 @@ const hardcodedNodePosts: CommunityPost[] = [
 export const CommunityPage: React.FC = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [posts, setPosts] = useState<CommunityPost[]>(hardcodedNodePosts);
+  const [posts, setPosts] = useState<CommunityPost[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_community_posts');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return hardcodedNodePosts;
+  });
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
@@ -81,10 +90,13 @@ export const CommunityPage: React.FC = () => {
   }, [selectedCategory, user?.id, user?.email]);
 
   const fetchPosts = async (isBackground = false) => {
-    if (!isBackground) setLoading(true);
+    if (!isBackground && posts.length === 0) setLoading(true);
     try {
       const res = await api.getCommunityPosts();
       if (res.success && res.posts) {
+        try {
+          localStorage.setItem('gt_cached_community_posts', JSON.stringify(res.posts));
+        } catch {}
         let loaded = res.posts;
         if (selectedCategory === 'Latest') {
           const recent = loaded.filter((p: CommunityPost) => isWithin24Hours(p.createdAt || p.updatedAt));
