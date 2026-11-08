@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Video,
   Plus,
@@ -16,6 +16,7 @@ import {
   Clock,
   Coins,
   Globe,
+  Upload,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -154,6 +155,25 @@ export const AdminTasksPage: React.FC = () => {
   const [iconType, setIconType] = useState<AdminTaskItem['iconType']>('video');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('Video size should be less than 50MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setUrl(reader.result);
+        setIconType('video');
+        showToast('Video file loaded successfully!', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -221,6 +241,19 @@ export const AdminTasksPage: React.FC = () => {
 
     setSaving(true);
     try {
+      let finalIconType: AdminTaskItem['iconType'] = 'video';
+      if (category === 'video') {
+        finalIconType = 'video';
+      } else {
+        if (url.includes('youtube.com') || url.includes('youtu.be')) finalIconType = 'youtube';
+        else if (url.includes('x.com') || url.includes('twitter.com')) finalIconType = 'x';
+        else if (url.includes('instagram.com')) finalIconType = 'instagram';
+        else if (url.includes('t.me') || url.includes('telegram')) finalIconType = 'telegram';
+        else if (url.includes('facebook.com')) finalIconType = 'facebook';
+        else if (url.includes('tiktok.com')) finalIconType = 'tiktok';
+        else finalIconType = 'x';
+      }
+
       const payload = {
         category,
         title: title.trim(),
@@ -230,7 +263,7 @@ export const AdminTasksPage: React.FC = () => {
         buttonLabel: buttonLabel.trim() || (category === 'video' ? 'Watch video' : 'Follow'),
         url: url.trim(),
         duration: category === 'video' ? Number(duration) || 15 : 0,
-        iconType,
+        iconType: finalIconType,
         isActive,
       };
 
@@ -670,31 +703,6 @@ export const AdminTasksPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Platform Preset Picker */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#A7C9B1]">Platform / Icon Preset</label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {PLATFORM_PRESETS.map((p) => (
-                    <button
-                      key={p.iconType}
-                      type="button"
-                      onClick={() => {
-                        setIconType(p.iconType as any);
-                        setCategory(p.category);
-                        setButtonLabel(p.defaultBtn);
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
-                        iconType === p.iconType
-                          ? 'bg-[#22C55E]/30 text-[#86EFAC] border-[#22C55E]'
-                          : 'bg-[#05160E] text-[#A7C9B1] border-white/10 hover:border-white/30'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Task Title */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#A7C9B1]">Task Title *</label>
@@ -708,27 +716,93 @@ export const AdminTasksPage: React.FC = () => {
                 />
               </div>
 
-              {/* Video / Action URL */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#A7C9B1]">
-                    {category === 'video' ? 'Video URL / YouTube Link *' : 'Target Action URL / Social Link *'}
-                  </label>
-                  <span className="text-[10px] text-[#86EFAC]">Opens when user clicks</span>
+              {/* Video Content (Direct Upload File OR YouTube Link) */}
+              {category === 'video' ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#A7C9B1]">Video Source *</label>
+                    <span className="text-[10px] text-[#86EFAC]">Direct Video Upload or YouTube Link</span>
+                  </div>
+
+                  {/* Hidden Video File Input */}
+                  <input
+                    ref={videoFileInputRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                    onChange={handleVideoFileChange}
+                    className="hidden"
+                  />
+
+                  {/* Option 1: Direct File Upload */}
+                  <button
+                    type="button"
+                    onClick={() => videoFileInputRef.current?.click()}
+                    className="w-full py-3.5 px-4 rounded-xl bg-[#0F3520] hover:bg-[#16492C] border-2 border-dashed border-[#22C55E]/50 hover:border-[#22C55E] text-[#86EFAC] text-xs font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md group"
+                  >
+                    <Upload className="w-4 h-4 text-[#22C55E] group-hover:scale-110 transition-transform" />
+                    <span>Choose Video File to Upload</span>
+                    <span className="text-[10px] text-[#A7C9B1] font-normal font-mono">(MP4, WebM up to 50MB)</span>
+                  </button>
+
+                  {/* Live Video Preview if uploaded */}
+                  {url && (url.startsWith('data:video') || url.endsWith('.mp4') || url.endsWith('.webm')) && (
+                    <div className="rounded-xl overflow-hidden bg-black border border-[#22C55E]/40 relative mt-2 shadow-lg">
+                      <video src={url} controls className="w-full max-h-48 object-contain bg-black" />
+                      <button
+                        type="button"
+                        onClick={() => setUrl('')}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 text-red-400 hover:text-white hover:bg-red-600 transition-colors cursor-pointer"
+                        title="Remove uploaded video"
+                      >
+                        <CloseIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* OR Divider */}
+                  <div className="flex items-center gap-2 my-1">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-[10px] text-[#A7C9B1] uppercase font-bold tracking-wider">
+                      OR Paste YouTube / Web Link
+                    </span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+
+                  {/* Option 2: YouTube / Video URL Input */}
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      required={!url}
+                      value={url.startsWith('data:video') ? '(Direct video file uploaded ✓)' : url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                      disabled={url.startsWith('data:video')}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-mono text-[11px] disabled:opacity-75 disabled:text-[#86EFAC]"
+                    />
+                    {(url.includes('youtube.com') || url.includes('youtu.be')) && (
+                      <p className="text-[10px] text-[#22C55E] font-bold flex items-center gap-1 pt-0.5">
+                        <Check className="w-3 h-3" /> YouTube Video Link Detected
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  required
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={
-                    category === 'video'
-                      ? 'https://www.youtube.com/watch?v=... or https://...'
-                      : 'https://x.com/gtnetwork or https://t.me/...'
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-mono text-[11px]"
-                />
-              </div>
+              ) : (
+                /* Social Action URL */
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#A7C9B1]">Target Social Link *</label>
+                    <span className="text-[10px] text-[#86EFAC]">Opens when user clicks</span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://x.com/gtnetwork or https://t.me/..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none font-mono text-[11px]"
+                  />
+                </div>
+              )}
 
               {/* Reward Amount & Duration */}
               <div className="grid grid-cols-2 gap-3">
