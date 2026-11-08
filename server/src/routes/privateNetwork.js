@@ -4,59 +4,133 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Helper to get or build persistent circle data from real referrals
-function getOrCreateCircle(db, userId, userName) {
+/**
+ * Determine which circle a user belongs to and retrieve its host, members, and messages.
+ * If user was referred by someone (e.g. ramuj was referred by rajesh), user is a member of that circle.
+ * If user has no referrer, user is the host of their own circle.
+ */
+function resolveCircle(db, currentUser) {
   if (!db.privateNetworks) {
     db.privateNetworks = {};
   }
 
-  // Real referrals from database
-  const userReferrals = (db.referrals || []).filter(r => r.referrerUserId === userId);
-  const now = Date.now();
-  const cooldownMs = 14400 * 1000; // 4 hours
+  // 1. Check if currentUser was referred by someone
+  const userReferralRecord = (db.referrals || []).find(r => r.referredUserId === currentUser.id);
+  const referrerUserId = currentUser.referredByUserId || userReferralRecord?.referrerUserId;
+  const referrerUser = referrerUserId ? (db.users || []).find(u => u.id === referrerUserId && !u.deletedAt) : null;
 
-  const members = userReferrals.map((ref, idx) => {
-    const friend = (db.users || []).find(u => u.id === ref.referredUserId && !u.deletedAt);
-    const lastClaimMs = friend && friend.lastMiningAt ? new Date(friend.lastMiningAt).getTime() : 0;
-    const nextEligibleMs = lastClaimMs > 0 ? lastClaimMs + cooldownMs : 0;
-    const isEligible = nextEligibleMs <= now;
-    const friendName = friend ? friend.fullName : 'GT Pioneer';
-    const initials = friendName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const maskedId = friend?.referralCode || `GT-${ref.id.slice(-4)}`;
-    const email = friend ? friend.email.replace(/(.{2})(.*)(?=@)/, '$1***') : '***@***.com';
+  // 2. Check users directly referred by currentUser
+  const myReferrals = (db.referrals || []).filter(r => r.referrerUserId === currentUser.id);
 
-    return {
-      id: `pn_mem_${userId}_${idx + 1}`,
-      userId: ref.referredUserId,
-      name: friendName,
-      maskedId,
-      email,
-      initials,
-      avatarColor: 'from-[#10B981] to-[#059669]',
-      isMiningActive: !isEligible && lastClaimMs > 0,
-      lastMiningAt: friend?.lastMiningAt || null,
-      nextEligibleAt: nextEligibleMs > 0 ? new Date(nextEligibleMs).toISOString() : null,
-      totalMined: Number(ref.rewardAmount || 0),
-      streakDays: lastClaimMs > 0 ? 1 : 0,
-      activityStatus: (!isEligible && lastClaimMs > 0) ? 'MINING' : 'IDLE',
-      lastPingedAt: null,
-    };
-  });
+  // Determine circleHost:
+  let circleHost = currentUser;
+  let isCurrentUserHost = true;
 
-  if (!db.privateNetworks[userId]) {
-    db.privateNetworks[userId] = {
-      circleHostId: userId,
+  if (referrerUser) {
+    circleHost = referrerUser;
+    isCurrentUserHost = false;
+  }
+
+  const circleHostId = circleHost.id;
+
+  // Ensure persistent circle record exists for this host
+  if (!db.privateNetworks[circleHostId]) {
+    db.privateNetworks[circleHostId] = {
+      circleHostId,
       messages: [],
       createdAt: new Date().toISOString(),
     };
-    writeDB(db);
   }
 
+  const now = Date.now();
+  const cooldownMs = 14400 * 1000; // 4 hours
+
+  // Helper to build a member item
+  function buildMemberObj(userObj, roleLabel, isHost = false, refReward = 0) {
+    const lastClaimMs = userObj.lastMiningAt ? new Date(userObj.lastMiningAt).getTime() : 0;
+    const nextEligibleMs = lastClaimMs > 0 ? lastClaimMs + cooldownMs : 0;
+    const isMiningActive = nextEligibleMs > now && lastClaimMs > 0;
+    const name = userObj.fullName || 'GT Pioneer';
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const maskedId = userObj.referralCode || `GT-${userObj.id.slice(-4)}`;
+    const email = userObj.email ? userObj.email.replace(/(.{2})(.*)(?=@)/, '$1***') : '***@***.com';
+
+    let totalMined = refReward;
+    if (isHost) {
+      const hostWallet = (db.wallets || []).find(w => w.userId === userObj.id);
+      totalMined = Number(hostWallet?.availableBalance || 0);
+    }
+
+    return {
+      id: `pn_mem_${userObj.id}`,
+      userId: userObj.id,
+      name: isHost ? `${name} (Host)` : name,
+      maskedId,
+      email,
+      initials,
+      avatarColor: isHost ? 'from-[#F59E0B] to-[#D97706]' : 'from-[#10B981] to-[#059669]',
+      avatarBg: isHost ? '#F59E0B' : '#10B981',
+      isMiningActive,
+      lastMiningAt: userObj.lastMiningAt || null,
+      nextEligibleAt: nextEligibleMs > 0 ? new Date(nextEligibleMs).toISOString() : null,
+      totalMined,
+      streakDays: lastClaimMs > 0 ? 1 : 0,
+      activityStatus: isMiningActive ? 'MINING' : 'IDLE',
+      isHost,
+      role: roleLabel,
+      lastPingedAt: null,
+    };
+  }
+
+  // All members of the host's circle:
+  const hostReferrals = (db.referrals || []).filter(r => r.referrerUserId === circleHostId);
+  const referredUserIds = hostReferrals.map(r => r.referredUserId);
+
+  // If currentUser has their own referrals as well, include them in the circle
+  myReferrals.forEach(r => {
+    if (!referredUserIds.includes(r.referredUserId)) {
+      referredUserIds.push(r.referredUserId);
+    }
+  });
+
+  const memberList = [];
+
+  // If viewing user is NOT the host, show the Host as the leader in their circle members list
+  if (!isCurrentUserHost) {
+    memberList.push(buildMemberObj(circleHost, 'HOST', true));
+  }
+
+  // Add the referred miners (excluding currentUser from their own member list)
+  referredUserIds.forEach(id => {
+    if (id === currentUser.id) {
+      return;
+    }
+    const friend = (db.users || []).find(u => u.id === id && !u.deletedAt);
+    if (friend) {
+      const refEntry = (db.referrals || []).find(r => r.referredUserId === id);
+      memberList.push(buildMemberObj(friend, 'MEMBER', false, Number(refEntry?.rewardAmount || 0)));
+    }
+  });
+
+  const activeMiningCount = memberList.filter(m => m.isMiningActive).length;
+  const idleCount = memberList.length - activeMiningCount;
+
   return {
-    circleHostId: userId,
-    members,
-    messages: db.privateNetworks[userId].messages || [],
-    createdAt: db.privateNetworks[userId].createdAt || new Date().toISOString(),
+    circleHostId,
+    circleHost: {
+      id: circleHost.id,
+      fullName: circleHost.fullName,
+      email: circleHost.email,
+      referralCode: circleHost.referralCode,
+      isCurrentUserHost,
+    },
+    members: memberList,
+    messages: db.privateNetworks[circleHostId].messages || [],
+    stats: {
+      totalMembers: memberList.length,
+      activeMiningCount,
+      idleCount,
+    },
   };
 }
 
@@ -69,26 +143,14 @@ router.get('/', requireAuth, (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const circle = getOrCreateCircle(db, user.id, user.fullName);
-    const activeMiningCount = circle.members.filter(m => m.isMiningActive).length;
-    const idleCount = circle.members.length - activeMiningCount;
+    const circle = resolveCircle(db, user);
 
     return res.json({
       success: true,
-      circleHost: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        referralCode: user.referralCode,
-        totalReferrals: circle.members.length,
-      },
+      circleHost: circle.circleHost,
       members: circle.members,
       messages: circle.messages,
-      stats: {
-        totalMembers: circle.members.length,
-        activeMiningCount,
-        idleCount,
-      },
+      stats: circle.stats,
     });
   } catch (err) {
     console.error('Error in GET /api/private-network:', err);
@@ -110,13 +172,15 @@ router.post('/messages', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
-    const circle = getOrCreateCircle(db, user.id, user.fullName);
+    const circle = resolveCircle(db, user);
+    const senderRole = user.id === circle.circleHostId ? 'HOST' : 'MEMBER';
+
     const newMessage = {
       id: generateId('msg'),
-      circleId: user.id,
+      circleId: circle.circleHostId,
       senderId: user.id,
       senderName: user.fullName,
-      senderRole: 'HOST',
+      senderRole,
       senderAvatar: user.fullName.charAt(0).toUpperCase(),
       text: text.trim(),
       type,
@@ -125,24 +189,32 @@ router.post('/messages', requireAuth, (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    if (!db.privateNetworks[user.id]) {
-      db.privateNetworks[user.id] = { circleHostId: user.id, messages: [] };
-    }
-    if (!db.privateNetworks[user.id].messages) {
-      db.privateNetworks[user.id].messages = [];
-    }
-    db.privateNetworks[user.id].messages.push(newMessage);
-
-    // If message is a reminder or alert, record an authoritative notification
-    if (type === 'REMINDER' || text.toLowerCase().includes('mine') || text.toLowerCase().includes('reminder')) {
-      db.notifications.push({
-        id: generateId('notif'),
-        userId: user.id,
-        title: 'Mining Reminder Broadcast',
-        message: `You posted a mining reminder in your Private Network: "${text.trim().substring(0, 80)}..."`,
-        type: 'MINING',
-        readAt: null,
+    if (!db.privateNetworks[circle.circleHostId]) {
+      db.privateNetworks[circle.circleHostId] = {
+        circleHostId: circle.circleHostId,
+        messages: [],
         createdAt: new Date().toISOString(),
+      };
+    }
+    if (!db.privateNetworks[circle.circleHostId].messages) {
+      db.privateNetworks[circle.circleHostId].messages = [];
+    }
+    db.privateNetworks[circle.circleHostId].messages.push(newMessage);
+
+    // If message is a reminder or alert, broadcast notification to other circle members
+    if (type === 'REMINDER' || text.toLowerCase().includes('mine') || text.toLowerCase().includes('reminder')) {
+      circle.members.forEach(m => {
+        if (m.userId && m.userId !== user.id) {
+          db.notifications.push({
+            id: generateId('notif'),
+            userId: m.userId,
+            title: `Circle Mining Alert from ${user.fullName}`,
+            message: text.trim(),
+            type: 'MINING',
+            readAt: null,
+            createdAt: new Date().toISOString(),
+          });
+        }
       });
     }
 
@@ -172,8 +244,8 @@ router.post('/ping-member', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, message: 'Member ID is required.' });
     }
 
-    const circle = getOrCreateCircle(db, user.id, user.fullName);
-    const member = circle.members.find(m => m.id === memberId);
+    const circle = resolveCircle(db, user);
+    const member = circle.members.find(m => m.id === memberId || m.userId === memberId);
     if (member) {
       member.lastPingedAt = new Date().toISOString();
     }
@@ -182,10 +254,10 @@ router.post('/ping-member', requireAuth, (req, res) => {
 
     const alertMessage = {
       id: generateId('msg'),
-      circleId: user.id,
+      circleId: circle.circleHostId,
       senderId: user.id,
       senderName: user.fullName,
-      senderRole: 'HOST',
+      senderRole: user.id === circle.circleHostId ? 'HOST' : 'MEMBER',
       senderAvatar: user.fullName.charAt(0).toUpperCase(),
       text: pingText,
       type: 'REMINDER',
@@ -194,24 +266,31 @@ router.post('/ping-member', requireAuth, (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    if (!db.privateNetworks[user.id]) {
-      db.privateNetworks[user.id] = { circleHostId: user.id, messages: [] };
+    if (!db.privateNetworks[circle.circleHostId]) {
+      db.privateNetworks[circle.circleHostId] = {
+        circleHostId: circle.circleHostId,
+        messages: [],
+        createdAt: new Date().toISOString(),
+      };
     }
-    if (!db.privateNetworks[user.id].messages) {
-      db.privateNetworks[user.id].messages = [];
+    if (!db.privateNetworks[circle.circleHostId].messages) {
+      db.privateNetworks[circle.circleHostId].messages = [];
     }
-    db.privateNetworks[user.id].messages.push(alertMessage);
+    db.privateNetworks[circle.circleHostId].messages.push(alertMessage);
 
-    // Add notification
-    db.notifications.push({
-      id: generateId('notif'),
-      userId: user.id,
-      title: `Mining Ping Sent to ${memberName || member?.name}`,
-      message: `Your reminder was delivered to ${memberName || member?.name} in your Private Network.`,
-      type: 'MINING',
-      readAt: null,
-      createdAt: new Date().toISOString(),
-    });
+    // Send notification to the pinged member
+    const targetUserId = member?.userId || (memberId.startsWith('pn_mem_') ? memberId.replace('pn_mem_', '') : memberId);
+    if (targetUserId && targetUserId !== user.id) {
+      db.notifications.push({
+        id: generateId('notif'),
+        userId: targetUserId,
+        title: `Mining Reminder from ${user.fullName}`,
+        message: `${user.fullName} pinged you to activate your 4-hour GT mining cycle!`,
+        type: 'MINING',
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
 
     writeDB(db);
 

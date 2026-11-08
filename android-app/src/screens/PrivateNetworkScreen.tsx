@@ -179,6 +179,10 @@ export const PrivateNetworkScreen: React.FC = () => {
 
   useEffect(() => {
     fetchCircleData();
+    const interval = setInterval(() => {
+      fetchCircleData();
+    }, 4000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const totalMembersCount = members.length;

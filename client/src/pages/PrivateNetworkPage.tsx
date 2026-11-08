@@ -140,6 +140,10 @@ export const PrivateNetworkPage: React.FC = () => {
 
   useEffect(() => {
     fetchPrivateNetwork();
+    const interval = setInterval(() => {
+      fetchPrivateNetwork();
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -469,8 +473,9 @@ export const PrivateNetworkPage: React.FC = () => {
     );
   }
 
-  const hostName = user?.fullName || data?.circleHost?.fullName || 'Network Host';
-  const refCode = user?.referralCode || data?.circleHost?.referralCode || 'GTMINING';
+  const isHost = !data?.circleHost || data?.circleHost?.id === user?.id;
+  const hostName = data?.circleHost?.fullName || user?.fullName || 'Network Host';
+  const refCode = (isHost ? user?.referralCode : data?.circleHost?.referralCode) || user?.referralCode || 'GTMINING';
   const totalCount = data?.stats?.totalMembers ?? data?.members?.length ?? 0;
   const activeCount = data?.stats?.activeMiningCount ?? 0;
   const idleCount = data?.stats?.idleCount ?? 0;
