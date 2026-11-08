@@ -8,8 +8,6 @@ import {
   Users,
   Pickaxe,
   Coins,
-  Settings,
-  ShieldCheck,
   ArrowLeft,
   LogOut,
   Menu,
@@ -92,13 +90,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
       ],
     },
-    {
-      heading: 'SYSTEM',
-      items: [
-        { label: 'Global Settings', path: '/admin/settings', icon: Settings },
-        { label: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldCheck },
-      ],
-    },
   ];
 
   const handleLogout = () => {
@@ -122,8 +113,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/mining-settings')) return 'Mining Protocol Settings';
     if (p.includes('/referrals')) return 'Referral Commissions & Dividends';
     if (p.includes('/transactions')) return 'Transactions & Balances';
-    if (p.includes('/settings')) return 'Global System Settings';
-    if (p.includes('/audit-logs')) return 'Security Audit Trail';
     return 'Admin Control Center';
   };
 
