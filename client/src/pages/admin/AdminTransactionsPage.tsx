@@ -49,17 +49,12 @@ export const AdminTransactionsPage: React.FC = () => {
       showToast('Adjustment amount cannot be zero', 'error');
       return;
     }
-    if (!adjustReason.trim()) {
-      showToast('Mandatory recorded reason is required', 'error');
-      return;
-    }
-
     setProcessing(true);
     try {
       const res = await api.adjustWalletBalance({
         userId: selectedUserId,
         amount: Number(adjustAmount),
-        reason: adjustReason.trim(),
+        reason: adjustReason.trim() || 'Manual balance adjustment',
       });
 
       if (res.success) {
@@ -149,14 +144,13 @@ export const AdminTransactionsPage: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-[#A7C9B1]">
-                  Mandatory Recorded Reason
+                  Reason / Note (Optional)
                 </label>
                 <textarea
-                  required
                   rows={2}
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
-                  placeholder="e.g. Community contest bounty winner verification"
+                  placeholder="e.g. Manual balance adjustment"
                   className="w-full p-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white text-xs placeholder-[#A7C9B1]/60 focus:border-[#FBBF24] outline-none resize-none"
                 />
               </div>

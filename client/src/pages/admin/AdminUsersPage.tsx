@@ -204,14 +204,13 @@ export const AdminUsersPage: React.FC = () => {
             <form onSubmit={handleUpdateStatus} className="space-y-4 pt-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#A7C9B1]">
-                  Mandatory Audit Reason
+                  Reason (Optional)
                 </label>
                 <textarea
-                  required
-                  rows={3}
+                  rows={2}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Account suspended due to detected automated multi-accounting scripts."
+                  placeholder="e.g. Account status update"
                   className="w-full p-3 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none resize-none"
                 />
               </div>
@@ -226,7 +225,7 @@ export const AdminUsersPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={processing || !reason.trim()}
+                  disabled={processing}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[#07130D] bg-[#FBBF24] hover:bg-[#F59E0B] disabled:opacity-50"
                 >
                   {processing ? 'Applying...' : `Confirm ${newStatus}`}

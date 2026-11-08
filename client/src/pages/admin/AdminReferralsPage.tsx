@@ -114,19 +114,6 @@ export const AdminReferralsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#A7C9B1]">
-              Audit Reason (Optional)
-            </label>
-            <input
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Campaign reward increase"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white placeholder-[#A7C9B1]/60 text-xs focus:border-[#FBBF24] outline-none"
-            />
-          </div>
-
           <button
             type="submit"
             disabled={saving}
