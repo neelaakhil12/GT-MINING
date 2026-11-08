@@ -72,7 +72,7 @@ export const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
+      <div className="space-y-6 max-w-5xl mx-auto animate-pulse">
         <div className="h-64 rounded-3xl bg-white/40 border border-white/60" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -93,7 +93,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       
       {/* 0. Dashboard Greeting Header matching client reference */}
       <div className="space-y-1">
