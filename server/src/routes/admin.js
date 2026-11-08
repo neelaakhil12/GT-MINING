@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import { readDB, writeDB, generateId, lockManager } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { cleanListSpacing } from '../utils/textFormatter.js';
@@ -676,6 +678,29 @@ router.delete('/home-banners/:id', (req, res) => {
   return res.json({ success: true, message: 'Home banner deleted.' });
 });
 
+// Helper: Save base64 direct video upload to disk to keep database.json lightweight
+function processVideoUrl(url) {
+  if (!url || typeof url !== 'string' || !url.startsWith('data:video/')) return url;
+  try {
+    const matches = url.match(/^data:video\/([a-zA-Z0-9]+);base64,(.+)$/);
+    if (!matches) return url;
+    const ext = matches[1] === 'quicktime' ? 'mov' : matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+    const videosDir = path.resolve('uploads', 'videos');
+    if (!fs.existsSync(videosDir)) {
+      fs.mkdirSync(videosDir, { recursive: true });
+    }
+    const filename = `quest_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+    const filePath = path.join(videosDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/videos/${filename}`;
+  } catch (err) {
+    console.error('Error saving video upload to disk:', err);
+    return url;
+  }
+}
+
 // Tasks & Video Quests Management
 // GET /api/admin/tasks
 router.get('/tasks', (req, res) => {
@@ -688,6 +713,7 @@ router.post('/tasks', (req, res) => {
   const db = readDB();
   if (!db.tasks) db.tasks = [];
   const rewardNum = parseFloat(req.body.reward) || 2;
+  const processedUrl = processVideoUrl(req.body.url);
   const newTask = {
     id: generateId('task'),
     category: req.body.category || 'video',
@@ -696,7 +722,7 @@ router.post('/tasks', (req, res) => {
     reward: rewardNum,
     rewardLabel: req.body.rewardLabel || `+${rewardNum} GT`,
     buttonLabel: req.body.buttonLabel || (req.body.category === 'video' ? 'Watch video' : 'Follow'),
-    url: req.body.url || '#',
+    url: processedUrl || '#',
     duration: parseInt(req.body.duration, 10) || (req.body.category === 'video' ? 15 : 0),
     iconType: req.body.iconType || (req.body.category === 'video' ? 'video' : 'x'),
     isActive: req.body.isActive !== false,
@@ -714,7 +740,11 @@ router.patch('/tasks/:id', (req, res) => {
   if (!db.tasks) db.tasks = [];
   const idx = db.tasks.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Task not found' });
-  db.tasks[idx] = { ...db.tasks[idx], ...req.body, updatedAt: new Date().toISOString() };
+  const updateData = { ...req.body };
+  if (updateData.url && updateData.url.startsWith('data:video/')) {
+    updateData.url = processVideoUrl(updateData.url);
+  }
+  db.tasks[idx] = { ...db.tasks[idx], ...updateData, updatedAt: new Date().toISOString() };
   createAuditLog(db, req.user?.id || 'admin', 'UPDATE_TASK', 'TASK', db.tasks[idx].id, `Updated task "${db.tasks[idx].title}"`);
   writeDB(db);
   return res.json({ success: true, task: db.tasks[idx], message: 'Task updated successfully.' });

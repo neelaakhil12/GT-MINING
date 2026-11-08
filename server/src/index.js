@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import fs from 'fs';
+import path from 'path';
 
 import authRouter from './routes/auth.js';
 import miningRouter from './routes/mining.js';
@@ -33,7 +35,15 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Serve static uploaded files (videos, proofs, avatars)
+const UPLOADS_DIR = path.resolve('uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Rate limiter for auth endpoints
 const authLimiter = rateLimit({
