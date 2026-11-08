@@ -85,103 +85,21 @@ const getInitialData = () => {
         createdAt: now,
         updatedAt: now,
         deletedAt: null
-      },
-      {
-        id: 'usr_demo_002',
-        fullName: 'Alex Reynolds',
-        email: 'demo@gtmining.com',
-        passwordHash: demoUserPasswordHash,
-        referralCode: 'GT88241',
-        referredByUserId: 'usr_admin_001',
-        role: 'USER',
-        accountStatus: 'ACTIVE',
-        emailVerifiedAt: now,
-        lastMiningAt: null,
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        updatedAt: now,
-        deletedAt: null
       }
     ],
     wallets: [
       {
         id: 'wal_admin_001',
         userId: 'usr_admin_001',
-        availableBalance: 10.0,
-        lifetimeEarned: 10.0,
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: 'wal_demo_002',
-        userId: 'usr_demo_002',
-        availableBalance: 2.5,
-        lifetimeEarned: 2.5,
+        availableBalance: 0.0,
+        lifetimeEarned: 0.0,
         createdAt: now,
         updatedAt: now
       }
     ],
-    walletTransactions: [
-      {
-        id: 'tx_seed_001',
-        userId: 'usr_demo_002',
-        type: 'MINING_REWARD',
-        amount: 1.0,
-        status: 'COMPLETED',
-        idempotencyKey: 'idemp_seed_001',
-        referenceId: 'claim_seed_001',
-        description: 'First successful 4h mining claim',
-        createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-        createdBy: 'SYSTEM'
-      },
-      {
-        id: 'tx_seed_002',
-        userId: 'usr_demo_002',
-        type: 'MINING_REWARD',
-        amount: 1.0,
-        status: 'COMPLETED',
-        idempotencyKey: 'idemp_seed_002',
-        referenceId: 'claim_seed_002',
-        description: 'Second successful 4h mining claim',
-        createdAt: new Date(Date.now() - 3600000 * 25).toISOString(),
-        createdBy: 'SYSTEM'
-      },
-      {
-        id: 'tx_seed_003',
-        userId: 'usr_demo_002',
-        type: 'REFERRAL_REWARD',
-        amount: 0.5,
-        status: 'COMPLETED',
-        idempotencyKey: 'idemp_seed_003',
-        referenceId: 'ref_seed_001',
-        description: 'Referral reward from community friend registration',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        createdBy: 'SYSTEM'
-      }
-    ],
-    miningClaims: [
-      {
-        id: 'claim_seed_001',
-        userId: 'usr_demo_002',
-        rewardAmount: 1.0,
-        claimedAt: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago (eligible now!)
-        nextEligibleAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-        transactionId: 'tx_seed_001',
-        status: 'SUCCESS'
-      }
-    ],
-    referrals: [
-      {
-        id: 'ref_seed_001',
-        referrerUserId: 'usr_admin_001',
-        referredUserId: 'usr_demo_002',
-        referralCodeUsed: 'GTADMIN',
-        status: 'ACTIVE',
-        rewardAmount: 0.5,
-        rewardStatus: 'CREDITED',
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        rewardCreditedAt: new Date(Date.now() - 86400000).toISOString()
-      }
-    ],
+    walletTransactions: [],
+    miningClaims: [],
+    referrals: [],
     communityPosts: [
       {
         id: 'post_001',
@@ -223,26 +141,7 @@ const getInitialData = () => {
         updatedAt: new Date().toISOString()
       }
     ],
-    notifications: [
-      {
-        id: 'notif_001',
-        userId: 'usr_demo_002',
-        title: 'Welcome to GT Network',
-        message: 'Your GT wallet has been created with a unique referral link. Start your first mining cycle now!',
-        type: 'SYSTEM',
-        readAt: null,
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
-      },
-      {
-        id: 'notif_002',
-        userId: 'usr_demo_002',
-        title: 'Mining Claim Confirmed',
-        message: 'You successfully claimed +1.0 GT coin! Your 4-hour cooldown is active.',
-        type: 'MINING',
-        readAt: null,
-        createdAt: new Date(Date.now() - 3600000 * 5).toISOString()
-      }
-    ],
+    notifications: [],
     adminAuditLogs: [
       {
         id: 'audit_001',
