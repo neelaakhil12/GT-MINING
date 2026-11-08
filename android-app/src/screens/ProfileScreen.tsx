@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -137,9 +138,17 @@ export const ProfileScreen: React.FC = () => {
           <View style={styles.headerProfileCard}>
             <View style={styles.profileUserRow}>
               <View style={styles.avatarLarge}>
-                <Text style={styles.avatarLargeText}>
-                  {fullName.charAt(0).toUpperCase()}
-                </Text>
+                {user?.avatar || user?.profileImage || user?.avatarUrl ? (
+                  <Image
+                    source={{ uri: user.avatar || user.profileImage || user.avatarUrl }}
+                    style={{ width: 64, height: 64, borderRadius: 24 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.avatarLargeText}>
+                    {fullName.charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
               <View style={{ gap: 2 }}>
                 <Text style={styles.userNameTitle}>{fullName}</Text>

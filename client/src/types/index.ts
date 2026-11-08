@@ -6,6 +6,8 @@ export interface User {
   role: 'USER' | 'ADMIN';
   accountStatus: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
   avatarUrl?: string;
+  avatar?: string;
+  profileImage?: string;
   emailVerifiedAt?: string | null;
   lastMiningAt?: string | null;
   createdAt: string;

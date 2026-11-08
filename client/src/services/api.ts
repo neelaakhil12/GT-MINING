@@ -118,6 +118,7 @@ export const api = {
   // Profile
   getProfile: () => request<any>('/profile'),
   updateProfile: (body: any) => request<any>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+  updateAvatar: (avatar: string) => request<any>('/profile/avatar', { method: 'POST', body: JSON.stringify({ avatar }) }),
   changePassword: (body: any) => request<any>('/profile/change-password', { method: 'POST', body: JSON.stringify(body) }),
   requestEmailChange: (newEmail: string) => request<any>('/profile/request-email-change', { method: 'POST', body: JSON.stringify({ newEmail }) }),
   getEmailChangeStatus: () => request<any>('/profile/email-change-status'),

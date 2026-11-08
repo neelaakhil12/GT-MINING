@@ -870,13 +870,17 @@ export const PrivateNetworkPage: React.FC = () => {
                   >
                     {/* Avatar */}
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 overflow-hidden ${
                         isHost
                           ? 'bg-gradient-to-tr from-[#22C55E] to-[#16A34A] text-white shadow-sm'
                           : 'bg-white border border-[#22C55E]/30 text-[#15803D] shadow-2xs'
                       }`}
                     >
-                      {msg.senderAvatar || msg.senderName.charAt(0)}
+                      {msg.senderAvatar && (msg.senderAvatar.startsWith('data:image') || msg.senderAvatar.startsWith('http')) ? (
+                        <img src={msg.senderAvatar} alt={msg.senderName} className="w-full h-full object-cover" />
+                      ) : (
+                        msg.senderAvatar || msg.senderName.charAt(0)
+                      )}
                     </div>
 
                     {/* Message Bubble */}

@@ -28,20 +28,29 @@ router.get('/', requireAuth, (req, res) => {
 // PATCH /api/profile - Edit permitted details
 router.patch('/', requireAuth, (req, res) => {
   try {
-    const { fullName, avatarUrl } = req.body;
-    if (!fullName || !fullName.trim()) {
-      return res.status(400).json({ success: false, message: 'Full name cannot be empty.' });
-    }
+    const { fullName, avatarUrl, avatar, profileImage } = req.body;
 
     const db = readDB();
     const user = db.users.find(u => u.id === req.user.id);
-
-    user.fullName = fullName.trim();
-    if (avatarUrl !== undefined) {
-      user.avatarUrl = avatarUrl;
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
     }
-    user.updatedAt = new Date().toISOString();
 
+    if (fullName !== undefined) {
+      if (!fullName.trim()) {
+        return res.status(400).json({ success: false, message: 'Full name cannot be empty.' });
+      }
+      user.fullName = fullName.trim();
+    }
+
+    const newPhoto = avatar !== undefined ? avatar : (profileImage !== undefined ? profileImage : avatarUrl);
+    if (newPhoto !== undefined) {
+      user.avatar = newPhoto;
+      user.profileImage = newPhoto;
+      user.avatarUrl = newPhoto;
+    }
+
+    user.updatedAt = new Date().toISOString();
     writeDB(db);
 
     return res.json({
@@ -50,7 +59,42 @@ router.patch('/', requireAuth, (req, res) => {
       user: sanitizeUser(user)
     });
   } catch (err) {
+    console.error('Update profile error:', err);
     return res.status(500).json({ success: false, message: 'Failed to update profile.' });
+  }
+});
+
+// POST /api/profile/avatar - Dedicated endpoint for avatar or photo upload
+router.post('/avatar', requireAuth, (req, res) => {
+  try {
+    const { avatar, profileImage, avatarUrl } = req.body;
+    const newPhoto = avatar || profileImage || avatarUrl;
+
+    if (!newPhoto) {
+      return res.status(400).json({ success: false, message: 'Image or avatar payload is required.' });
+    }
+
+    const db = readDB();
+    const user = db.users.find(u => u.id === req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    user.avatar = newPhoto;
+    user.profileImage = newPhoto;
+    user.avatarUrl = newPhoto;
+    user.updatedAt = new Date().toISOString();
+
+    writeDB(db);
+
+    return res.json({
+      success: true,
+      message: 'Profile image saved successfully!',
+      user: sanitizeUser(user)
+    });
+  } catch (err) {
+    console.error('Update avatar error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update avatar image.' });
   }
 });
 

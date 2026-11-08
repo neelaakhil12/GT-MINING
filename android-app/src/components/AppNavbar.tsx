@@ -11,6 +11,7 @@ import { Bell, User as UserIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface AppNavbarProps {
   activeTab?: 'App' | 'Wallet';
@@ -18,6 +19,7 @@ interface AppNavbarProps {
 
 export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useAuth();
 
   return (
     <View style={styles.headerContainer}>
@@ -75,7 +77,15 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
           activeOpacity={0.8}
           accessibilityLabel="Profile"
         >
-          <UserIcon size={18} color="#1E5E36" />
+          {user?.avatar || user?.profileImage || user?.avatarUrl ? (
+            <Image
+              source={{ uri: user.avatar || user.profileImage || user.avatarUrl }}
+              style={{ width: 34, height: 34, borderRadius: 17 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <UserIcon size={18} color="#1E5E36" />
+          )}
         </TouchableOpacity>
       </View>
     </View>

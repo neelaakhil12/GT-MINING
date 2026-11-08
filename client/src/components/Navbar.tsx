@@ -125,7 +125,7 @@ export const Navbar: React.FC = () => {
             {/* Profile Icon button to directly open profile page (Circle Type) */}
             <Link
               to="/profile"
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border transition-all flex items-center justify-center shadow-sm group shrink-0 ${
+              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border transition-all flex items-center justify-center shadow-sm group shrink-0 overflow-hidden ${
                 location.pathname === '/profile'
                   ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white border-[#22C55E] shadow-[0_4px_14px_rgba(34,197,94,0.4)]'
                   : 'bg-white/85 hover:bg-white text-[#16A34A] hover:text-[#0A341B] border-white hover:shadow-md'
@@ -133,7 +133,15 @@ export const Navbar: React.FC = () => {
               title="Open Profile Page"
               aria-label="Profile"
             >
-              <UserIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {user.avatar || user.profileImage || user.avatarUrl ? (
+                <img
+                  src={user.avatar || user.profileImage || user.avatarUrl}
+                  alt={user.fullName}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <UserIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              )}
             </Link>
           </div>
         ) : (

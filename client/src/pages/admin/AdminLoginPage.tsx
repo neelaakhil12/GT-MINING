@@ -28,9 +28,9 @@ export const AdminLoginPage: React.FC = () => {
   // Mode: 'LOGIN' | 'FORGOT' | 'RESET'
   const [mode, setMode] = useState<'LOGIN' | 'FORGOT' | 'RESET'>('LOGIN');
 
-  // Form states
-  const [email, setEmail] = useState(MASTER_ADMIN_EMAIL);
-  const [password, setPassword] = useState('Admin@123456');
+  // Form states - Start empty so no hardcoded credentials automatically fill
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -67,17 +67,23 @@ export const AdminLoginPage: React.FC = () => {
     setSuccessMsg(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail !== MASTER_ADMIN_EMAIL) {
-      const deniedMsg = `Access Denied: Only Master Admin (${MASTER_ADMIN_EMAIL}) can access this gateway.`;
-      setError(deniedMsg);
-      showToast(deniedMsg, 'error');
+    if (!cleanEmail) {
+      setError('Please enter your administrator email.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your administrator password.');
       return;
     }
 
     setLoading(true);
     try {
-      await login({ email: cleanEmail, password });
-      showToast('Welcome, Master Administrator!', 'success');
+      const res = await login({ email: cleanEmail, password });
+      const loggedUser = (res as any)?.user;
+      if (loggedUser && loggedUser.role !== 'ADMIN') {
+        throw new Error('Access Denied: This account is not authorized as an administrator.');
+      }
+      showToast('Welcome, Administrator!', 'success');
       navigate('/admin/dashboard', { replace: true });
     } catch (err: any) {
       const msg = err.message || 'Admin authentication failed. Please verify your credentials.';
@@ -201,7 +207,7 @@ export const AdminLoginPage: React.FC = () => {
           </h2>
           <p className="text-sm font-semibold text-[#1E5E36]">
             {mode === 'LOGIN'
-              ? 'Restricted access: gtmining2026@gmail.com only'
+              ? 'Authorized Administrators Only'
               : mode === 'FORGOT'
               ? 'Dispatches password reset link to master email'
               : 'Enter verification code and new password'}
@@ -228,11 +234,11 @@ export const AdminLoginPage: React.FC = () => {
 
           {/* 1. LOGIN MODE */}
           {mode === 'LOGIN' && (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
               {/* Email Field */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-[#A7C9B1] uppercase tracking-wider flex justify-between">
-                  <span>Master Admin Email</span>
+                  <span>Admin Email</span>
                   <span className="text-[10px] text-[#FBBF24] font-semibold lowercase">authorized only</span>
                 </label>
                 <div className="relative">
@@ -240,9 +246,10 @@ export const AdminLoginPage: React.FC = () => {
                   <input
                     type="email"
                     required
+                    autoComplete="off"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={MASTER_ADMIN_EMAIL}
+                    placeholder="Enter admin email address"
                     className="w-full pl-10 pr-4 py-3 rounded-2xl bg-[#05160E] border border-[#86EFAC]/30 text-white placeholder:text-[#A7C9B1]/40 text-sm font-semibold focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/30 outline-none"
                   />
                 </div>
@@ -271,9 +278,10 @@ export const AdminLoginPage: React.FC = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
+                    placeholder="Enter admin password"
                     className="w-full pl-10 pr-11 py-3 rounded-2xl bg-[#05160E] border border-[#86EFAC]/30 text-white placeholder:text-[#A7C9B1]/40 text-sm font-semibold focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/30 outline-none"
                   />
                   <button
