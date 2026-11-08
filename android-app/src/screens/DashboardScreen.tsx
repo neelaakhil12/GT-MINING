@@ -44,6 +44,7 @@ const DEFAULT_BANNER_SLIDES = [
     targetRoute: 'Mine' as const,
     gradient: ['#0A2A18', '#05180E'] as const,
     accentColor: '#22C55E',
+    imageUrl: '',
   },
   {
     id: 2,
@@ -54,6 +55,7 @@ const DEFAULT_BANNER_SLIDES = [
     targetRoute: 'Referrals' as const,
     gradient: ['#07241C', '#041611'] as const,
     accentColor: '#38BDF8',
+    imageUrl: '',
   },
   {
     id: 3,
@@ -64,6 +66,7 @@ const DEFAULT_BANNER_SLIDES = [
     targetRoute: 'Wallet' as const,
     gradient: ['#121829', '#060A14'] as const,
     accentColor: '#A855F7',
+    imageUrl: '',
   },
 ];
 
@@ -97,6 +100,7 @@ export const DashboardScreen: React.FC = () => {
                   : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
                 gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
                 accentColor: b.accentColor || '#22C55E',
+                imageUrl: b.imageUrl || '',
               }))
             );
           }
@@ -162,14 +166,28 @@ export const DashboardScreen: React.FC = () => {
 
           {/* 2. Interactive Slides Carousel Banner matching website HomeBanners */}
           <View style={styles.carouselWrapper}>
-            <LinearGradient
-              colors={activeSlide.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.carouselCard}
-            >
-              {/* Subtle ambient glow circle */}
-              <View style={styles.carouselGlow} />
+            <View style={styles.carouselCard}>
+              {/* Background: uploaded image if present, else gradient */}
+              {activeSlide.imageUrl ? (
+                <Image
+                  source={{ uri: activeSlide.imageUrl }}
+                  style={StyleSheet.absoluteFillObject}
+                  resizeMode="cover"
+                />
+              ) : (
+                <LinearGradient
+                  colors={activeSlide.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+
+              {/* Gentle bottom scrim for text readability */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.7)']}
+                style={StyleSheet.absoluteFillObject}
+              />
 
               <View style={styles.carouselContent}>
                 <View style={styles.carouselTagBadge}>
@@ -211,7 +229,7 @@ export const DashboardScreen: React.FC = () => {
                   />
                 ))}
               </View>
-            </LinearGradient>
+            </View>
           </View>
 
           {/* 3. MARKET OVERVIEW Header */}

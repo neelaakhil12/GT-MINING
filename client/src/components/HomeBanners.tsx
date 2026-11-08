@@ -94,7 +94,7 @@ export const HomeBanners: React.FC = () => {
     <div className="space-y-6">
       
       {/* 1. Header Hero Image Slides Carousel (compact size matching client reference) */}
-      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(22,101,52,0.12)] border-2 border-white/90 group bg-[#071F14]">
+      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
         
         {/* Slides Track - Reduced size on mobile and desktop views */}
         <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
@@ -108,18 +108,16 @@ export const HomeBanners: React.FC = () => {
                   isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                 }`}
               >
-                {/* Background Image with Ambient Glass Gradient Overlays */}
+                {/* Clear Background Image without green overlay */}
                 <img
                   src={slide.image}
                   alt={slide.title}
-                  className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.08] transition-transform duration-1000 scale-100 hover:scale-105"
+                  className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 hover:scale-105"
                   loading="eager"
                 />
 
-                {/* Multi-layered cinematic gradient overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-                <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-[#22C55E]/20 rounded-full blur-3xl pointer-events-none" />
+                {/* Gentle bottom scrim so title & button are crisp without obscuring the image */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
 
                 {/* Slide Foreground Content */}
                 <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2.5 z-20">

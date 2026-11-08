@@ -228,40 +228,50 @@ export const AdminHomeBannersPage: React.FC = () => {
             >
               {/* Live Preview of the Slide Card */}
               <div
-                className="relative overflow-hidden p-5 rounded-2xl border border-white/10 shadow-inner flex flex-col justify-between min-h-[160px]"
-                style={{
-                  background: `linear-gradient(135deg, ${b.gradientStart || '#0A2A18'} 0%, ${b.gradientEnd || '#05180E'} 100%)`,
-                }}
+                className="relative overflow-hidden p-5 rounded-2xl border border-white/15 shadow-inner flex flex-col justify-between min-h-[175px] bg-[#071F14]"
               >
-                {/* Glow circle */}
-                <div
-                  className="absolute -top-10 -right-10 w-28 h-28 rounded-full blur-xl pointer-events-none opacity-40"
-                  style={{ backgroundColor: b.accentColor || '#22C55E' }}
-                />
+                {/* Uploaded Banner Image */}
+                {b.imageUrl ? (
+                  <img
+                    src={b.imageUrl}
+                    alt={b.title || 'Banner'}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: `linear-gradient(135deg, ${b.gradientStart || '#0A2A18'} 0%, ${b.gradientEnd || '#05180E'} 100%)`,
+                    }}
+                  />
+                )}
 
-                <div className="z-10 space-y-2">
+                {/* Subtle dark gradient overlay so text remains readable without obscuring the image */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10 pointer-events-none" />
+
+                <div className="relative z-10 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 border border-white/10 text-[9px] font-black tracking-wider text-white">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[9px] font-black tracking-wider text-white">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: b.accentColor || '#22C55E' }}
                       />
                       <span>{b.tag}</span>
                     </div>
-                    <span className="text-[10px] text-white/50 font-mono">
+                    <span className="text-[10px] text-white/90 font-mono bg-black/50 px-2 py-0.5 rounded-full">
                       Order #{b.order || idx + 1}
                     </span>
                   </div>
 
-                  <h4 className="text-base font-black text-white leading-tight drop-shadow">
+                  <h4 className="text-base font-black text-white leading-tight drop-shadow-md">
                     {b.title}
                   </h4>
-                  <p className="text-[11px] text-white/70 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-white/90 line-clamp-2 leading-relaxed drop-shadow">
                     {b.description}
                   </p>
                 </div>
 
-                <div className="z-10 flex items-center justify-between pt-3">
+                <div className="relative z-10 flex items-center justify-between pt-3">
                   <div
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-white font-black text-[11px] shadow-md"
                     style={{
@@ -271,7 +281,7 @@ export const AdminHomeBannersPage: React.FC = () => {
                     <span>{b.ctaText}</span>
                     <ArrowRight className="w-3 h-3" />
                   </div>
-                  <span className="text-[10px] text-white/60 font-mono">{b.targetRoute}</span>
+                  <span className="text-[10px] text-white/90 font-mono bg-black/50 px-2 py-0.5 rounded-full">{b.targetRoute}</span>
                 </div>
               </div>
 
