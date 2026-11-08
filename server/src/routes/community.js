@@ -1,5 +1,5 @@
 import express from 'express';
-import { readDB } from '../db.js';
+import { readDB, writeDB, generateId } from '../db.js';
 
 const router = express.Router();
 
@@ -9,7 +9,8 @@ router.get('/posts', (req, res) => {
     const db = readDB();
     const { category, search } = req.query;
 
-    let posts = db.communityPosts.filter(p => p.status === 'PUBLISHED');
+    const rawPosts = Array.isArray(db.communityPosts) ? db.communityPosts : [];
+    let posts = rawPosts.filter(p => p.status === 'PUBLISHED');
 
     if (category && category.toLowerCase() === 'latest') {
       // Latest: Sort strictly newest first by updatedAt or createdAt
@@ -56,7 +57,8 @@ router.get('/posts', (req, res) => {
 router.get('/posts/:id', (req, res) => {
   try {
     const db = readDB();
-    const post = db.communityPosts.find(p => p.id === req.params.id && p.status === 'PUBLISHED');
+    const rawPosts = Array.isArray(db.communityPosts) ? db.communityPosts : [];
+    const post = rawPosts.find(p => p.id === req.params.id && p.status === 'PUBLISHED');
 
     if (!post) {
       return res.status(404).json({ success: false, message: 'Post not found.' });
@@ -71,13 +73,142 @@ router.get('/posts/:id', (req, res) => {
   }
 });
 
+// POST /api/community/posts/:id/like - Persistent toggle like with database saving
+router.post('/posts/:id/like', (req, res) => {
+  try {
+    const db = readDB();
+    if (!Array.isArray(db.communityPosts)) {
+      db.communityPosts = [];
+    }
+
+    const post = db.communityPosts.find(p => p.id === req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found.' });
+    }
+
+    if (!Array.isArray(post.likedBy)) {
+      post.likedBy = [];
+    }
+
+    const userId = req.body.userId || req.headers['x-user-id'] || 'miner_guest';
+    const alreadyLikedIndex = post.likedBy.indexOf(userId);
+    let isLiked = false;
+
+    if (alreadyLikedIndex !== -1) {
+      // Unlike
+      post.likedBy.splice(alreadyLikedIndex, 1);
+      post.likesCount = Math.max(0, (Number(post.likesCount) || 1) - 1);
+      isLiked = false;
+    } else {
+      // Like
+      post.likedBy.push(userId);
+      post.likesCount = (Number(post.likesCount) || 0) + 1;
+      isLiked = true;
+    }
+
+    writeDB(db);
+
+    return res.json({
+      success: true,
+      isLiked,
+      likesCount: post.likesCount,
+      likedBy: post.likedBy
+    });
+  } catch (err) {
+    console.error('Like error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update like status.' });
+  }
+});
+
+// GET /api/community/posts/:id/comments - Retrieve all comments from database
+router.get('/posts/:id/comments', (req, res) => {
+  try {
+    const db = readDB();
+    if (!Array.isArray(db.communityComments)) {
+      db.communityComments = [];
+    }
+
+    const comments = db.communityComments
+      .filter(c => c.postId === req.params.id)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    return res.json({
+      success: true,
+      comments,
+      total: comments.length
+    });
+  } catch (err) {
+    console.error('Get comments error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve comments.' });
+  }
+});
+
+// POST /api/community/posts/:id/comments - Post a new comment and save to database
+router.post('/posts/:id/comments', (req, res) => {
+  try {
+    const { content, userName, userId } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'Comment content cannot be empty.' });
+    }
+
+    const db = readDB();
+    if (!Array.isArray(db.communityPosts)) {
+      db.communityPosts = [];
+    }
+
+    const post = db.communityPosts.find(p => p.id === req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found.' });
+    }
+
+    if (!Array.isArray(db.communityComments)) {
+      db.communityComments = [];
+    }
+
+    const now = new Date().toISOString();
+    const newComment = {
+      id: generateId('cmt'),
+      postId: req.params.id,
+      userId: userId || 'usr_guest',
+      userName: userName ? userName.trim() : 'GT Miner',
+      content: content.trim(),
+      createdAt: now,
+      updatedAt: now
+    };
+
+    db.communityComments.push(newComment);
+
+    // Update post comments count in DB
+    post.commentsCount = db.communityComments.filter(c => c.postId === req.params.id).length;
+    post.updatedAt = now;
+
+    writeDB(db);
+
+    return res.json({
+      success: true,
+      message: 'Comment posted successfully!',
+      comment: newComment,
+      commentsCount: post.commentsCount
+    });
+  } catch (err) {
+    console.error('Post comment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to post comment.' });
+  }
+});
+
 // DELETE /api/community/posts/:id
 router.delete('/posts/:id', (req, res) => {
   try {
     const db = readDB();
+    if (!Array.isArray(db.communityPosts)) {
+      db.communityPosts = [];
+    }
     const index = db.communityPosts.findIndex(p => p.id === req.params.id);
     if (index !== -1) {
       db.communityPosts.splice(index, 1);
+      if (Array.isArray(db.communityComments)) {
+        db.communityComments = db.communityComments.filter(c => c.postId !== req.params.id);
+      }
       writeDB(db);
     }
     return res.json({ success: true, message: 'Post removed from community feed.' });

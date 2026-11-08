@@ -7,6 +7,11 @@ import {
   TouchableOpacity,
   Image,
   Share,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -16,6 +21,8 @@ import {
   MessageSquare,
   Share2,
   Sparkles,
+  Send,
+  X,
 } from 'lucide-react-native';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
@@ -23,6 +30,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { API_BASE_URL } from '../config/api';
+import { useAuth } from '../context/AuthContext';
 import { cleanListSpacing } from '../utils/textFormatter';
 
 interface PostItem {
@@ -37,14 +45,22 @@ interface PostItem {
   createdAt?: string;
   likes: number;
   comments: number;
+  likedBy?: string[];
+}
+
+interface CommentItem {
+  id: string;
+  author: string;
+  text: string;
+  time: string;
 }
 
 const defaultCommunityPosts: PostItem[] = [
   {
     id: 'post_live_004',
-    title: 'esrdhjkl',
+    title: 'Node 2.0 Genesis Update',
     content:
-      'Once upon a time, there was a small village surrounded by beautiful green forests. A young boy named Rahul lived in that village. Rahul was a kind and curious boy who loved exploring nature. Every evening, he went for a walk near the forest. One day, he discovered a strange tree with magic green crystals.\n\nRahul learned that true happiness comes from helping people.\n\nAnd he lived happily ever after.',
+      'Welcome to the official GT Node network! Tap like or leave comments below to engage with fellow miners.',
     imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
     isPinned: false,
     author: 'GT Foundation',
@@ -52,6 +68,7 @@ const defaultCommunityPosts: PostItem[] = [
     createdAt: new Date().toISOString(),
     likes: 0,
     comments: 0,
+    likedBy: [],
   },
 ];
 
@@ -59,10 +76,18 @@ const categories = ['All', 'Latest'] as const;
 
 export const CommunityScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Latest'>('All');
   const [posts, setPosts] = useState<PostItem[]>(defaultCommunityPosts);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [likesCount, setLikesCount] = useState<Record<string, number>>({});
+
+  // Comments Modal State
+  const [activeCommentPost, setActiveCommentPost] = useState<PostItem | null>(null);
+  const [commentsList, setCommentsList] = useState<CommentItem[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const isWithin24Hours = (dateStr?: string) => {
     if (!dateStr) return false;
@@ -93,15 +118,29 @@ export const CommunityScreen: React.FC = () => {
               createdAt: p.createdAt,
               likes: Number(p.likesCount ?? 0),
               comments: Number(p.commentsCount ?? 0),
+              likedBy: Array.isArray(p.likedBy) ? p.likedBy : [],
             }));
             setPosts(mapped);
+
+            // Sync user like status from server database
+            const userIdentifier = user?.id || user?.email || '';
+            const initialLikes: Record<string, boolean> = {};
+            const initialCounts: Record<string, number> = {};
+            mapped.forEach(p => {
+              initialCounts[p.id] = p.likes;
+              if (userIdentifier && p.likedBy?.includes(userIdentifier)) {
+                initialLikes[p.id] = true;
+              }
+            });
+            setLikesCount(prev => ({ ...initialCounts, ...prev }));
+            setLikedPosts(prev => ({ ...initialLikes, ...prev }));
             break;
           }
         } catch {}
       }
     };
     fetchLivePosts();
-  }, []);
+  }, [user?.id, user?.email]);
 
   const displayedPosts = (() => {
     if (selectedCategory === 'Latest') {
@@ -116,16 +155,131 @@ export const CommunityScreen: React.FC = () => {
     return posts;
   })();
 
-  const toggleLike = (id: string) => {
-    const isLiked = !!likedPosts[id];
-    setLikedPosts((prev) => ({ ...prev, [id]: !isLiked }));
+  const toggleLike = async (id: string) => {
+    const isCurrentlyLiked = !!likedPosts[id];
+    const newLiked = !isCurrentlyLiked;
+    const userIdentifier = user?.id || user?.email || 'miner_guest';
+
+    // Optimistic UI update
+    setLikedPosts((prev) => ({ ...prev, [id]: newLiked }));
     setLikesCount((prev) => {
       const base = prev[id] !== undefined ? prev[id] : Number(posts.find((p) => p.id === id)?.likes || 0);
       return {
         ...prev,
-        [id]: Math.max(0, base + (isLiked ? 1 : -1)),
+        [id]: Math.max(0, base + (newLiked ? 1 : -1)),
       };
     });
+
+    try {
+      const endpoints = [
+        `${API_BASE_URL}/community/posts/${id}/like`,
+        `http://localhost:5050/api/community/posts/${id}/like`,
+      ];
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userIdentifier }),
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            setLikedPosts(prev => ({ ...prev, [id]: !!data.isLiked }));
+            setLikesCount(prev => ({ ...prev, [id]: Number(data.likesCount || 0) }));
+            break;
+          }
+        } catch {}
+      }
+    } catch {
+      // Revert if failed
+      setLikedPosts((prev) => ({ ...prev, [id]: isCurrentlyLiked }));
+    }
+  };
+
+  const openComments = async (post: PostItem) => {
+    setActiveCommentPost(post);
+    setCommentsList([]);
+    setLoadingComments(true);
+    setCommentInput('');
+
+    try {
+      const endpoints = [
+        `${API_BASE_URL}/community/posts/${post.id}/comments`,
+        `http://localhost:5050/api/community/posts/${post.id}/comments`,
+      ];
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.comments)) {
+            const mappedComments: CommentItem[] = data.comments.map((c: any) => ({
+              id: c.id,
+              author: c.userName || c.author || 'GT Miner',
+              text: c.content || c.text || '',
+              time: c.createdAt ? new Date(c.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            }));
+            setCommentsList(mappedComments);
+            break;
+          }
+        } catch {}
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleSendComment = async () => {
+    if (!commentInput.trim() || !activeCommentPost) return;
+
+    setSubmittingComment(true);
+    const content = commentInput.trim();
+    const userName = user?.fullName || 'GT Miner';
+    const userId = user?.id || user?.email || 'miner_guest';
+
+    try {
+      const endpoints = [
+        `${API_BASE_URL}/community/posts/${activeCommentPost.id}/comments`,
+        `http://localhost:5050/api/community/posts/${activeCommentPost.id}/comments`,
+      ];
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, userName, userId }),
+          });
+          const data = await res.json();
+          if (data && data.success && data.comment) {
+            const c = data.comment;
+            const newComment: CommentItem = {
+              id: c.id,
+              author: c.userName || userName,
+              text: c.content,
+              time: 'Just now',
+            };
+            setCommentsList(prev => [...prev, newComment]);
+            setCommentInput('');
+
+            // Increment post comments count in state
+            setPosts(prev =>
+              prev.map(p =>
+                p.id === activeCommentPost.id
+                  ? { ...p, comments: (p.comments || 0) + 1 }
+                  : p
+              )
+            );
+            setActiveCommentPost(prev => prev ? { ...prev, comments: (prev.comments || 0) + 1 } : null);
+            break;
+          }
+        } catch {}
+      }
+    } catch (err) {
+      console.error('Failed to submit comment:', err);
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const handleShare = async (title: string) => {
@@ -276,10 +430,14 @@ export const CommunityScreen: React.FC = () => {
                       </Text>
                     </TouchableOpacity>
 
-                    <View style={styles.actionBtn}>
+                    <TouchableOpacity
+                      onPress={() => openComments(post)}
+                      style={styles.actionBtn}
+                      activeOpacity={0.7}
+                    >
                       <MessageSquare size={15} color="#1E5E36" />
                       <Text style={styles.actionBtnText}>{post.comments}</Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                       onPress={() => handleShare(post.title)}
@@ -303,6 +461,97 @@ export const CommunityScreen: React.FC = () => {
           <View style={styles.bottomSpacer} />
         </ScrollView>
       </SafeAreaView>
+
+      {/* Comments Drawer Modal */}
+      <Modal
+        visible={!!activeCommentPost}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setActiveCommentPost(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleContainer}>
+                <MessageSquare size={18} color="#15803D" />
+                <Text style={styles.modalTitle}>
+                  Comments ({activeCommentPost?.comments || 0})
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setActiveCommentPost(null)}
+                style={styles.closeBtn}
+                activeOpacity={0.7}
+              >
+                <X size={20} color="#1E5E36" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Comments List */}
+            <ScrollView
+              style={styles.commentsListScroll}
+              contentContainerStyle={styles.commentsListContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {loadingComments ? (
+                <View style={styles.commentLoadingContainer}>
+                  <ActivityIndicator size="small" color="#22C55E" />
+                  <Text style={styles.commentLoadingText}>Loading comments...</Text>
+                </View>
+              ) : commentsList.length === 0 ? (
+                <View style={styles.commentEmptyContainer}>
+                  <Text style={styles.commentEmptyText}>
+                    No comments yet. Start the conversation!
+                  </Text>
+                </View>
+              ) : (
+                commentsList.map((c) => (
+                  <View key={c.id} style={styles.commentCard}>
+                    <View style={styles.commentHeader}>
+                      <Text style={styles.commentAuthor}>{c.author}</Text>
+                      <Text style={styles.commentTime}>{c.time}</Text>
+                    </View>
+                    <Text style={styles.commentBody}>{c.text}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            {/* Comment Input Bar */}
+            <View style={styles.inputBarContainer}>
+              <TextInput
+                value={commentInput}
+                onChangeText={setCommentInput}
+                placeholder="Write a comment..."
+                placeholderTextColor="#6B7280"
+                style={styles.commentTextInput}
+                multiline={false}
+                returnKeyType="send"
+                onSubmitEditing={handleSendComment}
+              />
+              <TouchableOpacity
+                onPress={handleSendComment}
+                disabled={submittingComment || !commentInput.trim()}
+                style={[
+                  styles.sendBtn,
+                  (!commentInput.trim() || submittingComment) && styles.sendBtnDisabled,
+                ]}
+                activeOpacity={0.8}
+              >
+                {submittingComment ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Send size={16} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -566,5 +815,133 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 30,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '80%',
+    minHeight: 360,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0A341B',
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  commentsListScroll: {
+    flex: 1,
+  },
+  commentsListContent: {
+    padding: 20,
+    gap: 12,
+  },
+  commentLoadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  commentLoadingText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  commentEmptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentEmptyText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  commentCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  commentAuthor: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0A341B',
+  },
+  commentTime: {
+    fontSize: 10,
+    color: '#94A3B8',
+  },
+  commentBody: {
+    fontSize: 12,
+    color: '#1E293B',
+    lineHeight: 18,
+  },
+  inputBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  commentTextInput: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#0A341B',
+  },
+  sendBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.6,
   },
 });

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { CommunityPost } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { cleanListSpacing } from '../utils/textFormatter';
@@ -28,28 +29,11 @@ interface PostComment {
   time: string;
 }
 
-const initialComments: Record<string, PostComment[]> = {
-  post_001: [
-    { id: 'c1', author: 'SatoshiMiner', text: 'Huge milestone! Glad to be one of the genesis miners.', time: '2 hours ago' },
-    { id: 'c2', author: 'CryptoNova', text: 'The 4-hour cycle is so smooth and seamless on mobile.', time: '4 hours ago' },
-  ],
-  post_002: [
-    { id: 'c3', author: 'NodeValidator_9', text: 'Great security measures against duplicate claims.', time: '1 day ago' },
-  ],
-  post_003: [
-    { id: 'c4', author: 'Elena_R', text: 'Already invited 4 of my friends! +2.0 GT earned.', time: '5 hours ago' },
-  ],
-};
-
 const hardcodedNodePosts: CommunityPost[] = [
   {
     id: 'post_live_004',
-    title: 'esrdhjkl',
-    content: `Once upon a time, there was a small village surrounded by beautiful green forests. A young boy named Rahul lived in that village. Rahul was a kind and curious boy who loved exploring nature. Every evening, he went for a walk near the forest. One day, he discovered a strange tree with magic green crystals.
-
-Rahul learned that true happiness comes from helping people.
-
-And he lived happily ever after.`,
+    title: 'Node 2.0 Genesis Update',
+    content: `Welcome to the official GT Node network! Tap like or leave comments below to engage with fellow miners.`,
     imageUrl: '/gt-logo.png',
     category: 'Announcement',
     status: 'PUBLISHED',
@@ -64,34 +48,20 @@ And he lived happily ever after.`,
 
 export const CommunityPage: React.FC = () => {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>(hardcodedNodePosts);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
 
-  // Interactive Social Actions (Like, Comment, Share)
-  const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('gt_liked_posts');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
+  // Interactive Social Actions (Like, Comment, Share) stored persistently on AWS server
+  const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>({});
   const [likesCount, setLikesCount] = useState<Record<string, number>>({});
-
-  const [comments, setComments] = useState<Record<string, PostComment[]>>(() => {
-    try {
-      const saved = localStorage.getItem('gt_post_comments');
-      return saved ? JSON.parse(saved) : initialComments;
-    } catch {
-      return initialComments;
-    }
-  });
-
+  const [comments, setComments] = useState<Record<string, PostComment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   const [openCommentPostId, setOpenCommentPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState<Record<string, string>>({});
+  const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
 
   const categories = ['All', 'Latest'];
 
@@ -104,7 +74,7 @@ export const CommunityPage: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [selectedCategory]);
+  }, [selectedCategory, user?.id, user?.email]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -122,6 +92,19 @@ export const CommunityPage: React.FC = () => {
           });
         }
         setPosts(loaded);
+
+        // Sync initial likes and likesCount from server database
+        const userIdentifier = user?.id || user?.email || '';
+        const initialLikes: Record<string, boolean> = {};
+        const initialCounts: Record<string, number> = {};
+        loaded.forEach((p: CommunityPost) => {
+          initialCounts[p.id] = Number(p.likesCount || 0);
+          if (userIdentifier && Array.isArray(p.likedBy) && p.likedBy.includes(userIdentifier)) {
+            initialLikes[p.id] = true;
+          }
+        });
+        setLikesCount(prev => ({ ...initialCounts, ...prev }));
+        setLikedPostIds(prev => ({ ...initialLikes, ...prev }));
       }
     } catch (err: any) {
       let loaded = hardcodedNodePosts;
@@ -144,24 +127,61 @@ export const CommunityPage: React.FC = () => {
     setExpandedPostIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleToggleLike = (postId: string) => {
-    const isLiked = !likedPostIds[postId];
-    const updated = { ...likedPostIds, [postId]: isLiked };
-    setLikedPostIds(updated);
-    try {
-      localStorage.setItem('gt_liked_posts', JSON.stringify(updated));
-    } catch {}
-
+  const handleToggleLike = async (postId: string) => {
+    const userIdentifier = user?.id || user?.email || 'miner_guest';
+    const isCurrentlyLiked = !!likedPostIds[postId];
+    const newLikedStatus = !isCurrentlyLiked;
+    
+    // Optimistic UI update
+    setLikedPostIds(prev => ({ ...prev, [postId]: newLikedStatus }));
     setLikesCount(prev => {
-      const baseLikes = prev[postId] !== undefined ? prev[postId] : Number(posts.find(p => p.id === postId)?.likesCount || 0);
+      const base = prev[postId] !== undefined ? prev[postId] : Number(posts.find(p => p.id === postId)?.likesCount || 0);
       return {
         ...prev,
-        [postId]: Math.max(0, baseLikes + (isLiked ? 1 : -1)),
+        [postId]: Math.max(0, base + (newLikedStatus ? 1 : -1)),
       };
     });
 
-    if (isLiked) {
-      showToast('Liked post! ❤️', 'success');
+    try {
+      const res = await api.likeCommunityPost(postId, { userId: userIdentifier });
+      if (res.success) {
+        setLikedPostIds(prev => ({ ...prev, [postId]: !!res.isLiked }));
+        setLikesCount(prev => ({ ...prev, [postId]: Number(res.likesCount || 0) }));
+        if (res.isLiked) {
+          showToast('Liked post! ❤️', 'success');
+        }
+      }
+    } catch (err: any) {
+      // Revert if request failed
+      setLikedPostIds(prev => ({ ...prev, [postId]: isCurrentlyLiked }));
+      showToast('Failed to update like status', 'error');
+    }
+  };
+
+  const handleToggleComments = async (postId: string) => {
+    if (openCommentPostId === postId) {
+      setOpenCommentPostId(null);
+      return;
+    }
+
+    setOpenCommentPostId(postId);
+    setLoadingComments(prev => ({ ...prev, [postId]: true }));
+
+    try {
+      const res = await api.getCommunityComments(postId);
+      if (res.success && Array.isArray(res.comments)) {
+        const loadedComments: PostComment[] = res.comments.map((c: any) => ({
+          id: c.id,
+          author: c.userName || c.author || 'GT Miner',
+          text: c.content || c.text || '',
+          time: c.createdAt ? new Date(c.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now',
+        }));
+        setComments(prev => ({ ...prev, [postId]: loadedComments }));
+      }
+    } catch (err) {
+      console.error('Failed to load comments:', err);
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -182,29 +202,47 @@ export const CommunityPage: React.FC = () => {
     showToast('Post link copied to clipboard!', 'success');
   };
 
-  const handleAddComment = (postId: string) => {
+  const handleAddComment = async (postId: string) => {
     const text = (commentInput[postId] || '').trim();
     if (!text) return;
 
-    const newComment: PostComment = {
-      id: `c_${Date.now()}`,
-      author: 'You (Miner)',
-      text,
-      time: 'Just now',
-    };
-
-    const updated = {
-      ...comments,
-      [postId]: [...(comments[postId] || []), newComment],
-    };
-    setComments(updated);
-    setCommentInput(prev => ({ ...prev, [postId]: '' }));
-
+    setSubmittingComment(prev => ({ ...prev, [postId]: true }));
     try {
-      localStorage.setItem('gt_post_comments', JSON.stringify(updated));
-    } catch {}
+      const userName = user?.fullName || 'GT Miner';
+      const userId = user?.id || user?.email || 'miner_guest';
 
-    showToast('Comment posted to Node feed!', 'success');
+      const res = await api.addCommunityComment(postId, {
+        content: text,
+        userName,
+        userId,
+      });
+
+      if (res.success && res.comment) {
+        const created = res.comment;
+        const newComment: PostComment = {
+          id: created.id,
+          author: created.userName || userName,
+          text: created.content,
+          time: 'Just now',
+        };
+
+        setComments(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), newComment],
+        }));
+
+        // Increment comments count on post
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: (Number(p.commentsCount) || 0) + 1 } : p));
+        setCommentInput(prev => ({ ...prev, [postId]: '' }));
+        showToast('Comment saved to server!', 'success');
+      } else {
+        showToast(res.message || 'Could not post comment.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to post comment to server.', 'error');
+    } finally {
+      setSubmittingComment(prev => ({ ...prev, [postId]: false }));
+    }
   };
 
   return (
@@ -365,7 +403,7 @@ export const CommunityPage: React.FC = () => {
 
                   {/* Comment Button */}
                   <button
-                    onClick={() => setOpenCommentPostId(isCommentsOpen ? null : post.id)}
+                    onClick={() => handleToggleComments(post.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
                       isCommentsOpen
                         ? 'text-[#16A34A] bg-[#22C55E]/15'
@@ -373,7 +411,7 @@ export const CommunityPage: React.FC = () => {
                     }`}
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span>{postCommentsList.length}</span>
+                    <span>{comments[post.id]?.length !== undefined ? comments[post.id].length : Number(post.commentsCount || 0)}</span>
                   </button>
 
                   {/* Share Button */}
@@ -388,18 +426,28 @@ export const CommunityPage: React.FC = () => {
 
                 {/* Inline Comment Section Drawer */}
                 {isCommentsOpen && (
-                  <div className="space-y-3 pt-1 animate-fadeIn">
+                  <div className="space-y-3 pt-1 animate-fadeIn border-t border-black/5">
                     {/* Existing Comments */}
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {postCommentsList.map(c => (
-                        <div key={c.id} className="p-2.5 rounded-xl bg-white/70 border border-white/90 text-xs space-y-1">
-                          <div className="flex items-center justify-between font-bold text-[#0A341B]">
-                            <span>{c.author}</span>
-                            <span className="text-[10px] text-[#1E5E36]/70 font-normal">{c.time}</span>
-                          </div>
-                          <p className="text-[#1E5E36]">{c.text}</p>
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {loadingComments[post.id] ? (
+                        <div className="text-center py-3 text-xs text-[#1E5E36]/70">
+                          Loading comments from server...
                         </div>
-                      ))}
+                      ) : postCommentsList.length === 0 ? (
+                        <div className="text-center py-3 text-xs text-[#1E5E36]/70 italic">
+                          No comments yet. Be the first to start the discussion!
+                        </div>
+                      ) : (
+                        postCommentsList.map(c => (
+                          <div key={c.id} className="p-2.5 rounded-xl bg-white/70 border border-white/90 text-xs space-y-1">
+                            <div className="flex items-center justify-between font-bold text-[#0A341B]">
+                              <span>{c.author}</span>
+                              <span className="text-[10px] text-[#1E5E36]/70 font-normal">{c.time}</span>
+                            </div>
+                            <p className="text-[#1E5E36]">{c.text}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
 
                     {/* New Comment Input */}
@@ -408,13 +456,15 @@ export const CommunityPage: React.FC = () => {
                         type="text"
                         value={commentInput[post.id] || ''}
                         onChange={(e) => setCommentInput(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && !submittingComment[post.id] && handleAddComment(post.id)}
                         placeholder="Write a comment..."
-                        className="flex-1 px-3.5 py-2 rounded-xl bg-white/90 border border-white text-xs text-[#0A341B] placeholder-[#1E5E36]/60 focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
+                        disabled={submittingComment[post.id]}
+                        className="flex-1 px-3.5 py-2 rounded-xl bg-white/90 border border-white text-xs text-[#0A341B] placeholder-[#1E5E36]/60 focus:outline-none focus:ring-2 focus:ring-[#22C55E] disabled:opacity-60"
                       />
                       <button
                         onClick={() => handleAddComment(post.id)}
-                        className="p-2 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                        disabled={submittingComment[post.id] || !(commentInput[post.id] || '').trim()}
+                        className="p-2 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-sm hover:scale-105 transition-transform cursor-pointer disabled:opacity-50"
                         title="Send comment"
                       >
                         <Send className="w-3.5 h-3.5" />

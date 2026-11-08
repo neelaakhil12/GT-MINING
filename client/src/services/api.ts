@@ -108,6 +108,11 @@ export const api = {
     return request<any>(`/community/posts?${params.toString()}`);
   },
   getCommunityPost: (id: string) => request<any>(`/community/posts/${id}`),
+  likeCommunityPost: (id: string, body: any = {}) =>
+    request<any>(`/community/posts/${id}/like`, { method: 'POST', body: JSON.stringify(body) }),
+  getCommunityComments: (id: string) => request<any>(`/community/posts/${id}/comments`),
+  addCommunityComment: (id: string, body: { content: string; userName?: string; userId?: string }) =>
+    request<any>(`/community/posts/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
 
   // Profile
   getProfile: () => request<any>('/profile'),

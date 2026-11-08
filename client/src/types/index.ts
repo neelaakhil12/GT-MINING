@@ -94,6 +94,7 @@ export interface CommunityPost {
   authorName: string;
   likesCount?: number;
   commentsCount?: number;
+  likedBy?: string[];
   createdAt: string;
   updatedAt: string;
 }
