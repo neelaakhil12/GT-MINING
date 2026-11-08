@@ -568,7 +568,19 @@ router.patch('/settings', (req, res) => {
 // GET /api/admin/audit-logs
 router.get('/audit-logs', (req, res) => {
   const db = readDB();
-  const logs = [...db.adminAuditLogs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const usersMap = new Map((db.users || []).map(u => [u.id, u]));
+  const logs = [...(db.adminAuditLogs || [])]
+    .filter(log => log.id !== 'audit_001') // Exclude dummy initialization record
+    .map(log => {
+      const admin = usersMap.get(log.adminUserId);
+      return {
+        ...log,
+        adminName: admin ? admin.fullName : 'GT Administrator',
+        adminEmail: admin ? admin.email : (log.adminUserId || 'admin')
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   return res.json({ success: true, logs });
 });
 
@@ -588,6 +600,7 @@ router.post('/onboarding-banners', (req, res) => {
     createdAt: new Date().toISOString()
   };
   db.onboardingBanners.push(newBanner);
+  createAuditLog(db, req.user?.id || 'admin', 'CREATE_ONBOARDING_BANNER', 'ONBOARDING_BANNER', newBanner.id, `Created pre-opening banner "${newBanner.title || 'Banner'}"`);
   writeDB(db);
   return res.status(201).json({ success: true, banner: newBanner, message: 'Pre-opening banner added.' });
 });
@@ -599,6 +612,7 @@ router.patch('/onboarding-banners/:id', (req, res) => {
   const idx = db.onboardingBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
   db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...req.body };
+  createAuditLog(db, req.user?.id || 'admin', 'UPDATE_ONBOARDING_BANNER', 'ONBOARDING_BANNER', req.params.id, `Updated pre-opening banner "${db.onboardingBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.onboardingBanners[idx], message: 'Banner updated.' });
 });
@@ -607,7 +621,9 @@ router.patch('/onboarding-banners/:id', (req, res) => {
 router.delete('/onboarding-banners/:id', (req, res) => {
   const db = readDB();
   if (!db.onboardingBanners) db.onboardingBanners = [];
+  const banner = db.onboardingBanners.find(b => b.id === req.params.id);
   db.onboardingBanners = db.onboardingBanners.filter(b => b.id !== req.params.id);
+  createAuditLog(db, req.user?.id || 'admin', 'DELETE_ONBOARDING_BANNER', 'ONBOARDING_BANNER', req.params.id, `Deleted pre-opening banner "${banner?.title || req.params.id}"`);
   writeDB(db);
   return res.json({ success: true, message: 'Banner deleted.' });
 });
@@ -628,6 +644,7 @@ router.post('/home-banners', (req, res) => {
     createdAt: new Date().toISOString()
   };
   db.homeBanners.push(newBanner);
+  createAuditLog(db, req.user?.id || 'admin', 'CREATE_HOME_BANNER', 'HOME_BANNER', newBanner.id, `Created home banner "${newBanner.title || 'Banner'}"`);
   writeDB(db);
   return res.status(201).json({ success: true, banner: newBanner, message: 'Home banner added.' });
 });
@@ -639,6 +656,7 @@ router.patch('/home-banners/:id', (req, res) => {
   const idx = db.homeBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
   db.homeBanners[idx] = { ...db.homeBanners[idx], ...req.body };
+  createAuditLog(db, req.user?.id || 'admin', 'UPDATE_HOME_BANNER', 'HOME_BANNER', req.params.id, `Updated home banner "${db.homeBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.homeBanners[idx], message: 'Home banner updated.' });
 });
@@ -647,7 +665,11 @@ router.patch('/home-banners/:id', (req, res) => {
 router.delete('/home-banners/:id', (req, res) => {
   const db = readDB();
   if (!db.homeBanners) db.homeBanners = [];
+  const banner = db.homeBanners.find(b => b.id === req.params.id);
   db.homeBanners = db.homeBanners.filter(b => b.id !== req.params.id);
+  createAuditLog(db, req.user?.id || 'admin', 'DELETE_HOME_BANNER', 'HOME_BANNER', req.params.id, `Deleted home banner "${banner?.title || req.params.id}"`);
+  writeDB(db);
+  return res.json({ success: true, message: 'Banner deleted.' });
   writeDB(db);
   return res.json({ success: true, message: 'Home banner deleted.' });
 });

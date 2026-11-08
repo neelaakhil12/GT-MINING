@@ -142,18 +142,7 @@ const getInitialData = () => {
       }
     ],
     notifications: [],
-    adminAuditLogs: [
-      {
-        id: 'audit_001',
-        adminUserId: 'usr_admin_001',
-        action: 'SYSTEM_INITIALIZATION',
-        entityType: 'SYSTEM',
-        entityId: 'global',
-        reason: 'Initial platform setup with default mining cooldown of 4 hours',
-        metadata: { miningReward: 1.0, cooldownSeconds: 14400 },
-        createdAt: now
-      }
-    ]
+    adminAuditLogs: []
   };
 };
 
