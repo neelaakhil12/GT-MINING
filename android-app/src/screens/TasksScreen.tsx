@@ -57,6 +57,7 @@ function buildVideoHtml(rawUrl: string): string {
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
@@ -64,7 +65,13 @@ function buildVideoHtml(rawUrl: string): string {
   </style>
 </head>
 <body>
-  <iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+  <iframe
+    src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://gtnetwork.in"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
 </body>
 </html>`;
   }
@@ -994,32 +1001,25 @@ export const TasksScreen: React.FC = () => {
 
             {/* In-App Embedded Video Player (WebView for MP4 & YouTube without Error 153) */}
             <View style={styles.fullScreenPlayerBox}>
-              {(() => {
-                const ytId = extractYouTubeId(watchingVideoModalTask.url);
-                return (
-                  <WebView
-                    key={watchingVideoModalTask.id}
-                    source={
-                      ytId
-                        ? {
-                            uri: `https://www.youtube.com/embed/${ytId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1`,
-                          }
-                        : {
-                            html: buildVideoHtml(watchingVideoModalTask.url),
-                            baseUrl: 'https://gtnetwork.in',
-                          }
-                    }
-                    style={styles.fullScreenWebView}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
-                    allowsInlineMediaPlayback={true}
-                    mediaPlaybackRequiresUserAction={false}
-                    originWhitelist={['*']}
-                    allowsFullscreenVideo={true}
-                    userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-                  />
-                );
-              })()}
+              <WebView
+                key={watchingVideoModalTask.id}
+                source={{
+                  html: buildVideoHtml(watchingVideoModalTask.url),
+                  baseUrl: 'https://gtnetwork.in',
+                  headers: {
+                    Referer: 'https://gtnetwork.in',
+                  },
+                }}
+                style={styles.fullScreenWebView}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={false}
+                originWhitelist={['*']}
+                allowsFullscreenVideo={true}
+                mixedContentMode="always"
+                userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+              />
             </View>
 
             {/* Scrollable Quest Progress & Details */}
@@ -1063,6 +1063,23 @@ export const TasksScreen: React.FC = () => {
                   {watchingVideoModalTask.description || 'Watch the official video to earn GT Coins and boost community rank.'}
                 </Text>
               </View>
+
+              {/* Optional: Direct YouTube link fallback */}
+              {extractYouTubeId(watchingVideoModalTask.url) && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const ytId = extractYouTubeId(watchingVideoModalTask.url);
+                    const appUrl = `vnd.youtube:${ytId}`;
+                    const webUrl = `https://www.youtube.com/watch?v=${ytId}`;
+                    Linking.openURL(appUrl).catch(() => Linking.openURL(webUrl));
+                  }}
+                  style={styles.openYtBtn}
+                  activeOpacity={0.8}
+                >
+                  <ExternalLink size={14} color="#EF4444" />
+                  <Text style={styles.openYtBtnText}>Open directly in YouTube App ↗</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Action Buttons: Close & Submit Proof */}
               <View style={styles.fullScreenActionsRow}>
@@ -1986,6 +2003,23 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: '#9CA3AF',
     lineHeight: 19,
+  },
+  openYtBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+  },
+  openYtBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F87171',
   },
   fullScreenActionsRow: {
     flexDirection: 'row',
