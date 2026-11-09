@@ -120,3 +120,4 @@ router.get('/crypto', async (req, res) => {
 });
 
 export default router;
+
