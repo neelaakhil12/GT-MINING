@@ -15,8 +15,37 @@ import { GtCoinStream3D } from './GtCoinStream3D';
 import { GtCoinOrbitWeb } from './GtCoinOrbitWeb';
 import { api } from '../services/api';
 
+interface CryptoRate {
+  price: number;
+  change24h: number;
+  symbol: string;
+  name: string;
+}
+
+const defaultRates: Record<string, CryptoRate> = {
+  BTC: { price: 88450, change24h: 1.45, symbol: 'BTC', name: 'BITCOIN' },
+  ETH: { price: 2435, change24h: -0.52, symbol: 'ETH', name: 'ETHEREUM' },
+  SOL: { price: 184.5, change24h: 4.12, symbol: 'SOL', name: 'SOLANA' },
+  GT: { price: 1200, change24h: 12.4, symbol: 'GT', name: 'GT' }
+};
+
 export const HomeBanners: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [rates, setRates] = useState<Record<string, CryptoRate>>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_crypto_rates');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return defaultRates;
+  });
+
+  const formatPrice = (val: number | undefined) => {
+    if (typeof val !== 'number' || isNaN(val)) return '$0.00';
+    if (val >= 1000) {
+      return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return '$' + val.toFixed(2);
+  };
   const [slides, setSlides] = useState<any[]>(() => {
     try {
       const cached = localStorage.getItem('gt_cached_home_banners');
@@ -71,6 +100,87 @@ export const HomeBanners: React.FC = () => {
     }, 1500);
     return () => clearInterval(timer);
   }, [slides.length]);
+
+  // Live Crypto Rates: Coinbase Free Public WebSocket Feed + REST Sync
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let reconnectTimer: any = null;
+    let isMounted = true;
+
+    // 1. Initial quick fetch from our backend cached endpoint
+    fetch('/api/market/crypto')
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && data.rates) {
+          setRates(prev => ({ ...prev, ...data.rates }));
+          try {
+            localStorage.setItem('gt_cached_crypto_rates', JSON.stringify(data.rates));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
+    // 2. Open Coinbase Free Public WebSocket feed for tick-by-tick live price updates
+    const connectCoinbaseWS = () => {
+      if (!isMounted) return;
+      try {
+        ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+
+        ws.onopen = () => {
+          ws?.send(
+            JSON.stringify({
+              type: 'subscribe',
+              product_ids: ['BTC-USD', 'ETH-USD', 'SOL-USD'],
+              channels: ['ticker']
+            })
+          );
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'ticker' && data.product_id && data.price) {
+              const symbol = data.product_id.split('-')[0];
+              const price = parseFloat(data.price);
+              const open24h = parseFloat(data.open_24h || data.price);
+              const change24h = open24h > 0 ? parseFloat((((price - open24h) / open24h) * 100).toFixed(2)) : 0;
+
+              if (isMounted) {
+                setRates(prev => ({
+                  ...prev,
+                  [symbol]: {
+                    symbol,
+                    name: symbol === 'BTC' ? 'BITCOIN' : symbol === 'ETH' ? 'ETHEREUM' : 'SOLANA',
+                    price,
+                    change24h
+                  }
+                }));
+              }
+            }
+          } catch {}
+        };
+
+        ws.onerror = () => {};
+        ws.onclose = () => {
+          if (isMounted) {
+            reconnectTimer = setTimeout(connectCoinbaseWS, 6000);
+          }
+        };
+      } catch {}
+    };
+
+    connectCoinbaseWS();
+
+    return () => {
+      isMounted = false;
+      if (ws) {
+        try {
+          ws.close();
+        } catch {}
+      }
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
+  }, []);
 
   if (slides.length === 0) {
     return (
@@ -213,16 +323,16 @@ export const HomeBanners: React.FC = () => {
                 BITCOIN
               </span>
               <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
-                0.041
+                {formatPrice(rates.BTC?.price)}
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-0.5 text-xs">
               <span className="font-semibold text-[#1E5E36]">
-                $2,400
+                1 BTC
               </span>
-              <span className="font-bold text-[#16A34A]">
-                +1.2%
+              <span className={`font-bold ${(rates.BTC?.change24h ?? 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                {(rates.BTC?.change24h ?? 0) >= 0 ? `+${rates.BTC?.change24h ?? 0}%` : `${rates.BTC?.change24h}%`}
               </span>
             </div>
           </div>
@@ -238,16 +348,16 @@ export const HomeBanners: React.FC = () => {
                 ETHEREUM
               </span>
               <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
-                1.42
+                {formatPrice(rates.ETH?.price)}
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-0.5 text-xs">
               <span className="font-semibold text-[#1E5E36]">
-                $3,100
+                1 ETH
               </span>
-              <span className="font-bold text-[#DC2626]">
-                -0.5%
+              <span className={`font-bold ${(rates.ETH?.change24h ?? 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                {(rates.ETH?.change24h ?? 0) >= 0 ? `+${rates.ETH?.change24h ?? 0}%` : `${rates.ETH?.change24h}%`}
               </span>
             </div>
           </div>
@@ -263,16 +373,16 @@ export const HomeBanners: React.FC = () => {
                 SOLANA
               </span>
               <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
-                24.5
+                {formatPrice(rates.SOL?.price)}
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-0.5 text-xs">
               <span className="font-semibold text-[#1E5E36]">
-                $3,400
+                1 SOL
               </span>
-              <span className="font-bold text-[#16A34A]">
-                +5.1%
+              <span className={`font-bold ${(rates.SOL?.change24h ?? 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                {(rates.SOL?.change24h ?? 0) >= 0 ? `+${rates.SOL?.change24h ?? 0}%` : `${rates.SOL?.change24h}%`}
               </span>
             </div>
           </div>

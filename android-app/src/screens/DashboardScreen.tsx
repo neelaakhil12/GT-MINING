@@ -73,12 +73,37 @@ const DEFAULT_BANNER_SLIDES = [
   },
 ];
 
+interface CryptoRate {
+  price: number;
+  change24h: number;
+  symbol: string;
+  name: string;
+}
+
+const DEFAULT_CRYPTO_RATES: Record<string, CryptoRate> = {
+  BTC: { price: 88450, change24h: 1.45, symbol: 'BTC', name: 'BITCOIN' },
+  ETH: { price: 2435, change24h: -0.52, symbol: 'ETH', name: 'ETHEREUM' },
+  SOL: { price: 184.5, change24h: 4.12, symbol: 'SOL', name: 'SOLANA' },
+  GT: { price: 1200, change24h: 12.4, symbol: 'GT', name: 'GT' },
+};
+
 export const DashboardScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [bannerSlides, setBannerSlides] = useState(DEFAULT_BANNER_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Dynamic live crypto rates from Coinbase WebSocket & REST
+  const [cryptoRates, setCryptoRates] = useState<Record<string, CryptoRate>>(DEFAULT_CRYPTO_RATES);
+
+  const formatCryptoPrice = (val: number | undefined) => {
+    if (typeof val !== 'number' || isNaN(val)) return '$0.00';
+    if (val >= 1000) {
+      return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return '$' + val.toFixed(2);
+  };
 
   // Dynamic mining config from server
   const [miningRate, setMiningRate] = useState<number>(1.0);
@@ -107,6 +132,97 @@ export const DashboardScreen: React.FC = () => {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // Live Crypto Rates: Coinbase Free Public WebSocket Feed + REST Sync
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let reconnectTimer: any = null;
+    let isMounted = true;
+
+    // 1. Instant cached rates from AsyncStorage
+    appStorage.getItem('gt_cached_crypto_rates').then((cached) => {
+      if (cached && isMounted) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            setCryptoRates((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {}
+      }
+    });
+
+    // 2. Initial fetch from server endpoint /api/market/crypto
+    fetch(`${API_BASE_URL}/market/crypto`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success && data.rates && isMounted) {
+          setCryptoRates((prev) => ({ ...prev, ...data.rates }));
+          appStorage.setItem('gt_cached_crypto_rates', JSON.stringify(data.rates)).catch(() => {});
+        }
+      })
+      .catch(() => {});
+
+    // 3. Connect to free public Coinbase WebSocket feed for real-time tick-by-tick prices
+    const connectWS = () => {
+      if (!isMounted) return;
+      try {
+        ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+
+        ws.onopen = () => {
+          ws?.send(
+            JSON.stringify({
+              type: 'subscribe',
+              product_ids: ['BTC-USD', 'ETH-USD', 'SOL-USD'],
+              channels: ['ticker'],
+            })
+          );
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'ticker' && data.product_id && data.price) {
+              const symbol = data.product_id.split('-')[0];
+              const price = parseFloat(data.price);
+              const open24h = parseFloat(data.open_24h || data.price);
+              const change24h = open24h > 0 ? parseFloat((((price - open24h) / open24h) * 100).toFixed(2)) : 0;
+
+              if (isMounted) {
+                setCryptoRates((prev) => ({
+                  ...prev,
+                  [symbol]: {
+                    symbol,
+                    name: symbol === 'BTC' ? 'BITCOIN' : symbol === 'ETH' ? 'ETHEREUM' : 'SOLANA',
+                    price,
+                    change24h,
+                  },
+                }));
+              }
+            }
+          } catch {}
+        };
+
+        ws.onerror = () => {};
+        ws.onclose = () => {
+          if (isMounted) {
+            reconnectTimer = setTimeout(connectWS, 6000);
+          }
+        };
+      } catch {}
+    };
+
+    connectWS();
+
+    return () => {
+      isMounted = false;
+      if (ws) {
+        try {
+          ws.close();
+        } catch {}
+      }
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
   }, []);
 
   // Restore cached banners from storage immediately so there is never a hardcoded banner flash
@@ -316,11 +432,15 @@ export const DashboardScreen: React.FC = () => {
                   <Text style={styles.coinIconText}>₿</Text>
                 </View>
                 <Text style={styles.cardTokenLabel}>BITCOIN</Text>
-                <Text style={styles.cardTokenAmount}>0.041</Text>
+                <Text style={styles.cardTokenAmount} numberOfLines={1} adjustsFontSizeToFit>
+                  {formatCryptoPrice(cryptoRates.BTC?.price)}
+                </Text>
               </View>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardPriceText}>$2,400</Text>
-                <Text style={styles.percentPositive}>+1.2%</Text>
+                <Text style={styles.cardPriceText}>1 BTC</Text>
+                <Text style={(cryptoRates.BTC?.change24h ?? 0) >= 0 ? styles.percentPositive : styles.percentNegative}>
+                  {(cryptoRates.BTC?.change24h ?? 0) >= 0 ? `+${cryptoRates.BTC?.change24h ?? 0}%` : `${cryptoRates.BTC?.change24h}%`}
+                </Text>
               </View>
             </View>
 
@@ -331,11 +451,15 @@ export const DashboardScreen: React.FC = () => {
                   <Text style={styles.coinIconText}>Ξ</Text>
                 </View>
                 <Text style={styles.cardTokenLabel}>ETHEREUM</Text>
-                <Text style={styles.cardTokenAmount}>1.42</Text>
+                <Text style={styles.cardTokenAmount} numberOfLines={1} adjustsFontSizeToFit>
+                  {formatCryptoPrice(cryptoRates.ETH?.price)}
+                </Text>
               </View>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardPriceText}>$3,100</Text>
-                <Text style={styles.percentNegative}>-0.5%</Text>
+                <Text style={styles.cardPriceText}>1 ETH</Text>
+                <Text style={(cryptoRates.ETH?.change24h ?? 0) >= 0 ? styles.percentPositive : styles.percentNegative}>
+                  {(cryptoRates.ETH?.change24h ?? 0) >= 0 ? `+${cryptoRates.ETH?.change24h ?? 0}%` : `${cryptoRates.ETH?.change24h}%`}
+                </Text>
               </View>
             </View>
 
@@ -346,11 +470,15 @@ export const DashboardScreen: React.FC = () => {
                   <Text style={[styles.coinIconText, { color: '#14F195' }]}>◎</Text>
                 </View>
                 <Text style={styles.cardTokenLabel}>SOLANA</Text>
-                <Text style={styles.cardTokenAmount}>24.5</Text>
+                <Text style={styles.cardTokenAmount} numberOfLines={1} adjustsFontSizeToFit>
+                  {formatCryptoPrice(cryptoRates.SOL?.price)}
+                </Text>
               </View>
               <View style={styles.cardFooter}>
-                <Text style={styles.cardPriceText}>$3,400</Text>
-                <Text style={styles.percentPositive}>+5.1%</Text>
+                <Text style={styles.cardPriceText}>1 SOL</Text>
+                <Text style={(cryptoRates.SOL?.change24h ?? 0) >= 0 ? styles.percentPositive : styles.percentNegative}>
+                  {(cryptoRates.SOL?.change24h ?? 0) >= 0 ? `+${cryptoRates.SOL?.change24h ?? 0}%` : `${cryptoRates.SOL?.change24h}%`}
+                </Text>
               </View>
             </View>
           </ScrollView>
