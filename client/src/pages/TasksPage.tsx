@@ -696,7 +696,9 @@ export const TasksPage: React.FC = () => {
       {/* Video Watch & Quest Modal */}
       {watchingVideoModalTask && (
         <div
-          onClick={() => setWatchingVideoModalTask(null)}
+          onClick={() => {
+            if (videoTimer === 0) setWatchingVideoModalTask(null);
+          }}
           className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
         >
           <div
@@ -713,13 +715,20 @@ export const TasksPage: React.FC = () => {
                   {watchingVideoModalTask.title}
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setWatchingVideoModalTask(null)}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-all cursor-pointer shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {videoTimer === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setWatchingVideoModalTask(null)}
+                  className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-all cursor-pointer shrink-0"
+                  title="Close Video"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono text-xs font-bold border border-amber-500/40 shrink-0">
+                  Exit in {videoTimer}s
+                </span>
+              )}
             </div>
 
             {/* Video Player Body */}
@@ -777,16 +786,23 @@ export const TasksPage: React.FC = () => {
                 </p>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setWatchingVideoModalTask(null)}
-                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/15 text-neutral-300 transition-all cursor-pointer"
-                  >
-                    Close
-                  </button>
+                  {videoTimer === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setWatchingVideoModalTask(null)}
+                      className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/15 text-neutral-300 transition-all cursor-pointer"
+                    >
+                      Close / Back to Tasks
+                    </button>
+                  ) : (
+                    <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-semibold text-neutral-400">
+                      🔒 Watch {videoTimer}s to unlock exit
+                    </div>
+                  )}
 
                   <button
                     type="button"
+                    disabled={videoTimer !== 0}
                     onClick={() => {
                       const currentTask = watchingVideoModalTask;
                       setWatchingVideoModalTask(null);
@@ -794,10 +810,14 @@ export const TasksPage: React.FC = () => {
                       setProofNote('Video completed');
                       setProofImage('');
                     }}
-                    className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-black text-xs text-[#07130D] bg-gradient-to-r from-[#22C55E] to-[#4ADE80] hover:brightness-110 shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${
+                      videoTimer === 0
+                        ? 'text-[#07130D] bg-gradient-to-r from-[#22C55E] to-[#4ADE80] hover:brightness-110 shadow-lg cursor-pointer'
+                        : 'text-neutral-500 bg-white/10 opacity-50 cursor-not-allowed'
+                    }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Submit Proof ↗</span>
+                    <span>{videoTimer === 0 ? 'Submit Proof ↗' : `Wait ${videoTimer}s`}</span>
                   </button>
                 </div>
               </div>

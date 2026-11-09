@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
@@ -63,7 +64,7 @@ function buildVideoHtml(rawUrl: string): string {
   </style>
 </head>
 <body>
-  <iframe src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  <iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </body>
 </html>`;
   }
@@ -306,6 +307,27 @@ export const TasksScreen: React.FC = () => {
       if (interval) clearInterval(interval);
     };
   }, [videoTimer, activeVideoTask]);
+
+  // Prevent Android hardware back button exit while video watch requirement countdown is active (rewarded ad behavior)
+  useEffect(() => {
+    if (!watchingVideoModalTask) return;
+
+    const onBackPress = () => {
+      if (videoTimer !== null && videoTimer > 0) {
+        Alert.alert(
+          'Video in Progress',
+          `Please finish watching the video to unlock exit and claim your +${watchingVideoModalTask.reward} GT reward! (${videoTimer}s remaining)`,
+          [{ text: 'Keep Watching', style: 'default' }]
+        );
+        return true; // block back navigation
+      }
+      setWatchingVideoModalTask(null);
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [watchingVideoModalTask, videoTimer]);
 
   // Pick proof screenshot from phone gallery
   const handlePickProofImage = async () => {
@@ -911,18 +933,37 @@ export const TasksScreen: React.FC = () => {
           visible={!!watchingVideoModalTask}
           animationType="slide"
           statusBarTranslucent={true}
-          onRequestClose={() => setWatchingVideoModalTask(null)}
+          onRequestClose={() => {
+            if (videoTimer === 0) {
+              setWatchingVideoModalTask(null);
+            } else {
+              Alert.alert(
+                'Video in Progress',
+                `Please finish watching the video to unlock exit and claim your +${watchingVideoModalTask.reward} GT reward! (${videoTimer}s remaining)`,
+                [{ text: 'Keep Watching', style: 'default' }]
+              );
+            }
+          }}
         >
           <View style={[styles.fullScreenVideoContainer, { paddingTop: Math.max(top, 16), paddingBottom: modalPaddingBottom }]}>
             {/* Top Navigation Bar */}
             <View style={styles.fullScreenTopBar}>
-              <TouchableOpacity
-                onPress={() => setWatchingVideoModalTask(null)}
-                style={styles.fullScreenBackBtn}
-                activeOpacity={0.7}
-              >
-                <ArrowLeft size={22} color="#FFFFFF" />
-              </TouchableOpacity>
+              {/* Back button ONLY shows after required watch time completes (Rewarded Ad behavior) */}
+              {videoTimer === 0 ? (
+                <TouchableOpacity
+                  onPress={() => setWatchingVideoModalTask(null)}
+                  style={styles.fullScreenBackBtn}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Back to tasks"
+                >
+                  <ArrowLeft size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.adCountdownPill}>
+                  <Clock size={12} color="#FBBF24" />
+                  <Text style={styles.adCountdownPillText}>Exit in {videoTimer}s</Text>
+                </View>
+              )}
 
               <View style={{ flex: 1, paddingHorizontal: 8 }}>
                 <Text style={styles.fullScreenVideoTag}>GT VIDEO QUEST</Text>
@@ -931,24 +972,54 @@ export const TasksScreen: React.FC = () => {
                 </Text>
               </View>
 
-              <View style={styles.fullScreenRewardBadge}>
-                <Coins size={13} color="#22C55E" />
-                <Text style={styles.fullScreenRewardText}>+{watchingVideoModalTask.reward} GT</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={styles.fullScreenRewardBadge}>
+                  <Coins size={13} color="#22C55E" />
+                  <Text style={styles.fullScreenRewardText}>+{watchingVideoModalTask.reward} GT</Text>
+                </View>
+
+                {/* Wrong/Close button (✖) ONLY shows after video timer reaches 0 */}
+                {videoTimer === 0 && (
+                  <TouchableOpacity
+                    onPress={() => setWatchingVideoModalTask(null)}
+                    style={styles.adCloseXBtn}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Close Video Quest"
+                  >
+                    <X size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
-            {/* In-App Embedded Video Player (WebView for MP4 & YouTube) */}
+            {/* In-App Embedded Video Player (WebView for MP4 & YouTube without Error 153) */}
             <View style={styles.fullScreenPlayerBox}>
-              <WebView
-                source={{ html: buildVideoHtml(watchingVideoModalTask.url) }}
-                style={styles.fullScreenWebView}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                originWhitelist={['*']}
-                allowsFullscreenVideo={true}
-              />
+              {(() => {
+                const ytId = extractYouTubeId(watchingVideoModalTask.url);
+                return (
+                  <WebView
+                    key={watchingVideoModalTask.id}
+                    source={
+                      ytId
+                        ? {
+                            uri: `https://www.youtube.com/embed/${ytId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1`,
+                          }
+                        : {
+                            html: buildVideoHtml(watchingVideoModalTask.url),
+                            baseUrl: 'https://gtnetwork.in',
+                          }
+                    }
+                    style={styles.fullScreenWebView}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    allowsInlineMediaPlayback={true}
+                    mediaPlaybackRequiresUserAction={false}
+                    originWhitelist={['*']}
+                    allowsFullscreenVideo={true}
+                    userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                  />
+                );
+              })()}
             </View>
 
             {/* Scrollable Quest Progress & Details */}
@@ -993,17 +1064,27 @@ export const TasksScreen: React.FC = () => {
                 </Text>
               </View>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: Close & Submit Proof */}
               <View style={styles.fullScreenActionsRow}>
-                <TouchableOpacity
-                  onPress={() => setWatchingVideoModalTask(null)}
-                  style={styles.fullScreenCloseBtn}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.fullScreenCloseBtnText}>Back to Tasks</Text>
-                </TouchableOpacity>
+                {videoTimer === 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setWatchingVideoModalTask(null)}
+                    style={styles.fullScreenCloseBtn}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.fullScreenCloseBtnText}>Close / Back to Tasks</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.lockedExitBar}>
+                    <Clock size={13} color="#FBBF24" />
+                    <Text style={styles.lockedExitText}>
+                      🔒 Watch {videoTimer}s to unlock exit & reward
+                    </Text>
+                  </View>
+                )}
 
                 <TouchableOpacity
+                  disabled={videoTimer !== 0}
                   onPress={() => {
                     const currentTask = watchingVideoModalTask;
                     setWatchingVideoModalTask(null);
@@ -1013,18 +1094,20 @@ export const TasksScreen: React.FC = () => {
                   }}
                   style={[
                     styles.fullScreenSubmitBtn,
-                    videoTimer === 0 && styles.fullScreenSubmitBtnActive,
+                    videoTimer === 0
+                      ? styles.fullScreenSubmitBtnActive
+                      : styles.fullScreenSubmitBtnDisabled,
                   ]}
                   activeOpacity={0.8}
                 >
-                  <CheckCircle2 size={16} color={videoTimer === 0 ? '#07130D' : '#9CA3AF'} />
+                  <CheckCircle2 size={16} color={videoTimer === 0 ? '#07130D' : '#6B7280'} />
                   <Text
                     style={[
                       styles.fullScreenSubmitBtnText,
                       videoTimer === 0 && styles.fullScreenSubmitBtnActiveText,
                     ]}
                   >
-                    Submit Proof ↗
+                    {videoTimer === 0 ? 'Submit Proof ↗' : `Wait ${videoTimer}s`}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1942,5 +2025,54 @@ const styles = StyleSheet.create({
   },
   fullScreenSubmitBtnActiveText: {
     color: '#07130D',
+  },
+  fullScreenSubmitBtnDisabled: {
+    opacity: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  adCountdownPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  adCountdownPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FBBF24',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  adCloseXBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lockedExitBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  lockedExitText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
 });
