@@ -237,11 +237,40 @@ export const ReferralsScreen: React.FC = () => {
     } catch {}
 
     if (Platform.OS === 'android') {
-      const directIntentUrl = `intent:#Intent;package=com.instagram.android;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=${encodeURIComponent(shareMessage)};end`;
+      // 1. Target DirectShareHandlerActivity with SEND action
+      // Prompts user to select between Instagram and Instagram Clone,
+      // and directly opens the Instagram Direct "Send to friends" sheet!
+      const directIntent = `intent:#Intent;action=android.intent.action.SEND;type=text/plain;component=com.instagram.android/com.instagram.direct.share.handler.DirectShareHandlerActivity;S.android.intent.extra.TEXT=${encodeURIComponent(shareMessage)};end`;
       try {
-        await Linking.openURL(directIntentUrl);
+        await Linking.openURL(directIntent);
         return;
-      } catch {}
+      } catch {
+        // Fallback 1: Instagram Direct Inbox deep link (chat / share icon at bottom)
+        try {
+          await Linking.openURL('instagram://inbox');
+          return;
+        } catch {
+          // Fallback 2: Direct Share URI
+          try {
+            await Linking.openURL('instagram://direct_share');
+            return;
+          } catch {
+            // Fallback 3: Native app chooser
+            try {
+              await Share.share(
+                {
+                  message: shareMessage,
+                  title: 'Share via Instagram',
+                },
+                {
+                  dialogTitle: 'Select Instagram or Clone',
+                }
+              );
+              return;
+            } catch {}
+          }
+        }
+      }
     }
 
     try {

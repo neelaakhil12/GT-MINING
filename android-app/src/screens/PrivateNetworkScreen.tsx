@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   Clipboard,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -70,6 +71,11 @@ interface QuickReplyItem {
   type: 'REMINDER' | 'CHAT';
 }
 
+// Module-level persistent cache for 0ms instantaneous display
+let memoryCachedMessages: ChatMsg[] = [];
+let memoryCachedMeta: { circleHost?: any; members?: MemberItem[] } | null = null;
+let memoryCachedShortcuts: QuickReplyItem[] = [];
+
 export const PrivateNetworkScreen: React.FC = () => {
   const { user } = useAuth();
   const navigation = useNavigation<any>();
@@ -78,19 +84,30 @@ export const PrivateNetworkScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'CHAT' | 'STATUS'>('CHAT');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'IDLE'>('ALL');
 
-  const [members, setMembers] = useState<MemberItem[]>([]);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>([]);
+  const [members, setMembers] = useState<MemberItem[]>(memoryCachedMeta?.members || []);
+  const [messages, setMessages] = useState<ChatMsg[]>(memoryCachedMessages);
+  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>(memoryCachedShortcuts);
   const [circleHost, setCircleHost] = useState<{
     id: string;
     fullName: string;
     email?: string;
     referralCode?: string;
     isCurrentUserHost?: boolean;
-  } | null>(null);
+  } | null>(memoryCachedMeta?.circleHost || null);
 
   const [cycleHours, setCycleHours] = useState<number>(4);
   const [miningReward, setMiningReward] = useState<number>(1.0);
+
+  // Android Back Button & Gesture Interception: Redirect safely to Dashboard Home instead of exiting app
+  useEffect(() => {
+    const onBackPress = () => {
+      navigation.navigate('MainTabs', { screen: 'Home' });
+      return true; // Prevents closing the app
+    };
+
+    const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSub.remove();
+  }, [navigation]);
 
   // Custom Shortcut Modal states
   const [showShortcutModal, setShowShortcutModal] = useState(false);
@@ -110,6 +127,7 @@ export const PrivateNetworkScreen: React.FC = () => {
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            memoryCachedMessages = parsed;
             setMessages(parsed);
           }
         } catch {}
@@ -122,6 +140,7 @@ export const PrivateNetworkScreen: React.FC = () => {
         try {
           const parsed = JSON.parse(cached);
           if (parsed && typeof parsed === 'object') {
+            memoryCachedMeta = parsed;
             if (parsed.circleHost) setCircleHost(parsed.circleHost);
             if (Array.isArray(parsed.members) && parsed.members.length > 0) {
               setMembers(parsed.members);
@@ -137,6 +156,7 @@ export const PrivateNetworkScreen: React.FC = () => {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
+            memoryCachedShortcuts = parsed;
             setQuickReplies(parsed);
           }
         } catch {}
@@ -215,6 +235,7 @@ export const PrivateNetworkScreen: React.FC = () => {
             ) {
               return prev;
             }
+            memoryCachedMeta = { circleHost: json.circleHost, members: mappedMembers };
             appStorage
               .setItem(
                 'gt_cached_circle_meta',
@@ -245,6 +266,7 @@ export const PrivateNetworkScreen: React.FC = () => {
             };
           });
 
+          memoryCachedMessages = formatted;
           setMessages((prev) => {
             const isSame =
               prev.length === formatted.length &&
@@ -482,6 +504,109 @@ export const PrivateNetworkScreen: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
+  const renderMessageItem = useCallback(
+    ({ item }: { item: ChatMsg }) => {
+      const isMyMessage = item.senderId === user?.id;
+      const isReminder = item.type === 'REMINDER';
+
+      return (
+        <View
+          style={[
+            styles.messageRow,
+            isMyMessage ? styles.messageRowHost : styles.messageRowMember,
+          ]}
+        >
+          {/* Other Member Avatar on Left */}
+          {!isMyMessage && (
+            <View style={styles.memberAvatarBox}>
+              <Text style={styles.memberAvatarText}>
+                {item.senderAvatar || (item.senderName ? item.senderName.charAt(0).toUpperCase() : 'M')}
+              </Text>
+            </View>
+          )}
+
+          {/* Bubble Content Stack */}
+          <View
+            style={[
+              styles.bubbleWrapper,
+              isMyMessage ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
+            ]}
+          >
+            {/* Name + Time Row */}
+            <View
+              style={[
+                styles.bubbleHeaderRow,
+                isMyMessage ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
+              ]}
+            >
+              <Text style={styles.senderNameText}>{item.senderName}</Text>
+              {item.senderRole === 'HOST' && (
+                <View style={styles.hostBadge}>
+                  <Text style={styles.hostBadgeText}>HOST</Text>
+                </View>
+              )}
+              <Text style={styles.messageTimeText}>{item.time}</Text>
+            </View>
+
+            {/* Bubble Box */}
+            <View
+              style={[
+                styles.bubbleBox,
+                isMyMessage ? styles.bubbleBoxHost : styles.bubbleBoxMember,
+                isReminder && styles.bubbleBoxReminder,
+              ]}
+            >
+              {isReminder && (
+                <View style={styles.reminderHeader}>
+                  <Bell size={13} color="#B45309" />
+                  <Text style={styles.reminderHeaderText}>
+                    MINING ALERT & CYCLE REMINDER
+                  </Text>
+                </View>
+              )}
+
+              <Text
+                style={[
+                  styles.bubbleText,
+                  isMyMessage ? styles.bubbleTextHost : styles.bubbleTextMember,
+                ]}
+              >
+                {item.text}
+              </Text>
+
+              {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
+              {isReminder && (
+                <View style={styles.reminderActionRow}>
+                  <Text style={styles.reminderYieldText}>
+                    {cycleHours}-Hour cycle yield: +{miningReward.toFixed(2)} GT
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Mine' })}
+                    style={styles.reminderMineBtn}
+                    activeOpacity={0.85}
+                  >
+                    <Pickaxe size={12} color="#FFFFFF" />
+                    <Text style={styles.reminderMineBtnText}>Mine Now</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* My Avatar on Right */}
+          {isMyMessage && (
+            <View style={styles.hostAvatarBox}>
+              <Text style={styles.hostAvatarText}>
+                {item.senderAvatar || (user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U')}
+              </Text>
+            </View>
+          )}
+        </View>
+      );
+    },
+    [user?.id, user?.fullName, cycleHours, miningReward, navigation]
+  );
+
   return (
     <View style={styles.container}>
       <OrbBackground />
@@ -495,17 +620,13 @@ export const PrivateNetworkScreen: React.FC = () => {
           <View style={styles.subHeaderLeft}>
             <TouchableOpacity
               onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                } else {
-                  navigation.navigate('MainTabs');
-                }
+                navigation.navigate('MainTabs', { screen: 'Home' });
               }}
               style={styles.backButton}
               activeOpacity={0.8}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             >
-              <ArrowLeft size={18} color="#1E5E36" />
+              <ArrowLeft size={20} color="#1E5E36" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -595,172 +716,85 @@ export const PrivateNetworkScreen: React.FC = () => {
         </View>
 
         {/* 4. CONTENT AREA: TAB 1: CHAT */}
-        {activeTab === 'CHAT' ? (
-          <KeyboardAvoidingView
-            style={styles.chatAreaContainer}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={[
-                styles.messagesList,
-                messages.length === 0 && { flex: 1, justifyContent: 'center' },
-              ]}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyMessagesBox}>
-                  <View style={styles.emptyMessagesIcon}>
-                    <MessageSquare size={26} color="#16A34A" />
-                  </View>
-                  <Text style={styles.emptyMessagesTitle}>No circle messages yet</Text>
-                  <Text style={styles.emptyMessagesText}>
-                    Welcome to your Private Circle Chat. Send a message or broadcast a mining reminder to your team below!
-                  </Text>
+        <KeyboardAvoidingView
+          style={[
+            styles.chatAreaContainer,
+            { display: activeTab === 'CHAT' ? 'flex' : 'none' },
+          ]}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.messagesList,
+              messages.length === 0 && { flex: 1, justifyContent: 'center' },
+            ]}
+            showsVerticalScrollIndicator={false}
+            renderItem={renderMessageItem}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={7}
+            removeClippedSubviews={false}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              <View style={styles.emptyMessagesBox}>
+                <View style={styles.emptyMessagesIcon}>
+                  <MessageSquare size={26} color="#16A34A" />
                 </View>
-              }
-              renderItem={({ item }) => {
-                const isMyMessage = item.senderId === user?.id;
-                const isReminder = item.type === 'REMINDER';
+                <Text style={styles.emptyMessagesTitle}>No circle messages yet</Text>
+                <Text style={styles.emptyMessagesText}>
+                  Welcome to your Private Circle Chat. Send a message or broadcast a mining reminder to your team below!
+                </Text>
+              </View>
+            }
+          />
 
-                return (
-                  <View
-                    style={[
-                      styles.messageRow,
-                      isMyMessage ? styles.messageRowHost : styles.messageRowMember,
-                    ]}
-                  >
-                    {/* Other Member Avatar on Left */}
-                    {!isMyMessage && (
-                      <View style={styles.memberAvatarBox}>
-                        <Text style={styles.memberAvatarText}>
-                          {item.senderAvatar || (item.senderName ? item.senderName.charAt(0).toUpperCase() : 'M')}
-                        </Text>
-                      </View>
-                    )}
+          {/* Bottom Chat Input Bar */}
+          <View style={styles.inputBar}>
+            <TouchableOpacity
+              onPress={() => setShowQuickSheet((prev) => !prev)}
+              style={styles.quickReplyBtn}
+              activeOpacity={0.8}
+            >
+              <Zap size={18} color="#16A34A" />
+            </TouchableOpacity>
 
-                    {/* Bubble Content Stack */}
-                    <View
-                      style={[
-                        styles.bubbleWrapper,
-                        isMyMessage ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
-                      ]}
-                    >
-                      {/* Name + Time Row */}
-                      <View
-                        style={[
-                          styles.bubbleHeaderRow,
-                          isMyMessage ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
-                        ]}
-                      >
-                        <Text style={styles.senderNameText}>{item.senderName}</Text>
-                        {item.senderRole === 'HOST' && (
-                          <View style={styles.hostBadge}>
-                            <Text style={styles.hostBadgeText}>HOST</Text>
-                          </View>
-                        )}
-                        <Text style={styles.messageTimeText}>{item.time}</Text>
-                      </View>
-
-                      {/* Bubble Box */}
-                      <View
-                        style={[
-                          styles.bubbleBox,
-                          isMyMessage ? styles.bubbleBoxHost : styles.bubbleBoxMember,
-                          isReminder && styles.bubbleBoxReminder,
-                        ]}
-                      >
-                        {isReminder && (
-                          <View style={styles.reminderHeader}>
-                            <Bell size={13} color="#B45309" />
-                            <Text style={styles.reminderHeaderText}>
-                              MINING ALERT & CYCLE REMINDER
-                            </Text>
-                          </View>
-                        )}
-
-                        <Text
-                          style={[
-                            styles.bubbleText,
-                            isMyMessage ? styles.bubbleTextHost : styles.bubbleTextMember,
-                          ]}
-                        >
-                          {item.text}
-                        </Text>
-
-                        {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
-                        {isReminder && (
-                          <View style={styles.reminderActionRow}>
-                            <Text style={styles.reminderYieldText}>
-                              {cycleHours}-Hour cycle yield: +{miningReward.toFixed(2)} GT
-                            </Text>
-                            <TouchableOpacity
-                              onPress={() => navigation.navigate('MainTabs', { screen: 'Mine' })}
-                              style={styles.reminderMineBtn}
-                              activeOpacity={0.85}
-                            >
-                              <Pickaxe size={12} color="#FFFFFF" />
-                              <Text style={styles.reminderMineBtnText}>Mine Now</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* My Avatar on Right */}
-                    {isMyMessage && (
-                      <View style={styles.hostAvatarBox}>
-                        <Text style={styles.hostAvatarText}>
-                          {item.senderAvatar || (user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U')}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                );
+            <TextInput
+              style={styles.chatInput}
+              placeholder="Type a message (type '@' to mention friend)..."
+              placeholderTextColor="#6B7280"
+              value={inputText}
+              onChangeText={(text) => {
+                setInputText(text);
+                if (text.startsWith('/')) {
+                  setShowQuickSheet(true);
+                }
               }}
             />
 
-            {/* Bottom Chat Input Bar */}
-            <View style={styles.inputBar}>
-              <TouchableOpacity
-                onPress={() => setShowQuickSheet((prev) => !prev)}
-                style={styles.quickReplyBtn}
-                activeOpacity={0.8}
-              >
-                <Zap size={18} color="#16A34A" />
-              </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleSend()}
+              style={styles.sendBtn}
+              activeOpacity={0.85}
+            >
+              <Send size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
 
-              <TextInput
-                style={styles.chatInput}
-                placeholder="Type a message (type '@' to mention friend)..."
-                placeholderTextColor="#6B7280"
-                value={inputText}
-                onChangeText={(text) => {
-                  setInputText(text);
-                  if (text.startsWith('/')) {
-                    setShowQuickSheet(true);
-                  }
-                }}
-              />
-
-              <TouchableOpacity
-                onPress={() => handleSend()}
-                style={styles.sendBtn}
-                activeOpacity={0.85}
-              >
-                <Send size={16} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        ) : (
-          /* 5. CONTENT AREA: TAB 2: MINERS STATUS */
-          <ScrollView
-            style={styles.minersAreaContainer}
-            contentContainerStyle={styles.minersContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.minersCard}>
+        {/* 5. CONTENT AREA: TAB 2: MINERS STATUS */}
+        <ScrollView
+          style={[
+            styles.minersAreaContainer,
+            { display: activeTab === 'STATUS' ? 'flex' : 'none' },
+          ]}
+          contentContainerStyle={styles.minersContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.minersCard}>
               {/* Header: Referred Miners, active/idle count, total badge */}
               <View style={styles.minersHeaderRow}>
                 <View>
@@ -940,7 +974,6 @@ export const PrivateNetworkScreen: React.FC = () => {
               </View>
             </View>
           </ScrollView>
-        )}
 
         {/* 6. QUICK REPLIES POPOVER SHEET (Image 4) */}
         {showQuickSheet && (

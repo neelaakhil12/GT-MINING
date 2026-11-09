@@ -25,10 +25,10 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
     <View style={styles.headerContainer}>
       {/* 1. Left: Crystal Logo Image matching website */}
       <TouchableOpacity
-        onPress={() => navigation.navigate('MainTabs')}
+        onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Home' })}
         activeOpacity={0.8}
         style={styles.logoBtn}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Image
           source={require('../../assets/gt-logo.png')}
@@ -40,10 +40,10 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
       {/* 2. Center: [App | Wallet] pill toggle matching website mobile navbar */}
       <View style={styles.pillWrapper}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('MainTabs')}
+          onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Home' })}
           style={[styles.pillBtn, activeTab === 'App' && styles.pillBtnActive]}
           activeOpacity={0.85}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text
             style={[
@@ -56,10 +56,10 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('Wallet')}
+          onPress={() => (navigation as any).navigate('Wallet')}
           style={[styles.pillBtn, activeTab === 'Wallet' && styles.pillBtnActive]}
           activeOpacity={0.85}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text
             style={[
@@ -75,10 +75,10 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
       {/* 3. Right: Single Profile Avatar Circle matching website mobile view */}
       <View style={styles.actionsRight}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => (navigation as any).navigate('Profile')}
           style={styles.avatarCircle}
           activeOpacity={0.8}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel="Profile"
         >
           {user?.avatar || user?.profileImage || user?.avatarUrl ? (

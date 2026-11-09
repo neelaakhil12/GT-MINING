@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { THREE_MIN_JS } from './threeMinJs';
 
 interface MiningGlobe3DProps {
   spinning?: boolean;
 }
 
-const GLOBE_HTML = `
+const buildGlobeHtml = (): string => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -36,18 +37,18 @@ const GLOBE_HTML = `
       background: transparent !important;
     }
   </style>
-  <script src="https://gtnetwork.in/three.min.js"></script>
   <script>
-    if (typeof THREE === 'undefined') {
-      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\\/script>');
-    }
+    ${THREE_MIN_JS}
   </script>
 </head>
 <body>
   <div id="canvas-container"></div>
   <script>
-    window.addEventListener('DOMContentLoaded', function() {
-      if (typeof THREE === 'undefined') return;
+    (function init() {
+      if (typeof THREE === 'undefined') {
+        setTimeout(init, 30);
+        return;
+      }
 
       var container = document.getElementById('canvas-container');
       var width = window.innerWidth || 300;
@@ -222,7 +223,7 @@ const GLOBE_HTML = `
         camera.updateProjectionMatrix();
         renderer.setSize(newW, newH);
       });
-    });
+    })();
   </script>
 </body>
 </html>
@@ -230,6 +231,7 @@ const GLOBE_HTML = `
 
 export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }) => {
   const webViewRef = useRef<WebView>(null);
+  const globeHtml = useMemo(() => buildGlobeHtml(), []);
 
   useEffect(() => {
     if (spinning) {
@@ -242,10 +244,15 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }
       <View style={styles.ambientAura} />
       <WebView
         ref={webViewRef}
-        source={{ html: GLOBE_HTML }}
+        source={{ html: globeHtml, baseUrl: 'https://gtnetwork.in' }}
         style={styles.webView}
         scrollEnabled={false}
         originWhitelist={['*']}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        allowFileAccess={true}
+        allowUniversalAccessFromFileURLs={true}
+        mixedContentMode="always"
         scalesPageToFit={false}
         androidLayerType="hardware"
         showsHorizontalScrollIndicator={false}
