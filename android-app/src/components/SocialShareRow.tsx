@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Linking, Share } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, Share, Platform, Clipboard } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
@@ -39,11 +39,29 @@ export const SocialShareRow: React.FC<SocialShareRowProps> = ({ referralCode }) 
     });
   };
 
-  const handleInstagram = () => {
+  const handleInstagram = async () => {
     triggerHaptic();
-    Linking.openURL('instagram://app').catch(() => {
-      Linking.openURL('https://instagram.com').catch(() => {});
-    });
+    try {
+      Clipboard.setString(shareMessage);
+    } catch {}
+
+    if (Platform.OS === 'android') {
+      const directIntentUrl = `intent:#Intent;package=com.instagram.android;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=${encodeURIComponent(shareMessage)};end`;
+      try {
+        await Linking.openURL(directIntentUrl);
+        return;
+      } catch {}
+    }
+
+    try {
+      await Linking.openURL('instagram://inbox');
+    } catch {
+      try {
+        await Linking.openURL('instagram://direct_share');
+      } catch {
+        Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => {});
+      }
+    }
   };
 
   const handleNativeShare = async () => {

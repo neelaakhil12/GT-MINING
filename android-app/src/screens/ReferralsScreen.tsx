@@ -233,27 +233,28 @@ export const ReferralsScreen: React.FC = () => {
 
   const shareInstagram = async () => {
     try {
-      Clipboard.setString(referralLink);
-      Alert.alert(
-        'Link Copied for Instagram!',
-        'Your referral link has been copied to clipboard. Opening Instagram so you can paste it in your Story sticker or DM/Bio.',
-        [
-          {
-            text: 'Open Instagram',
-            onPress: async () => {
-              const appUrl = 'instagram://app';
-              const webUrl = 'https://www.instagram.com';
-              try {
-                await Linking.openURL(appUrl);
-              } catch {
-                await Linking.openURL(webUrl).catch(() => {});
-              }
-            },
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+      Clipboard.setString(shareMessage);
     } catch {}
+
+    if (Platform.OS === 'android') {
+      const directIntentUrl = `intent:#Intent;package=com.instagram.android;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=${encodeURIComponent(shareMessage)};end`;
+      try {
+        await Linking.openURL(directIntentUrl);
+        return;
+      } catch {}
+    }
+
+    try {
+      await Linking.openURL('instagram://inbox');
+    } catch {
+      try {
+        await Linking.openURL('instagram://direct_share');
+      } catch {
+        Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => {
+          Linking.openURL('https://www.instagram.com').catch(() => {});
+        });
+      }
+    }
   };
 
   const handleNativeShare = async () => {
