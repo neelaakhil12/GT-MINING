@@ -28,7 +28,9 @@ import {
   CheckCircle2,
   ExternalLink,
   ShieldCheck,
+  Coins,
 } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
 import * as ImagePicker from 'expo-image-picker';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
@@ -39,6 +41,54 @@ import { appStorage } from '../utils/storage';
 import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
+
+function extractYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+}
+
+function buildVideoHtml(rawUrl: string): string {
+  const ytId = extractYouTubeId(rawUrl);
+  if (ytId) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    iframe { width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <iframe src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</body>
+</html>`;
+  }
+
+  const directUrl = rawUrl.startsWith('http')
+    ? rawUrl
+    : rawUrl.startsWith('/')
+    ? `${SERVER_HOST}${rawUrl}`
+    : `${SERVER_HOST}/${rawUrl}`;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    video { width: 100%; height: 100%; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <video src="${directUrl}" controls autoplay playsinline webkit-playsinline></video>
+</body>
+</html>`;
+}
 
 interface TaskItem {
   id: string;
@@ -855,111 +905,130 @@ export const TasksScreen: React.FC = () => {
         </Modal>
       )}
 
-      {/* Video Watch Quest Modal */}
+      {/* Full-Screen In-App Video Quest Player (Plays Uploaded & YouTube Videos Inside App) */}
       {watchingVideoModalTask && (
         <Modal
           visible={!!watchingVideoModalTask}
-          animationType="fade"
-          transparent={true}
+          animationType="slide"
+          statusBarTranslucent={true}
           onRequestClose={() => setWatchingVideoModalTask(null)}
         >
-          <View style={styles.modalBackdrop}>
-            <View style={styles.videoPlayerCard}>
-              {/* Header */}
-              <View style={styles.videoHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.videoHeaderTag}>VIDEO QUEST PLAYER</Text>
-                  <Text style={styles.videoHeaderTitle} numberOfLines={1}>
-                    {watchingVideoModalTask.title}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setWatchingVideoModalTask(null)}
-                  style={styles.videoCloseBtn}
-                >
-                  <X size={18} color="#D1D5DB" />
-                </TouchableOpacity>
+          <View style={[styles.fullScreenVideoContainer, { paddingTop: Math.max(top, 16), paddingBottom: modalPaddingBottom }]}>
+            {/* Top Navigation Bar */}
+            <View style={styles.fullScreenTopBar}>
+              <TouchableOpacity
+                onPress={() => setWatchingVideoModalTask(null)}
+                style={styles.fullScreenBackBtn}
+                activeOpacity={0.7}
+              >
+                <ArrowLeft size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1, paddingHorizontal: 8 }}>
+                <Text style={styles.fullScreenVideoTag}>GT VIDEO QUEST</Text>
+                <Text style={styles.fullScreenVideoTitle} numberOfLines={1}>
+                  {watchingVideoModalTask.title}
+                </Text>
               </View>
 
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={[styles.modalScrollBody, { paddingBottom: modalPaddingBottom }]}
-              >
-                {/* Video Info Display */}
-                <View style={styles.videoScreenPlaceholder}>
-                  <Play size={36} color="#4ADE80" fill="#4ADE80" />
-                  <Text style={styles.videoPlayingTitle} numberOfLines={2}>
-                    {watchingVideoModalTask.title}
-                  </Text>
-                  <Text style={styles.videoPlayingUrl} numberOfLines={1}>
-                    {watchingVideoModalTask.url && watchingVideoModalTask.url !== '#'
-                      ? watchingVideoModalTask.url
-                      : 'GT Protocol Official Ecosystem Video'}
-                  </Text>
-                  {watchingVideoModalTask.url && watchingVideoModalTask.url.startsWith('http') && (
-                    <TouchableOpacity
-                      onPress={() => Linking.openURL(watchingVideoModalTask.url)}
-                      style={styles.externalVideoLinkBtn}
-                    >
-                      <ExternalLink size={13} color="#FFFFFF" />
-                      <Text style={styles.externalVideoLinkText}>Open Stream in Player / Browser</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* Watch Progress Card */}
-                <View style={styles.watchProgressCard}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Clock size={14} color="#FBBF24" />
-                      <Text style={styles.watchProgressLabel}>Watch Progress</Text>
-                    </View>
-                    <Text style={styles.watchTimerValue}>
-                      {videoTimer === 0 ? '✓ Requirement Completed' : `${videoTimer}s remaining`}
-                    </Text>
-                  </View>
-
-                  <View style={styles.watchProgressBarTrack}>
-                    <View
-                      style={[
-                        styles.watchProgressBarFill,
-                        { width: `${videoProgress}%` },
-                      ]}
-                    />
-                  </View>
-                </View>
-
-                <Text style={styles.videoHintText}>
-                  {videoTimer === 0
-                    ? `🎉 Watch completed! Tap below to submit your verification screenshot to claim +${watchingVideoModalTask.reward} GT.`
-                    : `Please watch for at least ${watchingVideoModalTask.duration || 15}s to complete task.`}
-                </Text>
-
-                {/* Actions */}
-                <View style={styles.modalActionsRow}>
-                  <TouchableOpacity
-                    onPress={() => setWatchingVideoModalTask(null)}
-                    style={styles.modalCancelBtn}
-                  >
-                    <Text style={styles.modalCancelBtnText}>Close</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      const currentTask = watchingVideoModalTask;
-                      setWatchingVideoModalTask(null);
-                      setProofModalTask(currentTask);
-                      setProofNote('Video completed');
-                      setProofImage('');
-                    }}
-                    style={styles.videoSubmitBtn}
-                  >
-                    <CheckCircle2 size={15} color="#07130D" />
-                    <Text style={styles.videoSubmitBtnText}>Submit Proof ↗</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
+              <View style={styles.fullScreenRewardBadge}>
+                <Coins size={13} color="#22C55E" />
+                <Text style={styles.fullScreenRewardText}>+{watchingVideoModalTask.reward} GT</Text>
+              </View>
             </View>
+
+            {/* In-App Embedded Video Player (WebView for MP4 & YouTube) */}
+            <View style={styles.fullScreenPlayerBox}>
+              <WebView
+                source={{ html: buildVideoHtml(watchingVideoModalTask.url) }}
+                style={styles.fullScreenWebView}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={false}
+                originWhitelist={['*']}
+                allowsFullscreenVideo={true}
+              />
+            </View>
+
+            {/* Scrollable Quest Progress & Details */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.fullScreenDetailsContent}
+            >
+              {/* Watch Progress Card */}
+              <View style={styles.fullScreenProgressCard}>
+                <View style={styles.progressHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Clock size={15} color="#FBBF24" />
+                    <Text style={styles.fullScreenProgressTitle}>Required Watch Progress</Text>
+                  </View>
+                  <Text style={styles.fullScreenTimerBadge}>
+                    {videoTimer === 0 ? '✓ Requirement Met' : `${videoTimer}s remaining`}
+                  </Text>
+                </View>
+
+                {/* Progress Bar Track */}
+                <View style={styles.fullScreenProgressBarTrack}>
+                  <View
+                    style={[
+                      styles.fullScreenProgressBarFill,
+                      { width: `${videoProgress}%` },
+                    ]}
+                  />
+                </View>
+
+                <Text style={styles.fullScreenInstructionText}>
+                  {videoTimer === 0
+                    ? `🎉 Required watch time completed! Tap "Submit Proof" below to upload screenshot verification and claim +${watchingVideoModalTask.reward} GT.`
+                    : `Please watch for at least ${watchingVideoModalTask.duration || 15}s. The countdown is running automatically.`}
+                </Text>
+              </View>
+
+              {/* Task Details & Description */}
+              <View style={styles.fullScreenInfoCard}>
+                <Text style={styles.fullScreenInfoTitle}>Task Description</Text>
+                <Text style={styles.fullScreenInfoBody}>
+                  {watchingVideoModalTask.description || 'Watch the official video to earn GT Coins and boost community rank.'}
+                </Text>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.fullScreenActionsRow}>
+                <TouchableOpacity
+                  onPress={() => setWatchingVideoModalTask(null)}
+                  style={styles.fullScreenCloseBtn}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.fullScreenCloseBtnText}>Back to Tasks</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    const currentTask = watchingVideoModalTask;
+                    setWatchingVideoModalTask(null);
+                    setProofModalTask(currentTask);
+                    setProofNote('Video completed');
+                    setProofImage('');
+                  }}
+                  style={[
+                    styles.fullScreenSubmitBtn,
+                    videoTimer === 0 && styles.fullScreenSubmitBtnActive,
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <CheckCircle2 size={16} color={videoTimer === 0 ? '#07130D' : '#9CA3AF'} />
+                  <Text
+                    style={[
+                      styles.fullScreenSubmitBtnText,
+                      videoTimer === 0 && styles.fullScreenSubmitBtnActiveText,
+                    ]}
+                  >
+                    Submit Proof ↗
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </Modal>
       )}
@@ -1712,6 +1781,166 @@ const styles = StyleSheet.create({
   videoSubmitBtnText: {
     fontSize: 12,
     fontWeight: '900',
+    color: '#07130D',
+  },
+  fullScreenVideoContainer: {
+    flex: 1,
+    backgroundColor: '#07130D',
+  },
+  fullScreenTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#0B2016',
+    gap: 10,
+  },
+  fullScreenBackBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenVideoTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#22C55E',
+    letterSpacing: 0.8,
+  },
+  fullScreenVideoTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 2,
+  },
+  fullScreenRewardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+  },
+  fullScreenRewardText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#22C55E',
+  },
+  fullScreenPlayerBox: {
+    width: '100%',
+    height: 240,
+    backgroundColor: '#000000',
+  },
+  fullScreenWebView: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  fullScreenDetailsContent: {
+    padding: 16,
+    gap: 16,
+  },
+  fullScreenProgressCard: {
+    backgroundColor: '#0F291E',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+    gap: 12,
+  },
+  progressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  fullScreenProgressTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#E5E7EB',
+  },
+  fullScreenTimerBadge: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FBBF24',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  fullScreenProgressBarTrack: {
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  fullScreenProgressBarFill: {
+    height: '100%',
+    backgroundColor: '#22C55E',
+    borderRadius: 4,
+  },
+  fullScreenInstructionText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    lineHeight: 18,
+  },
+  fullScreenInfoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    gap: 8,
+  },
+  fullScreenInfoTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  fullScreenInfoBody: {
+    fontSize: 12.5,
+    color: '#9CA3AF',
+    lineHeight: 19,
+  },
+  fullScreenActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  fullScreenCloseBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullScreenCloseBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D1D5DB',
+  },
+  fullScreenSubmitBtn: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  fullScreenSubmitBtnActive: {
+    backgroundColor: '#22C55E',
+  },
+  fullScreenSubmitBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#9CA3AF',
+  },
+  fullScreenSubmitBtnActiveText: {
     color: '#07130D',
   },
 });

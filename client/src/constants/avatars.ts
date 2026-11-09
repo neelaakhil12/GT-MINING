@@ -72,3 +72,4 @@ export const GIRL_AVATARS: AvatarPreset[] = [
 ];
 
 export const ALL_AVATARS: AvatarPreset[] = [...BOY_AVATARS, ...GIRL_AVATARS];
+

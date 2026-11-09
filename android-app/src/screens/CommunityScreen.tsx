@@ -33,6 +33,7 @@ import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { cleanListSpacing } from '../utils/textFormatter';
 import { useAppSafeArea } from '../utils/safeArea';
+import { appStorage } from '../utils/storage';
 
 interface PostItem {
   id: string;
@@ -56,23 +57,6 @@ interface CommentItem {
   time: string;
 }
 
-const defaultCommunityPosts: PostItem[] = [
-  {
-    id: 'post_live_004',
-    title: 'Node 2.0 Genesis Update',
-    content:
-      'Welcome to the official GT Node network! Tap like or leave comments below to engage with fellow miners.',
-    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
-    isPinned: false,
-    author: 'GT Foundation',
-    dateStr: '7 Nov 2026, 03:17 pm',
-    createdAt: new Date().toISOString(),
-    likes: 0,
-    comments: 0,
-    likedBy: [],
-  },
-];
-
 const categories = ['All', 'Latest'] as const;
 
 export const CommunityScreen: React.FC = () => {
@@ -80,9 +64,23 @@ export const CommunityScreen: React.FC = () => {
   const { user } = useAuth();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Latest'>('All');
-  const [posts, setPosts] = useState<PostItem[]>(defaultCommunityPosts);
+  const [posts, setPosts] = useState<PostItem[]>([]);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [likesCount, setLikesCount] = useState<Record<string, number>>({});
+
+  // Instant cached posts loader on mount
+  useEffect(() => {
+    appStorage.getItem('@gt_cached_community_posts').then((cached) => {
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPosts(parsed);
+          }
+        } catch {}
+      }
+    });
+  }, []);
 
   // Comments Modal State
   const [activeCommentPost, setActiveCommentPost] = useState<PostItem | null>(null);
@@ -123,6 +121,7 @@ export const CommunityScreen: React.FC = () => {
               likedBy: Array.isArray(p.likedBy) ? p.likedBy : [],
             }));
             setPosts(mapped);
+            appStorage.setItem('@gt_cached_community_posts', JSON.stringify(mapped)).catch(() => {});
 
             // Sync user like status from server database
             const userIdentifier = user?.id || user?.email || '';

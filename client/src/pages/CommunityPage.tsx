@@ -29,23 +29,6 @@ interface PostComment {
   time: string;
 }
 
-const hardcodedNodePosts: CommunityPost[] = [
-  {
-    id: 'post_live_004',
-    title: 'Node 2.0 Genesis Update',
-    content: `Welcome to the official GT Node network! Tap like or leave comments below to engage with fellow miners.`,
-    imageUrl: '/gt-logo.png',
-    category: 'Announcement',
-    status: 'PUBLISHED',
-    isPinned: false,
-    authorName: 'GT Foundation',
-    likesCount: 0,
-    commentsCount: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 export const CommunityPage: React.FC = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -57,7 +40,7 @@ export const CommunityPage: React.FC = () => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return hardcodedNodePosts;
+    return [];
   });
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -123,17 +106,7 @@ export const CommunityPage: React.FC = () => {
         setLikedPostIds(serverLikes);
       }
     } catch (err: any) {
-      let loaded = hardcodedNodePosts;
-      if (selectedCategory === 'Latest') {
-        const recent = loaded.filter((p: CommunityPost) => isWithin24Hours(p.createdAt || p.updatedAt));
-        loaded = recent.length > 0 ? recent : loaded;
-        loaded = [...loaded].sort((a, b) => {
-          const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-          const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-          return timeB - timeA;
-        });
-      }
-      setPosts(loaded);
+      console.warn('Failed to fetch community posts:', err);
     } finally {
       setLoading(false);
     }
