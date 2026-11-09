@@ -22,49 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 import { GlassCard } from '../components/GlassCard';
-
-export const PRESET_AVATARS = [
-  {
-    id: 'cyber_miner',
-    name: 'Cyber Miner',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2322C55E"/><stop offset="100%" stop-color="%23052E16"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g1)"/><circle cx="50" cy="42" r="22" fill="%2386EFAC"/><rect x="32" y="36" width="36" height="12" rx="6" fill="%23052E16"/><circle cx="42" cy="42" r="3" fill="%2322C55E"/><circle cx="58" cy="42" r="3" fill="%2322C55E"/><path d="M26 86 C26 64, 74 64, 74 86 Z" fill="%2316A34A"/><polygon points="50,14 58,26 42,26" fill="%23FBBF24"/></svg>`,
-  },
-  {
-    id: 'gold_vip',
-    name: 'Gold VIP',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23F59E0B"/><stop offset="100%" stop-color="%2378350F"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g2)"/><circle cx="50" cy="42" r="22" fill="%23FEF08A"/><rect x="34" y="37" width="32" height="11" rx="5" fill="%2378350F"/><circle cx="43" cy="42.5" r="3" fill="%23F59E0B"/><circle cx="57" cy="42.5" r="3" fill="%23F59E0B"/><path d="M24 86 C24 64, 76 64, 76 86 Z" fill="%23D97706"/><path d="M36 18 L50 28 L64 18 L60 30 L40 30 Z" fill="%23FFFFFF"/></svg>`,
-  },
-  {
-    id: 'quantum_bot',
-    name: 'Quantum Bot',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2306B6D4"/><stop offset="100%" stop-color="%23083344"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g3)"/><rect x="28" y="26" width="44" height="34" rx="10" fill="%23A5F3FC"/><rect x="36" y="38" width="8" height="8" rx="3" fill="%23083344"/><rect x="56" y="38" width="8" height="8" rx="3" fill="%23083344"/><line x1="50" y1="26" x2="50" y2="12" stroke="%2338BDF8" stroke-width="4"/><circle cx="50" cy="11" r="5" fill="%2322C55E"/><path d="M24 86 C24 65, 76 65, 76 86 Z" fill="%230891B2"/></svg>`,
-  },
-  {
-    id: 'cosmic_astro',
-    name: 'Cosmic Astro',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%238B5CF6"/><stop offset="100%" stop-color="%232E1065"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g4)"/><circle cx="50" cy="40" r="23" fill="%23E9D5FF"/><ellipse cx="50" cy="40" rx="17" ry="12" fill="%23A855F7"/><ellipse cx="46" cy="37" rx="6" ry="3" fill="%23DDD6FE"/><path d="M24 86 C24 64, 76 64, 76 86 Z" fill="%237C3AED"/></svg>`,
-  },
-  {
-    id: 'ruby_sentinel',
-    name: 'Ruby Sentinel',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23EF4444"/><stop offset="100%" stop-color="%23450A0A"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g5)"/><circle cx="50" cy="42" r="22" fill="%23FECACA"/><rect x="30" y="37" width="40" height="11" rx="4" fill="%2318181B"/><line x1="34" y1="42.5" x2="66" y2="42.5" stroke="%23EF4444" stroke-width="3"/><path d="M26 86 C26 65, 74 65, 74 86 Z" fill="%23DC2626"/></svg>`,
-  },
-  {
-    id: 'emerald_guardian',
-    name: 'Emerald Titan',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2310B981"/><stop offset="100%" stop-color="%23064E3B"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g6)"/><circle cx="50" cy="42" r="22" fill="%23A7F3D0"/><polygon points="50,20 68,34 62,56 38,56 32,34" fill="%23047857"/><circle cx="44" cy="42" r="3" fill="%2334D399"/><circle cx="56" cy="42" r="3" fill="%2334D399"/><path d="M25 86 C25 64, 75 64, 75 86 Z" fill="%23059669"/></svg>`,
-  },
-  {
-    id: 'diamond_crypto',
-    name: 'Diamond Node',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g7" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%236366F1"/><stop offset="100%" stop-color="%231E1B4B"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g7)"/><polygon points="50,16 75,38 50,80 25,38" fill="%23A5B4FC"/><polygon points="50,16 50,80 75,38" fill="%23818CF8"/><polygon points="50,16 50,80 25,38" fill="%23C7D2FE"/><polygon points="35,38 65,38 50,70" fill="%234F46E5"/><circle cx="50" cy="46" r="6" fill="%23FFFFFF"/></svg>`,
-  },
-  {
-    id: 'blue_matrix',
-    name: 'Blue Matrix',
-    url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g8" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%233B82F6"/><stop offset="100%" stop-color="%23172554"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(%23g8)"/><circle cx="50" cy="42" r="20" fill="%23BFDBFE"/><circle cx="50" cy="42" r="8" fill="%231E40AF"/><circle cx="50" cy="42" r="3" fill="%2393C5FD"/><path d="M26 86 C26 65, 74 65, 74 86 Z" fill="%232563EB"/><circle cx="50" cy="20" r="4" fill="%2360A5FA"/></svg>`,
-  },
-];
+import { BOY_AVATARS, GIRL_AVATARS, ALL_AVATARS } from '../constants/avatars';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshSession, logout } = useAuth();
@@ -76,6 +34,8 @@ export const ProfilePage: React.FC = () => {
   const [pendingRequest, setPendingRequest] = useState<any>(null);
 
   // Avatar and photo states
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [activeGenderTab, setActiveGenderTab] = useState<'boy' | 'girl'>('boy');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(
     user?.avatar || user?.profileImage || user?.avatarUrl || null
   );
@@ -332,11 +292,11 @@ export const ProfilePage: React.FC = () => {
             <span>Profile Photo & Avatar</span>
           </h2>
           <p className="text-xs text-[#1E5E36] font-medium mt-1">
-            Choose an exclusive cyber avatar or upload a personal photo from your device. Your selection is permanently saved to your account.
+            Upload your custom profile photo from device or select an exclusive Boy / Girl avatar.
           </p>
         </div>
 
-        {/* Live Preview & Upload Controls */}
+        {/* Live Preview & Two Main Buttons */}
         <div className="p-5 rounded-3xl bg-white/80 border border-white/90 shadow-sm flex flex-col sm:flex-row items-center gap-6">
           {/* Active Preview */}
           <div className="relative group shrink-0">
@@ -351,25 +311,16 @@ export const ProfilePage: React.FC = () => {
                 fullName.charAt(0).toUpperCase()
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-[#15803D] text-white shadow-md hover:bg-[#166534] transition-all hover:scale-105 cursor-pointer"
-              title="Upload from Device"
-              aria-label="Upload photo from device"
-            >
-              <Camera className="w-4 h-4" />
-            </button>
           </div>
 
-          {/* Action Details & Buttons */}
+          {/* Action Details & The Two Main Buttons */}
           <div className="space-y-3 text-center sm:text-left flex-1">
             <div>
               <span className="text-xs font-bold text-[#0A341B] block">Current Photo Status</span>
               <span className="text-[11px] text-[#1E5E36] font-semibold">
                 {selectedAvatar
-                  ? selectedAvatar.startsWith('data:image/svg+xml')
-                    ? 'Preset Avatar Selected'
+                  ? selectedAvatar.includes('dicebear') || selectedAvatar.startsWith('data:image/svg+xml')
+                    ? 'Avatar Preset Selected'
                     : 'Custom Image Uploaded'
                   : 'Using Default Letter Initial'}
               </span>
@@ -385,25 +336,28 @@ export const ProfilePage: React.FC = () => {
                 className="hidden"
               />
 
-              {/* Upload Device Photo Button */}
+              {/* BUTTON 1: Upload Profile Image */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2.5 rounded-xl font-bold text-xs text-[#0A341B] bg-white border border-[#22C55E]/40 hover:bg-[#22C55E]/10 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.35)] flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5 text-[#16A34A]" />
-                <span>Upload From Device</span>
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Profile Image</span>
               </button>
 
-              {/* Save Button */}
+              {/* BUTTON 2: Choose Avatar */}
               <button
                 type="button"
-                disabled={savingAvatar || !selectedAvatar}
-                onClick={() => handleSaveAvatar()}
-                className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_4px_14px_rgba(34,197,94,0.35)] hover:shadow-md flex items-center gap-1.5 disabled:opacity-40 transition-all cursor-pointer"
+                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs border shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showAvatarPicker
+                    ? 'bg-[#059669] text-white border-[#059669]'
+                    : 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]'
+                }`}
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>{savingAvatar ? 'Saving...' : 'Save Profile Photo'}</span>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{showAvatarPicker ? 'Hide Avatars' : 'Choose Avatar'}</span>
               </button>
 
               {/* Remove / Reset Button */}
@@ -412,7 +366,7 @@ export const ProfilePage: React.FC = () => {
                   type="button"
                   disabled={savingAvatar}
                   onClick={handleRemoveAvatar}
-                  className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-red-600 hover:bg-red-50 border border-red-200 transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-2.5 rounded-xl font-bold text-xs text-red-600 hover:bg-red-50 border border-red-200 transition-all flex items-center gap-1 cursor-pointer"
                   title="Remove avatar and restore default initial"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -423,51 +377,80 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Preset Avatar Grid */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#0A341B] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
-              <span>Choose From Avatar Presets</span>
-            </span>
-            <span className="text-[11px] font-semibold text-[#1E5E36]">8 exclusive styles</span>
-          </div>
+        {/* AVATAR PICKER (5 Boys & 5 Girls Horizontally Scrollable) */}
+        {showAvatarPicker && (
+          <div className="p-5 rounded-3xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-4">
+            {/* Gender Switch Tabs */}
+            <div className="flex gap-2 max-w-xs">
+              <button
+                type="button"
+                onClick={() => setActiveGenderTab('boy')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeGenderTab === 'boy'
+                    ? 'bg-[#16A34A] text-white shadow-xs'
+                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
+                }`}
+              >
+                👦 Boys Avatars (5)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveGenderTab('girl')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeGenderTab === 'girl'
+                    ? 'bg-[#16A34A] text-white shadow-xs'
+                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
+                }`}
+              >
+                👧 Girls Avatars (5)
+              </button>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {PRESET_AVATARS.map((av) => {
-              const isSelected = selectedAvatar === av.url;
-              return (
-                <button
-                  key={av.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedAvatar(av.url);
-                    handleSaveAvatar(av.url);
-                  }}
-                  className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-2 cursor-pointer group relative ${
-                    isSelected
-                      ? 'bg-[#22C55E]/15 border-[#22C55E] shadow-[0_4px_18px_rgba(34,197,94,0.3)] ring-2 ring-[#22C55E]/50'
-                      : 'bg-white/80 border-white hover:bg-white hover:border-[#22C55E]/30 shadow-xs'
-                  }`}
-                >
-                  {/* Selected Check Badge */}
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs">
-                      <Check className="w-3 h-3 stroke-[3]" />
+            {/* Horizontally Scrollable Row */}
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-green-300">
+              {(activeGenderTab === 'boy' ? BOY_AVATARS : GIRL_AVATARS).map((av) => {
+                const isSelected = selectedAvatar === av.url;
+                return (
+                  <button
+                    key={av.id}
+                    type="button"
+                    onClick={() => setSelectedAvatar(av.url)}
+                    className={`shrink-0 w-24 p-3 rounded-2xl border transition-all flex flex-col items-center gap-2 cursor-pointer relative ${
+                      isSelected
+                        ? 'bg-[#DCFCE7] border-[#16A34A] shadow-[0_4px_18px_rgba(34,197,94,0.3)] ring-2 ring-[#22C55E]/50'
+                        : 'bg-white border-[#E5E7EB] hover:border-[#16A34A]/50 shadow-xs'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xs border border-white/60">
+                      <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
                     </div>
-                  )}
+                    <span className={`text-[10.5px] font-bold text-center truncate w-full ${isSelected ? 'text-[#15803D]' : 'text-[#4B5563]'}`}>
+                      {av.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                  <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xs border border-white/60 group-hover:scale-105 transition-transform">
-                    <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
-                  </div>
-                  <span className={`text-[11px] font-bold ${isSelected ? 'text-[#15803D]' : 'text-[#0A341B]'}`}>
-                    {av.name}
-                  </span>
-                </button>
-              );
-            })}
+            {/* Save Avatar Button */}
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={savingAvatar || !selectedAvatar}
+                onClick={() => handleSaveAvatar()}
+                className="px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-[#16A34A] to-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.35)] hover:shadow-md flex items-center gap-2 disabled:opacity-40 transition-all cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{savingAvatar ? 'Saving Avatar...' : 'Save Avatar'}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </GlassCard>
 
       {/* Edit Profile Form */}

@@ -31,8 +31,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, GOOGLE_WEB_CLIENT_ID } from '../config/api';
 import { useAppSafeArea } from '../utils/safeArea';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 export const AuthScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -85,26 +86,17 @@ export const AuthScreen: React.FC = () => {
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
   const [forgotStep, setForgotStep] = useState<'REQUEST_OTP' | 'VERIFY_OTP'>('REQUEST_OTP');
 
-  // Native In-App Google Account Chooser State
-  const [googleModalVisible, setGoogleModalVisible] = useState(false);
-  const [savedGoogleAccounts, setSavedGoogleAccounts] = useState<Array<{ email: string; name: string }>>([
-    { email: 'akhil.neela@gmail.com', name: 'Akhil Neela' },
-  ]);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
-  const [showAddGoogleAccount, setShowAddGoogleAccount] = useState(false);
-
+  // Configure native Google Play Services Google Sign-In
   useEffect(() => {
-    AsyncStorage.getItem('@gt_device_google_accounts').then((val) => {
-      if (val) {
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setSavedGoogleAccounts(parsed);
-          }
-        } catch {}
-      }
-    });
+    try {
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: true,
+        forceCodeForRefreshToken: false,
+      });
+    } catch (e) {
+      console.log('GoogleSignin configure error:', e);
+    }
   }, []);
 
   const [email, setEmail] = useState('');
@@ -302,46 +294,59 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleGoogleSubmit = () => {
+  const handleGoogleSubmit = async () => {
     setErrorMessage('');
     setSuccessMessage('');
-    setShowAddGoogleAccount(false);
-    setCustomGoogleEmail('');
-    setCustomGoogleName('');
-    // Open Native In-App Google Account Picker Bottom Sheet
-    setGoogleModalVisible(true);
-  };
-
-  const performGoogleSignIn = async (targetEmail: string, targetName: string) => {
-    const cleanEmail = targetEmail.trim().toLowerCase();
-    if (!cleanEmail) {
-      setErrorMessage('Please enter or select a Google email');
-      return;
-    }
-
-    setGoogleModalVisible(false);
     setLoading(true);
-    setErrorMessage('');
-    const isSignup = mode === 'SIGNUP';
 
     try {
-      await googleLogin({
-        email: cleanEmail,
-        name: targetName || 'Google Miner',
-        isSignup,
-      });
+      if (Platform.OS === 'android' || Platform.OS === 'ios') {
+        // Native Google Play Services Account Chooser (works exactly like Planto Park)
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        const response = await GoogleSignin.signIn();
+        
+        const userInfo = (response as any).data?.user || (response as any).user;
+        const targetEmail = userInfo?.email;
+        const targetName = userInfo?.name || 'Google Miner';
 
-      // Save to device Google accounts list in AsyncStorage
-      const updated = [
-        { email: cleanEmail, name: targetName || 'Google Miner' },
-        ...savedGoogleAccounts.filter((a) => a.email.toLowerCase() !== cleanEmail),
-      ].slice(0, 5);
-      setSavedGoogleAccounts(updated);
-      AsyncStorage.setItem('@gt_device_google_accounts', JSON.stringify(updated)).catch(() => {});
+        if (!targetEmail) {
+          throw new Error('Google Sign-In did not return an email address.');
+        }
 
-      navigation.replace('MainTabs');
-    } catch (e: any) {
-      setErrorMessage(e.message || 'No account registered with this Google email. Please sign up first.');
+        const isSignup = mode === 'SIGNUP';
+        await googleLogin({
+          email: targetEmail.trim().toLowerCase(),
+          name: targetName,
+          isSignup,
+        });
+
+        navigation.replace('MainTabs');
+        return;
+      }
+
+      // Web platform fallback
+      if (typeof window !== 'undefined') {
+        const client_id = GOOGLE_WEB_CLIENT_ID;
+        const redirect_uri = window.location.origin;
+        sessionStorage.setItem('gt_app_google_mode', mode === 'SIGNUP' ? 'signup' : 'login');
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(
+          redirect_uri
+        )}&response_type=token&scope=openid%20profile%20email`;
+        window.location.href = authUrl;
+      }
+    } catch (error: any) {
+      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User closed or cancelled the native account chooser
+        return;
+      }
+      if (error?.code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+      if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setErrorMessage('Google Play Services is not available or outdated.');
+        return;
+      }
+      setErrorMessage(error?.message || 'Google Sign-In failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -774,122 +779,6 @@ export const AuthScreen: React.FC = () => {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
-
-        {/* 5. Native In-App Google Account Chooser Bottom Sheet */}
-        <Modal
-          visible={googleModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setGoogleModalVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setGoogleModalVisible(false)}
-          >
-            <TouchableOpacity
-              style={styles.googleSheetCard}
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-            >
-              {/* Sheet Handle */}
-              <View style={styles.sheetHandle} />
-
-              {/* Google Header */}
-              <View style={styles.googleSheetHeader}>
-                <View style={styles.googleCircleIcon}>
-                  <Text style={styles.googleCircleG}>G</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.googleSheetTitle}>Choose an account</Text>
-                  <Text style={styles.googleSheetSubtitle}>to continue to GT Network</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setGoogleModalVisible(false)}
-                  style={styles.closeSheetBtn}
-                >
-                  <Text style={styles.closeSheetBtnText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.sheetDivider} />
-
-              {/* List of device / remembered Google accounts */}
-              <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
-                {savedGoogleAccounts.map((acc, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.accountRow}
-                    activeOpacity={0.7}
-                    onPress={() => performGoogleSignIn(acc.email, acc.name)}
-                  >
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarText}>
-                        {(acc.name || acc.email || 'G').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountName} numberOfLines={1}>
-                        {acc.name || 'Google User'}
-                      </Text>
-                      <Text style={styles.accountEmail} numberOfLines={1}>
-                        {acc.email}
-                      </Text>
-                    </View>
-                    <ArrowRight size={16} color="#9CA3AF" />
-                  </TouchableOpacity>
-                ))}
-
-                {/* Add another account option */}
-                {!showAddGoogleAccount ? (
-                  <TouchableOpacity
-                    style={styles.addAccountRow}
-                    activeOpacity={0.7}
-                    onPress={() => setShowAddGoogleAccount(true)}
-                  >
-                    <View style={styles.addAccountCircle}>
-                      <UserIcon size={18} color="#15803D" />
-                    </View>
-                    <Text style={styles.addAccountText}>Use another Google account</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.customAccountBox}>
-                    <Text style={styles.customAccountLabel}>Enter Google Email Address</Text>
-                    <TextInput
-                      style={styles.customAccountInput}
-                      placeholder="example@gmail.com"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      value={customGoogleEmail}
-                      onChangeText={setCustomGoogleEmail}
-                    />
-                    <TextInput
-                      style={[styles.customAccountInput, { marginTop: 8 }]}
-                      placeholder="Your Full Name (optional)"
-                      placeholderTextColor="#9CA3AF"
-                      value={customGoogleName}
-                      onChangeText={setCustomGoogleName}
-                    />
-                    <TouchableOpacity
-                      style={styles.continueGoogleBtn}
-                      onPress={() => performGoogleSignIn(customGoogleEmail, customGoogleName)}
-                    >
-                      <Text style={styles.continueGoogleBtnText}>Sign In with this Google Account</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </ScrollView>
-
-              <View style={styles.sheetDivider} />
-
-              {/* Privacy footer */}
-              <Text style={styles.googleSheetPrivacy}>
-                To continue, Google will verify your account with GT Network. No password shared.
-              </Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
       </View>
     </View>
   );

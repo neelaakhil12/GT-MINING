@@ -18,6 +18,7 @@ interface AuthContextType {
   startMiningSession: () => void;
   claimCommission: (amount: number) => boolean;
   refreshUserData: () => Promise<void>;
+  updateUserAvatar: (newAvatar: string) => Promise<boolean>;
 }
 
 const defaultUser: User = {
@@ -303,6 +304,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserAvatar = async (newAvatar: string): Promise<boolean> => {
+    try {
+      setUser((prev) => {
+        if (!prev) return null;
+        const updated = {
+          ...prev,
+          avatar: newAvatar,
+          profileImage: newAvatar,
+          avatarUrl: newAvatar,
+        };
+        appStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(updated)).catch(() => {});
+        return updated;
+      });
+
+      const token = await appStorage.getItem('gt_mobile_token');
+      await fetch(`${API_BASE_URL}/profile/avatar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ avatar: newAvatar, avatarUrl: newAvatar }),
+      });
+      return true;
+    } catch (e) {
+      console.warn('Failed to update avatar:', e);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -318,6 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         startMiningSession,
         claimCommission,
         refreshUserData,
+        updateUserAvatar,
       }}
     >
       {children}

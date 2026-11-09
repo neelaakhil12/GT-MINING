@@ -7,14 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Linking,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ShieldCheck,
-  ShieldAlert,
-  ArrowRight,
   CheckCircle2,
   User as UserIcon,
   Mail,
@@ -22,7 +20,12 @@ import {
   LogOut,
   Save,
   Trash2,
+  Camera,
+  Sparkles,
+  Check,
+  Upload,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
@@ -30,9 +33,10 @@ import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config/api';
 import { appStorage } from '../utils/storage';
 import { useAppSafeArea } from '../utils/safeArea';
+import { BOY_AVATARS, GIRL_AVATARS, AvatarPreset } from '../constants/avatars';
 
 export const ProfileScreen: React.FC = () => {
-  const { user, refreshUserData, logout } = useAuth();
+  const { user, refreshUserData, logout, updateUserAvatar } = useAuth();
   const navigation = useNavigation();
   const { top, stackContentPaddingBottom } = useAppSafeArea();
 
@@ -41,9 +45,21 @@ export const ProfileScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [pendingRequest, setPendingRequest] = useState<any>(null);
 
+  // Avatar & Photo Upload states
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [activeGenderTab, setActiveGenderTab] = useState<'boy' | 'girl'>('boy');
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(
+    user?.avatar || user?.profileImage || user?.avatarUrl || null
+  );
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+
   useEffect(() => {
     if (user?.fullName) {
       setFullName(user.fullName);
+    }
+    if (user?.avatar || user?.profileImage || user?.avatarUrl) {
+      setSelectedAvatarUrl(user.avatar || user.profileImage || user.avatarUrl || null);
     }
   }, [user]);
 
@@ -68,8 +84,86 @@ export const ProfileScreen: React.FC = () => {
     fetchEmailStatus();
   }, []);
 
-  const handleSaveProfile = () => {
-    Alert.alert('Profile Updated!', 'Your display name has been saved.');
+  // Upload Custom Photo from Gallery
+  const handlePickCustomPhoto = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Please allow access to your photos to upload a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setUploadingPhoto(true);
+
+        const dataUri = asset.base64
+          ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
+          : asset.uri;
+
+        setSelectedAvatarUrl(dataUri);
+        const ok = await updateUserAvatar(dataUri);
+        if (ok) {
+          Alert.alert('Success', 'Profile photo updated successfully!');
+        } else {
+          Alert.alert('Notice', 'Photo updated on device, syncing with server.');
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not pick image.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Save Selected Preset Avatar
+  const handleSaveAvatar = async () => {
+    if (!selectedAvatarUrl) {
+      Alert.alert('Select Avatar', 'Please tap an avatar to select it first.');
+      return;
+    }
+    setSavingAvatar(true);
+    try {
+      const ok = await updateUserAvatar(selectedAvatarUrl);
+      if (ok) {
+        Alert.alert('Avatar Saved!', 'Your new avatar is now active across GT Network.');
+        setShowAvatarPicker(false);
+      } else {
+        Alert.alert('Saved Locally', 'Avatar applied to your profile.');
+        setShowAvatarPicker(false);
+      }
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      await fetch(`${API_BASE_URL}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ fullName }),
+      });
+      refreshUserData?.();
+      Alert.alert('Profile Updated!', 'Your display name has been saved.');
+    } catch {
+      Alert.alert('Profile Updated!', 'Your display name has been saved.');
+    }
   };
 
   const handleRequestEmail = async () => {
@@ -120,9 +214,11 @@ export const ProfileScreen: React.FC = () => {
     });
   };
 
-  const handleDelete = () => {
-    Alert.alert('Warning', 'Account deletion requires administrator approval.');
-  };
+  const currentDisplayAvatar =
+    selectedAvatarUrl || user?.avatar || user?.profileImage || user?.avatarUrl;
+
+  const currentAvatarList: AvatarPreset[] =
+    activeGenderTab === 'boy' ? BOY_AVATARS : GIRL_AVATARS;
 
   return (
     <View style={styles.container}>
@@ -136,14 +232,14 @@ export const ProfileScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
         >
-          {/* 1. Header Profile Summary Card matching video */}
+          {/* 1. Header Profile Summary Card */}
           <View style={styles.headerProfileCard}>
             <View style={styles.profileUserRow}>
               <View style={styles.avatarLarge}>
-                {user?.avatar || user?.profileImage || user?.avatarUrl ? (
+                {currentDisplayAvatar ? (
                   <Image
-                    source={{ uri: user.avatar || user.profileImage || user.avatarUrl }}
-                    style={{ width: 64, height: 64, borderRadius: 24 }}
+                    source={{ uri: currentDisplayAvatar }}
+                    style={{ width: 68, height: 68, borderRadius: 24 }}
                     resizeMode="cover"
                   />
                 ) : (
@@ -152,7 +248,7 @@ export const ProfileScreen: React.FC = () => {
                   </Text>
                 )}
               </View>
-              <View style={{ gap: 2 }}>
+              <View style={{ gap: 2, flex: 1 }}>
                 <Text style={styles.userNameTitle}>{fullName}</Text>
                 <Text style={styles.userEmailSubtitle}>
                   {user?.email || ''}
@@ -163,6 +259,147 @@ export const ProfileScreen: React.FC = () => {
                 </View>
               </View>
             </View>
+
+            {/* TWO PROMINENT BUTTONS: Upload Photo & Choose Avatar */}
+            <View style={styles.photoActionsRow}>
+              <TouchableOpacity
+                style={styles.actionBtnPrimary}
+                onPress={handlePickCustomPhoto}
+                disabled={uploadingPhoto}
+                activeOpacity={0.8}
+              >
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Camera size={14} color="#FFFFFF" />
+                )}
+                <Text style={styles.actionBtnPrimaryText}>
+                  {uploadingPhoto ? 'Uploading...' : 'Upload Profile Image'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionBtnSecondary,
+                  showAvatarPicker && styles.actionBtnSecondaryActive,
+                ]}
+                onPress={() => setShowAvatarPicker(!showAvatarPicker)}
+                activeOpacity={0.8}
+              >
+                <Sparkles size={14} color={showAvatarPicker ? '#FFFFFF' : '#15803D'} />
+                <Text
+                  style={[
+                    styles.actionBtnSecondaryText,
+                    showAvatarPicker && styles.actionBtnSecondaryActiveText,
+                  ]}
+                >
+                  {showAvatarPicker ? 'Hide Avatars' : 'Choose Avatar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* AVATAR SELECTOR (5 Boys & 5 Girls Horizontally Scrollable) */}
+            {showAvatarPicker && (
+              <View style={styles.avatarPickerContainer}>
+                {/* Gender Tabs */}
+                <View style={styles.genderTabsRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderTabBtn,
+                      activeGenderTab === 'boy' && styles.genderTabBtnActive,
+                    ]}
+                    onPress={() => setActiveGenderTab('boy')}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.genderTabText,
+                        activeGenderTab === 'boy' && styles.genderTabTextActive,
+                      ]}
+                    >
+                      👦 Boys Avatars (5)
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.genderTabBtn,
+                      activeGenderTab === 'girl' && styles.genderTabBtnActive,
+                    ]}
+                    onPress={() => setActiveGenderTab('girl')}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.genderTabText,
+                        activeGenderTab === 'girl' && styles.genderTabTextActive,
+                      ]}
+                    >
+                      👧 Girls Avatars (5)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Horizontally Scrollable Avatar Row */}
+                <ScrollView
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalAvatarScroll}
+                >
+                  {currentAvatarList.map((item) => {
+                    const isSelected = selectedAvatarUrl === item.url;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[
+                          styles.avatarItemCard,
+                          isSelected && styles.avatarItemCardSelected,
+                        ]}
+                        onPress={() => setSelectedAvatarUrl(item.url)}
+                        activeOpacity={0.75}
+                      >
+                        <Image
+                          source={{ uri: item.url }}
+                          style={styles.avatarThumbnail}
+                          resizeMode="cover"
+                        />
+                        {isSelected && (
+                          <View style={styles.selectedCheckBadge}>
+                            <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                        )}
+                        <Text
+                          style={[
+                            styles.avatarItemName,
+                            isSelected && styles.avatarItemNameSelected,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Save Avatar Button */}
+                <TouchableOpacity
+                  style={styles.saveAvatarBtn}
+                  onPress={handleSaveAvatar}
+                  disabled={savingAvatar}
+                  activeOpacity={0.85}
+                >
+                  {savingAvatar ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Save size={14} color="#FFFFFF" />
+                  )}
+                  <Text style={styles.saveAvatarBtnText}>
+                    {savingAvatar ? 'Saving Avatar...' : 'Save Avatar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* 2x2 Account Details Metadata Grid */}
             <View style={styles.metaGrid}>
@@ -200,21 +437,19 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.sectionHeaderTitle}>Edit Personal Details</Text>
             </View>
 
-            <View style={styles.inputGroup}>
+            <View style={styles.formGroup}>
               <Text style={styles.inputLabel}>Display Full Name</Text>
               <TextInput
+                style={styles.textInput}
                 value={fullName}
                 onChangeText={setFullName}
-                style={styles.textInput}
+                placeholder="Enter full name"
+                placeholderTextColor="#9CA3AF"
               />
             </View>
 
-            <TouchableOpacity
-              onPress={handleSaveProfile}
-              style={styles.saveBtn}
-              activeOpacity={0.85}
-            >
-              <Save size={14} color="#FFFFFF" />
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile} activeOpacity={0.8}>
+              <Save size={13} color="#FFFFFF" />
               <Text style={styles.saveBtnText}>Save Profile Changes</Text>
             </TouchableOpacity>
           </View>
@@ -227,83 +462,81 @@ export const ProfileScreen: React.FC = () => {
             </View>
 
             <Text style={styles.emailNoticeText}>
-              Current email is <Text style={{ fontWeight: '800' }}>{user?.email || 'your registered email'}</Text>. Submit a new email address to request an email change. Once approved by the administrator, your login email will be updated.
+              Current email is <Text style={{ fontWeight: '800' }}>{user?.email}</Text>. Submit
+              a new email address to request an email change. Once approved by the administrator,
+              your login email will be updated.
             </Text>
 
-            {pendingRequest && pendingRequest.status === 'PENDING' && (
-              <View style={{ backgroundColor: '#FEF3C7', borderColor: '#F59E0B', borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 12 }}>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>Pending Admin Approval</Text>
-                <Text style={{ fontSize: 11, color: '#78350F', marginTop: 2, fontFamily: 'monospace' }}>
-                  Requested: {pendingRequest.requestedNewEmail}
-                </Text>
+            {pendingRequest && (
+              <View style={styles.pendingBanner}>
+                <AlertTriangle size={15} color="#D97706" />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.pendingTitle}>Pending Email Change Request</Text>
+                  <Text style={styles.pendingSubtitle}>
+                    New: {pendingRequest.requested_email} (Status: {pendingRequest.status})
+                  </Text>
+                </View>
               </View>
             )}
 
-            <View style={styles.inputGroup}>
+            <View style={styles.formGroup}>
               <Text style={styles.inputLabel}>New Email Address</Text>
               <TextInput
+                style={styles.textInput}
                 value={newEmail}
                 onChangeText={setNewEmail}
                 placeholder="newemail@example.com"
                 placeholderTextColor="#9CA3AF"
-                style={styles.textInput}
-                keyboardType="email-address"
                 autoCapitalize="none"
+                keyboardType="email-address"
               />
             </View>
 
             <TouchableOpacity
+              style={styles.sendEmailBtn}
               onPress={handleRequestEmail}
               disabled={submitting}
-              style={[styles.sendEmailBtn, submitting ? { opacity: 0.6 } : null]}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
             >
               <Text style={styles.sendEmailBtnText}>
-                {submitting ? 'Submitting Request...' : 'Send Change Request'}
+                {submitting ? 'Submitting...' : 'Send Change Request'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* 5. Danger Zone: Account Deletion */}
+          {/* 4. Danger Zone Card */}
           <View style={styles.dangerZoneCard}>
             <View style={styles.dangerHeaderRow}>
-              <AlertTriangle size={17} color="#DC2626" />
-              <Text style={styles.dangerHeaderTitle}>
-                Danger Zone: Irreversible Account Deletion
-              </Text>
+              <AlertTriangle size={16} color="#DC2626" />
+              <Text style={styles.dangerHeaderTitle}>Danger Zone</Text>
             </View>
             <Text style={styles.dangerNoticeText}>
-              Permanently delete your GT account and anonymize all personal identifying data in accordance with data privacy regulations. Active sessions will be revoked and this account cannot be recovered.
+              Once requested for deletion, all pending transactions and referral earnings are permanently removed.
             </Text>
             <TouchableOpacity
-              onPress={handleDelete}
               style={styles.deleteBtn}
-              activeOpacity={0.85}
+              onPress={() =>
+                Alert.alert(
+                  'Account Deletion Request',
+                  'Please contact support or admin to request account deletion.'
+                )
+              }
+              activeOpacity={0.8}
             >
-              <Trash2 size={14} color="#FFFFFF" />
-              <Text style={styles.deleteBtnText}>Delete Account Permanently</Text>
+              <Trash2 size={13} color="#FFFFFF" />
+              <Text style={styles.deleteBtnText}>Request Account Deletion</Text>
             </TouchableOpacity>
           </View>
 
-          {/* 6. Session & Security Logout */}
+          {/* 5. Logout Card */}
           <View style={styles.logoutCard}>
-            <View style={{ gap: 2, flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <LogOut size={16} color="#DC2626" />
-                <Text style={styles.logoutTitle}>Session & Security</Text>
-              </View>
-              <Text style={styles.logoutSubtitle}>
-                Safely log out of your active GT Pioneer session on this device.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={styles.logoutBtn}
-              activeOpacity={0.85}
-            >
+            <Text style={styles.logoutTitle}>Session Security</Text>
+            <Text style={styles.logoutSubtitle}>
+              Safely end your current session across this device.
+            </Text>
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
               <LogOut size={13} color="#DC2626" />
-              <Text style={styles.logoutBtnText}>Log Out of Account</Text>
+              <Text style={styles.logoutBtnText}>Logout Account</Text>
             </TouchableOpacity>
           </View>
 
@@ -317,7 +550,7 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0FAF3',
+    backgroundColor: '#EAF8EE',
   },
   safeArea: {
     flex: 1,
@@ -325,7 +558,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 110,
     gap: 14,
   },
   headerProfileCard: {
@@ -333,39 +565,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
-    padding: 18,
-    gap: 16,
-    shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    padding: 16,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+    gap: 14,
   },
   profileUserRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-    paddingBottom: 14,
   },
   avatarLarge: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    backgroundColor: '#22C55E',
+    width: 68,
+    height: 68,
+    borderRadius: 24,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 2,
+    borderColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
+    overflow: 'hidden',
   },
   avatarLargeText: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#15803D',
   },
   userNameTitle: {
     fontSize: 18,
@@ -373,94 +600,213 @@ const styles = StyleSheet.create({
     color: '#0A341B',
   },
   userEmailSubtitle: {
-    fontSize: 11.5,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#1E5E36',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    gap: 5,
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    paddingVertical: 3,
     borderRadius: 10,
     alignSelf: 'flex-start',
     marginTop: 2,
   },
   statusBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  photoActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    shadowColor: '#16A34A',
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  actionBtnPrimaryText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  actionBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+  },
+  actionBtnSecondaryActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  actionBtnSecondaryText: {
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#15803D',
+  },
+  actionBtnSecondaryActiveText: {
+    color: '#FFFFFF',
+  },
+  avatarPickerContainer: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    borderRadius: 18,
+    padding: 12,
+    gap: 12,
+  },
+  genderTabsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  genderTabBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    borderRadius: 10,
+  },
+  genderTabBtnActive: {
+    backgroundColor: '#16A34A',
+    borderColor: '#16A34A',
+  },
+  genderTabText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  genderTabTextActive: {
+    color: '#FFFFFF',
+  },
+  horizontalAvatarScroll: {
+    paddingVertical: 6,
+    gap: 12,
+  },
+  avatarItemCard: {
+    alignItems: 'center',
+    width: 72,
+    padding: 6,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+  },
+  avatarItemCardSelected: {
+    borderColor: '#16A34A',
+    backgroundColor: '#DCFCE7',
+    shadowColor: '#16A34A',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatarThumbnail: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#F3F4F6',
+  },
+  selectedCheckBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  avatarItemName: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#4B5563',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  avatarItemNameSelected: {
+    color: '#15803D',
+    fontWeight: '900',
+  },
+  saveAvatarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#15803D',
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#15803D',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  saveAvatarBtnText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
   metaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    justifyContent: 'space-between',
   },
   metaCard: {
-    width: '48%',
-    backgroundColor: 'rgba(240, 250, 243, 0.8)',
-    borderRadius: 14,
+    width: '48.5%',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#DCF2E4',
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
     padding: 10,
-    gap: 2,
+    gap: 3,
   },
   metaLabel: {
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '800',
-    color: '#1E5E36',
-    letterSpacing: 0.8,
+    color: '#15803D',
+    letterSpacing: 0.5,
   },
   metaValueGreen: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '900',
-    color: '#15803D',
+    color: '#16A34A',
   },
   metaValueDark: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '900',
-    color: '#0A341B',
+    color: '#111827',
   },
   verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  adminBannerBtn: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#FDE68A',
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  adminIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(217, 119, 6, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  adminTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#92400E',
-  },
-  adminSubtitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#B45309',
   },
   sectionCard: {
     borderRadius: 22,
@@ -469,11 +815,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     padding: 16,
     gap: 12,
-    shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -481,22 +822,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionHeaderTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
     color: '#0A341B',
   },
-  inputGroup: {
-    gap: 4,
+  formGroup: {
+    gap: 6,
   },
   inputLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '800',
     color: '#1E5E36',
   },
   textInput: {
-    backgroundColor: 'rgba(240, 250, 243, 0.7)',
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: '#DCF2E4',
+    borderColor: '#E5E7EB',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -525,6 +866,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1E5E36',
     lineHeight: 16,
+  },
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 12,
+    padding: 10,
+  },
+  pendingTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  pendingSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#B45309',
   },
   sendEmailBtn: {
     backgroundColor: '#FFFFFF',

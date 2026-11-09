@@ -29,7 +29,9 @@
         "VIBRATE"
       ]
     },
-    "plugins": [],
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
     "extra": {
       "eas": {
         "projectId": "0ce96532-48cd-490b-84c7-fa7ff61e34b7"
