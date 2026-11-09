@@ -21,6 +21,7 @@ dist/
 client/dist/
 .next/
 /.next/
+*.tar.gz
 
 # temp media & video recordings
 *.mp4
