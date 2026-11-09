@@ -61,6 +61,26 @@ export const PrivateNetworkPage: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'IDLE'>('ALL');
   const [activeTab, setActiveTab] = useState<'MEMBERS' | 'CHAT'>('CHAT'); // Mobile tab toggle
+  const [cycleHours, setCycleHours] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('gt_mining_cycle_hours');
+      if (saved) return Number(saved);
+    } catch {}
+    return 4;
+  });
+  const [miningReward, setMiningReward] = useState<number>(1.0);
+
+  useEffect(() => {
+    fetch('/api/mining/config')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success) {
+          if (res.cycleHours) setCycleHours(Number(res.cycleHours));
+          if (res.miningReward) setMiningReward(Number(res.miningReward));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const DEFAULT_QUICK_REPLIES: QuickReply[] = [
     {
@@ -229,7 +249,7 @@ export const PrivateNetworkPage: React.FC = () => {
       return;
     }
 
-    const broadcastText = `⏰ Network Alert to all ${idleCount} idle miners: Your 4-hour GT mining cycle is ready! Tap 'Mine Now' to claim your 1.00 GT token and boost our circle hash rate!`;
+    const broadcastText = `⏰ Network Alert to all ${idleCount} idle miners: Your ${cycleHours}-hour GT mining cycle is ready! Tap 'Mine Now' to claim your ${miningReward.toFixed(2)} GT token and boost our circle hash rate!`;
     await handleSendMessage(broadcastText, 'REMINDER');
   };
 

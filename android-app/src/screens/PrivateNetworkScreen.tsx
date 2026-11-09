@@ -120,6 +120,21 @@ export const PrivateNetworkScreen: React.FC = () => {
     isCurrentUserHost?: boolean;
   } | null>(null);
 
+  const [cycleHours, setCycleHours] = useState<number>(4);
+  const [miningReward, setMiningReward] = useState<number>(1.0);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/mining/config`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success) {
+          if (data.cycleHours) setCycleHours(Number(data.cycleHours));
+          if (data.miningReward) setMiningReward(Number(data.miningReward));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [inputText, setInputText] = useState('');
   const [showQuickSheet, setShowQuickSheet] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
@@ -280,7 +295,7 @@ export const PrivateNetworkScreen: React.FC = () => {
     const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
     const timeStr = `${formattedHours < 10 ? `0${formattedHours}` : formattedHours}:${formattedMinutes} ${ampm}`;
 
-    const pingText = `🔔 @${member.name} Mining Reminder: Your 4-hour GT cycle is ready to claim! Tap 'Mine Now' to collect 1.00 GT.`;
+    const pingText = `🔔 @${member.name} Mining Reminder: Your ${cycleHours}-hour GT cycle is ready to claim! Tap 'Mine Now' to collect ${miningReward.toFixed(2)} GT.`;
 
     const pingMsg: ChatMsg = {
       id: `msg_ping_${Date.now()}`,
@@ -320,7 +335,7 @@ export const PrivateNetworkScreen: React.FC = () => {
 
   const handleNudgeAllIdle = () => {
     if (idleMembersCount === 0) return;
-    const text = `⏰ Network Alert to all ${idleMembersCount} idle miners: Your 4-hour GT mining cycle is ready! Tap 'Mine Now' to claim your 1.00 GT and boost our circle hash rate!`;
+    const text = `⏰ Network Alert to all ${idleMembersCount} idle miners: Your ${cycleHours}-hour GT mining cycle is ready! Tap 'Mine Now' to claim your ${miningReward.toFixed(2)} GT and boost our circle hash rate!`;
     handleSend(text, 'REMINDER');
     setShowStatsModal(false);
     setActiveTab('CHAT');
@@ -545,7 +560,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                         {isReminder && (
                           <View style={styles.reminderActionRow}>
                             <Text style={styles.reminderYieldText}>
-                              4-Hour cycle yield: +1.00 GT
+                              {cycleHours}-Hour cycle yield: +{miningReward.toFixed(2)} GT
                             </Text>
                             <TouchableOpacity
                               onPress={() => navigation.navigate('MainTabs', { screen: 'Mine' })}

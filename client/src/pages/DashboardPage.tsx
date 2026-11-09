@@ -34,6 +34,30 @@ export const DashboardPage: React.FC = () => {
     return !localStorage.getItem('gt_cached_dashboard');
   });
   const [countdownStr, setCountdownStr] = useState<string>('00:00:00');
+  const [miningConfig, setMiningConfig] = useState<{ cycleHours: number; miningReward: number } | null>(() => {
+    try {
+      const savedHours = localStorage.getItem('gt_mining_cycle_hours');
+      if (savedHours) return { cycleHours: Number(savedHours), miningReward: 1.0 };
+    } catch {}
+    return null;
+  });
+
+  useEffect(() => {
+    fetch('/api/mining/config')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success) {
+          setMiningConfig({
+            cycleHours: res.cycleHours || Math.max(1, Math.round(Number(res.cooldownSeconds || 14400) / 3600)),
+            miningReward: Number(res.miningReward || 1.0),
+          });
+          try {
+            localStorage.setItem('gt_mining_cycle_hours', String(res.cycleHours || 4));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchDashboard();
@@ -173,11 +197,11 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
             <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#15803D] tracking-tight truncate">
-              +{Number(data?.mining?.rewardPerClaim ?? 1.0).toFixed(2)} GT
+              +{Number(miningConfig?.miningReward ?? data?.mining?.rewardPerClaim ?? 1.0).toFixed(2)} GT
             </p>
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[#1E5E36] truncate">
               <span className="truncate">
-                Per {Math.max(1, Math.round(Number(data?.mining?.cooldownSeconds || 14400) / 3600))}-hour cycle
+                Per {miningConfig?.cycleHours ?? data?.mining?.cycleHours ?? Math.max(1, Math.round(Number(data?.mining?.cooldownSeconds || 14400) / 3600))}-hour cycle
               </span>
             </div>
           </div>

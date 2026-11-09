@@ -57,6 +57,7 @@ export interface MiningStatus {
   lastMiningAt: string | null;
   cooldownSeconds: number;
   rewardPerClaim: number;
+  cycleHours?: number;
   availableBalance: number;
   lifetimeEarned: number;
   serverTime: string;
@@ -142,6 +143,7 @@ export interface DashboardSummary {
     lastMiningAt: string | null;
     cooldownSeconds: number;
     rewardPerClaim: number;
+    cycleHours?: number;
   };
   recentTransactions: WalletTransaction[];
   latestNews: CommunityPost[];

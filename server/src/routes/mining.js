@@ -9,6 +9,7 @@ export const calculateMiningState = (user, settings) => {
   const cooldownSeconds = Number(settings.cooldownSeconds || 14400); // 4 hours = 14400s
   const rewardPerClaim = Number(settings.miningReward || 1.0);
   const isMiningEnabled = settings.miningEnabled !== false;
+  const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
 
   if (!user.lastMiningAt) {
     return {
@@ -17,7 +18,8 @@ export const calculateMiningState = (user, settings) => {
       nextEligibleAt: null,
       lastMiningAt: null,
       cooldownSeconds,
-      rewardPerClaim
+      rewardPerClaim,
+      cycleHours
     };
   }
 
@@ -34,7 +36,8 @@ export const calculateMiningState = (user, settings) => {
       nextEligibleAt: new Date(nextEligibleMs).toISOString(),
       lastMiningAt: user.lastMiningAt,
       cooldownSeconds,
-      rewardPerClaim
+      rewardPerClaim,
+      cycleHours
     };
   }
 
@@ -45,7 +48,8 @@ export const calculateMiningState = (user, settings) => {
     nextEligibleAt: new Date(nextEligibleMs).toISOString(),
     lastMiningAt: user.lastMiningAt,
     cooldownSeconds,
-    rewardPerClaim
+    rewardPerClaim,
+    cycleHours
   };
 };
 

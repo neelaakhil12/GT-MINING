@@ -80,6 +80,35 @@ export const DashboardScreen: React.FC = () => {
   const [bannerSlides, setBannerSlides] = useState(DEFAULT_BANNER_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Dynamic mining config from server
+  const [miningRate, setMiningRate] = useState<number>(1.0);
+  const [cycleHours, setCycleHours] = useState<number>(4);
+
+  useEffect(() => {
+    // 1. Instant cached config
+    appStorage.getItem('gt_cached_mining_config').then((cached) => {
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.miningReward) setMiningRate(Number(parsed.miningReward));
+          if (parsed.cycleHours) setCycleHours(Number(parsed.cycleHours));
+        } catch {}
+      }
+    });
+
+    // 2. Fetch live mining config from server
+    fetch(`${API_BASE_URL}/mining/config`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success) {
+          if (data.miningReward) setMiningRate(Number(data.miningReward));
+          if (data.cycleHours) setCycleHours(Number(data.cycleHours));
+          appStorage.setItem('gt_cached_mining_config', JSON.stringify(data)).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Restore cached banners from storage immediately so there is never a hardcoded banner flash
   useEffect(() => {
     appStorage.getItem('gt_cached_mobile_home_banners').then((cached) => {
@@ -477,9 +506,9 @@ export const DashboardScreen: React.FC = () => {
                       <Pickaxe size={15} color="#16A34A" strokeWidth={2.2} />
                     </View>
                   </View>
-                  <Text style={styles.statMainValue}>+1.00 GT</Text>
+                  <Text style={styles.statMainValue}>+{miningRate.toFixed(2)} GT</Text>
                   <View style={styles.statSubRow}>
-                    <Text style={styles.statSubTextMuted}>Per 4-hour cycle</Text>
+                    <Text style={styles.statSubTextMuted}>Per {cycleHours}-hour cycle</Text>
                   </View>
                 </View>
               </View>
