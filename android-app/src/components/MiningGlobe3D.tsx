@@ -1,211 +1,258 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, Animated, Easing, Text } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, StyleSheet, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 interface MiningGlobe3DProps {
   spinning?: boolean;
 }
 
-export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }) => {
-  // Continuous rotation animations
-  const baseRotateAnim = useRef(new Animated.Value(0)).current;
-  const counterRotateAnim = useRef(new Animated.Value(0)).current;
-  const verticalFloatAnim = useRef(new Animated.Value(0)).current;
-  const pulseAuraAnim = useRef(new Animated.Value(1)).current;
-  const fastSpinAnim = useRef(new Animated.Value(0)).current;
-  const isFastSpinning = useRef(false);
+const GLOBE_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+    canvas {
+      display: block;
+      background: transparent !important;
+    }
+  </style>
+  <script src="https://gtnetwork.in/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\\/script>');
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof THREE === 'undefined') return;
 
-  useEffect(() => {
-    // 1. Smooth slow continuous rotation of outer rings
-    Animated.loop(
-      Animated.timing(baseRotateAnim, {
-        toValue: 1,
-        duration: 9000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
+      var container = document.getElementById('canvas-container');
+      var width = window.innerWidth || 300;
+      var height = window.innerHeight || 230;
 
-    // 2. Counter rotation of inner orbital ring
-    Animated.loop(
-      Animated.timing(counterRotateAnim, {
-        toValue: 1,
-        duration: 6500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 100);
+      camera.position.set(0, 0, 5.7);
 
-    // 3. Floating levitation bounce
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(verticalFloatAnim, {
-          toValue: -10,
-          duration: 1800,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(verticalFloatAnim, {
-          toValue: 10,
-          duration: 1800,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.appendChild(renderer.domElement);
 
-    // 4. Subtle ambient aura breathing
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAuraAnim, {
-          toValue: 1.18,
-          duration: 1600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAuraAnim, {
-          toValue: 0.95,
-          duration: 1600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
+      var ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
+      scene.add(ambientLight);
 
-  // 5. Trigger fast spin on mining activation
-  useEffect(() => {
-    if (spinning && !isFastSpinning.current) {
-      isFastSpinning.current = true;
-      fastSpinAnim.setValue(0);
-      Animated.timing(fastSpinAnim, {
-        toValue: 1,
-        duration: 2600,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
-        useNativeDriver: true,
-      }).start(() => {
-        isFastSpinning.current = false;
+      var dirLight1 = new THREE.DirectionalLight(0xffffff, 1.85);
+      dirLight1.position.set(4.5, 5.5, 4.0);
+      scene.add(dirLight1);
+
+      var dirLight2 = new THREE.DirectionalLight(0x4ade80, 2.0);
+      dirLight2.position.set(-4.5, -3.0, 3.0);
+      scene.add(dirLight2);
+
+      var dirLight3 = new THREE.DirectionalLight(0x16a34a, 1.5);
+      dirLight3.position.set(0, -4.0, -3.0);
+      scene.add(dirLight3);
+
+      var globeGroup = new THREE.Group();
+      scene.add(globeGroup);
+      globeGroup.rotation.x = 0.18;
+      globeGroup.rotation.z = -0.06;
+
+      var innerGeo = new THREE.SphereGeometry(1.62, 36, 36);
+      var innerMat = new THREE.MeshPhysicalMaterial({
+        color: 0x15803d,
+        emissive: 0x054f2c,
+        emissiveIntensity: 0.18,
+        roughness: 0.28,
+        metalness: 0.08,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.14,
+        transparent: true,
+        opacity: 0.96,
       });
+      var innerSphere = new THREE.Mesh(innerGeo, innerMat);
+      globeGroup.add(innerSphere);
+
+      var tileCount = 210;
+      var tileGeo = new THREE.BoxGeometry(0.25, 0.25, 0.045);
+      var tileMat = new THREE.MeshPhysicalMaterial({
+        color: 0x22c55e,
+        emissive: 0x059669,
+        emissiveIntensity: 0.2,
+        roughness: 0.22,
+        metalness: 0.1,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.1,
+        reflectivity: 0.8,
+      });
+
+      var instancedTiles = new THREE.InstancedMesh(tileGeo, tileMat, tileCount);
+      instancedTiles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      var dummy = new THREE.Object3D();
+      var goldenRatio = (1 + Math.sqrt(5)) / 2;
+      var tileData = [];
+
+      for (var i = 0; i < tileCount; i++) {
+        var theta = (2 * Math.PI * i) / goldenRatio;
+        var phi = Math.acos(1 - (2 * (i + 0.5)) / tileCount);
+        var sinPhi = Math.sin(phi);
+        var normal = new THREE.Vector3(
+          sinPhi * Math.cos(theta),
+          sinPhi * Math.sin(theta),
+          Math.cos(phi)
+        ).normalize();
+
+        var baseRadius = 1.66;
+        if (i % 5 === 0) {
+          baseRadius = 2.15 + (i % 3) * 0.12;
+        } else if (i % 2 === 0) {
+          baseRadius = 1.88 + (i % 4) * 0.08;
+        } else {
+          baseRadius = 1.66 + Math.sin(i * 3.1) * 0.04;
+        }
+
+        tileData.push({
+          normal: normal,
+          baseRadius: baseRadius,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.0035 + Math.random() * 0.0035,
+          amplitude: baseRadius > 1.8 ? 0.16 + Math.random() * 0.12 : 0.05,
+          scaleX: 0.9 + Math.sin(i * 1.5) * 0.2,
+          scaleY: 0.9 + Math.cos(i * 1.5) * 0.2,
+        });
+
+        var pos = normal.clone().multiplyScalar(baseRadius);
+        dummy.position.copy(pos);
+        dummy.lookAt(pos.clone().add(normal));
+        dummy.scale.set(tileData[i].scaleX, tileData[i].scaleY, 1.0);
+        dummy.updateMatrix();
+        instancedTiles.setMatrixAt(i, dummy.matrix);
+      }
+
+      instancedTiles.instanceMatrix.needsUpdate = true;
+      globeGroup.add(instancedTiles);
+
+      var spinState = {
+        active: false,
+        startTime: 0,
+        duration: 2600,
+        totalRotations: 14 * Math.PI * 2,
+      };
+
+      window.triggerSpin = function() {
+        spinState.active = true;
+        spinState.startTime = performance.now();
+      };
+
+      var baseAngle = 0;
+      var tempPos = new THREE.Vector3();
+      var targetLook = new THREE.Vector3();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        var now = performance.now();
+
+        for (var i = 0; i < tileCount; i++) {
+          var d = tileData[i];
+          var r = d.baseRadius + Math.sin(now * d.speed + d.phase) * d.amplitude;
+          tempPos.copy(d.normal).multiplyScalar(r);
+          dummy.position.copy(tempPos);
+          targetLook.copy(tempPos).add(d.normal);
+          dummy.lookAt(targetLook);
+          dummy.scale.set(d.scaleX, d.scaleY, 1.0);
+          dummy.updateMatrix();
+          instancedTiles.setMatrixAt(i, dummy.matrix);
+        }
+        instancedTiles.instanceMatrix.needsUpdate = true;
+
+        if (spinState.active) {
+          var elapsed = now - spinState.startTime;
+          var t = Math.min(1, elapsed / spinState.duration);
+          var ease = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+          globeGroup.rotation.y = baseAngle + ease * spinState.totalRotations;
+          var pulse = Math.sin(t * Math.PI) * 0.15;
+          globeGroup.scale.set(1 + pulse, 1 + pulse, 1 + pulse);
+          if (t >= 1) {
+            spinState.active = false;
+            baseAngle = globeGroup.rotation.y;
+            globeGroup.scale.set(1, 1, 1);
+          }
+        } else {
+          globeGroup.rotation.y += 0.017;
+          baseAngle = globeGroup.rotation.y;
+        }
+
+        globeGroup.position.y = Math.sin(now * 0.0022) * 0.08;
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      window.addEventListener('resize', function() {
+        var newW = window.innerWidth || 300;
+        var newH = window.innerHeight || 230;
+        camera.aspect = newW / newH;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newW, newH);
+      });
+    });
+  </script>
+</body>
+</html>
+`;
+
+export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }) => {
+  const webViewRef = useRef<WebView>(null);
+
+  useEffect(() => {
+    if (spinning) {
+      webViewRef.current?.injectJavaScript('window.triggerSpin && window.triggerSpin(); true;');
     }
   }, [spinning]);
 
-  const baseSpin = baseRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const counterSpin = counterRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['360deg', '0deg'],
-  });
-
-  const fastSpinExtra = fastSpinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '2880deg'], // 8 ultra-fast spins
-  });
-
-  const fastScale = fastSpinAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1, 1.25, 1],
-  });
-
   return (
-    <View style={styles.container}>
-      {/* Ambient glowing background aura */}
-      <Animated.View
-        style={[
-          styles.ambientAura,
-          {
-            transform: [{ scale: pulseAuraAnim }],
-          },
-        ]}
+    <View style={styles.container} pointerEvents="none">
+      <View style={styles.ambientAura} />
+      <WebView
+        ref={webViewRef}
+        source={{ html: GLOBE_HTML }}
+        style={styles.webView}
+        scrollEnabled={false}
+        originWhitelist={['*']}
+        scalesPageToFit={false}
+        androidLayerType="hardware"
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+        bounces={false}
       />
-
-      {/* Floating 3D Globe Assembly */}
-      <Animated.View
-        style={[
-          styles.globeAssembly,
-          {
-            transform: [
-              { translateY: verticalFloatAnim },
-              { scale: fastScale },
-            ],
-          },
-        ]}
-      >
-        {/* Layer 1: Outer Celestial Orbital Ring (Tilted) */}
-        <Animated.View
-          style={[
-            styles.outerOrbitalRing,
-            {
-              transform: [
-                { rotateX: '65deg' },
-                { rotateZ: '-25deg' },
-                { rotateZ: baseSpin },
-              ],
-            },
-          ]}
-        >
-          {/* Orbital Node Satellites */}
-          <View style={[styles.nodePoint, { top: -4, left: '50%', transform: [{ translateX: -4 }] }]}>
-            <View style={styles.nodeCore} />
-          </View>
-          <View style={[styles.nodePoint, { bottom: -4, left: '50%', transform: [{ translateX: -4 }] }]}>
-            <View style={styles.nodeCore} />
-          </View>
-        </Animated.View>
-
-        {/* Layer 2: Counter-Rotating Secondary Celestial Ring */}
-        <Animated.View
-          style={[
-            styles.innerOrbitalRing,
-            {
-              transform: [
-                { rotateX: '55deg' },
-                { rotateY: '35deg' },
-                { rotateZ: counterSpin },
-              ],
-            },
-          ]}
-        >
-          <View style={[styles.nodePointSmall, { top: -3, right: '20%' }]} />
-          <View style={[styles.nodePointSmall, { bottom: -3, left: '20%' }]} />
-        </Animated.View>
-
-        {/* Layer 3: Central GT 3D Core Sphere & Gem Facets */}
-        <Animated.View
-          style={[
-            styles.coreSphereContainer,
-            {
-              transform: [
-                { rotateY: baseSpin },
-                { rotateZ: fastSpinExtra },
-              ],
-            },
-          ]}
-        >
-          {/* Sphere Outer Glow */}
-          <LinearGradient
-            colors={['#4ade80', '#16a34a', '#052e16']}
-            start={{ x: 0.15, y: 0.1 }}
-            end={{ x: 0.85, y: 0.95 }}
-            style={styles.coreSphere}
-          >
-            {/* Top specular highlight shine */}
-            <View style={styles.specularShine} />
-
-            {/* Inner crystalline facets */}
-            <View style={styles.crystalFacet1} />
-            <View style={styles.crystalFacet2} />
-
-            {/* Center GT Hologram Monogram */}
-            <View style={styles.centerMonogramBox}>
-              <Text style={styles.monogramText}>GT</Text>
-              <Text style={styles.miningSubText}>MINING</Text>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-      </Animated.View>
     </View>
   );
 };
@@ -213,148 +260,28 @@ export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 230,
+    height: 235,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   ambientAura: {
     position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: 'rgba(74, 222, 128, 0.22)',
-    shadowColor: '#22c55e',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(52, 211, 153, 0.22)',
+    shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.75,
-    shadowRadius: 40,
-    elevation: 10,
+    shadowOpacity: 0.65,
+    shadowRadius: 35,
+    elevation: 8,
   },
-  globeAssembly: {
-    width: 220,
-    height: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  outerOrbitalRing: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    borderWidth: 2,
-    borderColor: 'rgba(134, 239, 172, 0.65)',
-    borderStyle: 'dashed',
-  },
-  innerOrbitalRing: {
-    position: 'absolute',
-    width: 175,
-    height: 175,
-    borderRadius: 87.5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(74, 222, 128, 0.45)',
-  },
-  nodePoint: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#86efac',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  nodeCore: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#ffffff',
-  },
-  nodePointSmall: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4ade80',
-    shadowColor: '#16a34a',
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  coreSphereContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    shadowColor: '#15803d',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  coreSphere: {
+  webView: {
     width: '100%',
     height: '100%',
-    borderRadius: 65,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 2.5,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  specularShine: {
-    position: 'absolute',
-    top: 10,
-    left: 20,
-    width: 45,
-    height: 25,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    transform: [{ rotate: '-30deg' }],
-  },
-  crystalFacet1: {
-    position: 'absolute',
-    width: 90,
-    height: 90,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.22)',
-    borderRadius: 45,
-    transform: [{ rotate: '45deg' }],
-  },
-  crystalFacet2: {
-    position: 'absolute',
-    width: 110,
-    height: 50,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    borderRadius: 25,
-    transform: [{ rotate: '-35deg' }],
-  },
-  centerMonogramBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  monogramText: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
-  miningSubText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#dcfce7',
-    letterSpacing: 3,
-    marginTop: -2,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    backgroundColor: 'transparent',
   },
 });

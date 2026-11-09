@@ -205,14 +205,9 @@ export const ReferralsScreen: React.FC = () => {
     const appUrl = `whatsapp://send?text=${encodedText}`;
     const webUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
     try {
-      const supported = await Linking.canOpenURL(appUrl);
-      if (supported) {
-        await Linking.openURL(appUrl);
-      } else {
-        await Linking.openURL(webUrl);
-      }
+      await Linking.openURL(appUrl);
     } catch {
-      await Linking.openURL(webUrl);
+      await Linking.openURL(webUrl).catch(() => {});
     }
   };
 
@@ -220,14 +215,9 @@ export const ReferralsScreen: React.FC = () => {
     const appUrl = `tg://msg?text=${encodedText}`;
     const webUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`⛏️ Join me on GT Mining! Use referral code: ${referralCode}`)}`;
     try {
-      const supported = await Linking.canOpenURL(appUrl);
-      if (supported) {
-        await Linking.openURL(appUrl);
-      } else {
-        await Linking.openURL(webUrl);
-      }
+      await Linking.openURL(appUrl);
     } catch {
-      await Linking.openURL(webUrl);
+      await Linking.openURL(webUrl).catch(() => {});
     }
   };
 
@@ -235,14 +225,9 @@ export const ReferralsScreen: React.FC = () => {
     const appUrl = `twitter://post?message=${encodedText}`;
     const webUrl = `https://twitter.com/intent/tweet?text=${encodedText}`;
     try {
-      const supported = await Linking.canOpenURL(appUrl);
-      if (supported) {
-        await Linking.openURL(appUrl);
-      } else {
-        await Linking.openURL(webUrl);
-      }
+      await Linking.openURL(appUrl);
     } catch {
-      await Linking.openURL(webUrl);
+      await Linking.openURL(webUrl).catch(() => {});
     }
   };
 
@@ -259,14 +244,9 @@ export const ReferralsScreen: React.FC = () => {
               const appUrl = 'instagram://app';
               const webUrl = 'https://www.instagram.com';
               try {
-                const supported = await Linking.canOpenURL(appUrl);
-                if (supported) {
-                  await Linking.openURL(appUrl);
-                } else {
-                  await Linking.openURL(webUrl);
-                }
+                await Linking.openURL(appUrl);
               } catch {
-                await Linking.openURL(webUrl);
+                await Linking.openURL(webUrl).catch(() => {});
               }
             },
           },

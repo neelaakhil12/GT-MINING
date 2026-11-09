@@ -132,6 +132,14 @@ export const MiningScreen: React.FC = () => {
   const elapsedSec = Math.max(0, totalCycleSec - miningStats.cycleRemainingSeconds);
   const progressPct = isEligible ? 100 : Math.min(100, Math.max(5, (elapsedSec / totalCycleSec) * 100));
 
+  const sessionStartedTime = (user as any)?.lastMiningAt || (miningStats as any)?.lastMiningAt
+    ? new Date((user as any)?.lastMiningAt || (miningStats as any)?.lastMiningAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    : '05:16:58 PM';
+
+  const estimatedSettlementTime = (miningStats as any)?.nextEligibleAt
+    ? new Date((miningStats as any)?.nextEligibleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    : '09:16:58 PM';
+
   return (
     <View style={styles.container}>
       <OrbBackground />
@@ -143,7 +151,7 @@ export const MiningScreen: React.FC = () => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom + 65 }]}
         >
           {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 matching website */}
           <View style={styles.networkSubHeader}>
@@ -161,8 +169,8 @@ export const MiningScreen: React.FC = () => {
             {/* Top Badges in Glassy Mode */}
             <View style={styles.topBadgesRow}>
               <View style={styles.activePillBadge}>
-                <View style={styles.smallGreenPulse} />
-                <Text style={styles.pillBadgeText}>Mining Active</Text>
+                <View style={[styles.smallGreenPulse, isEligible && { backgroundColor: '#FBBF24' }]} />
+                <Text style={styles.pillBadgeText}>{isEligible ? 'Claim Ready' : 'Mining Active'}</Text>
               </View>
 
               <View style={styles.ratePillBadge}>
@@ -170,7 +178,7 @@ export const MiningScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* 3D Segmented Mint-Green Cube Globe matching video */}
+            {/* 3D Segmented Mint-Green Cube Globe matching website */}
             <View style={{ marginVertical: -10, alignItems: 'center', justifyContent: 'center' }}>
               <MiningGlobe3D spinning={isFastSpinning} />
             </View>
@@ -246,11 +254,11 @@ export const MiningScreen: React.FC = () => {
             <View style={styles.timestampsGrid}>
               <View style={styles.timestampCol}>
                 <Text style={styles.timestampLabel}>SESSION STARTED</Text>
-                <Text style={styles.timestampValue}>05:16:58 PM</Text>
+                <Text style={styles.timestampValue}>{sessionStartedTime}</Text>
               </View>
               <View style={styles.timestampCol}>
                 <Text style={styles.timestampLabel}>ESTIMATED SETTLEMENT</Text>
-                <Text style={styles.timestampValue}>09:16:58 PM</Text>
+                <Text style={styles.timestampValue}>{estimatedSettlementTime}</Text>
               </View>
             </View>
           </View>

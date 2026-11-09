@@ -136,11 +136,19 @@ export const HomeBanners: React.FC = () => {
           );
         };
 
+        let lastUpdateTime: Record<string, number> = {};
+
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'ticker' && data.product_id && data.price) {
               const symbol = data.product_id.split('-')[0];
+              const now = Date.now();
+              if (lastUpdateTime[symbol] && now - lastUpdateTime[symbol] < 3000) {
+                return; // Throttle to at most once per 3s to prevent UI thrashing
+              }
+              lastUpdateTime[symbol] = now;
+
               const price = parseFloat(data.price);
               const open24h = parseFloat(data.open_24h || data.price);
               const change24h = open24h > 0 ? parseFloat((((price - open24h) / open24h) * 100).toFixed(2)) : 0;

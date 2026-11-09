@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -117,7 +127,7 @@ export const DashboardScreen: React.FC = () => {
           const parsed = JSON.parse(cached);
           if (parsed.miningReward) setMiningRate(Number(parsed.miningReward));
           if (parsed.cycleHours) setCycleHours(Number(parsed.cycleHours));
-        } catch {}
+        } catch { }
       }
     });
 
@@ -128,17 +138,16 @@ export const DashboardScreen: React.FC = () => {
         if (data && data.success) {
           if (data.miningReward) setMiningRate(Number(data.miningReward));
           if (data.cycleHours) setCycleHours(Number(data.cycleHours));
-          appStorage.setItem('gt_cached_mining_config', JSON.stringify(data)).catch(() => {});
+          appStorage.setItem('gt_cached_mining_config', JSON.stringify(data)).catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
-  // Live Crypto Rates: Coinbase Free Public WebSocket Feed + REST Sync
+  // Live Crypto Rates: Smooth periodic polling from backend (prevents JS thread saturation & UI freezing)
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimer: any = null;
     let isMounted = true;
+    let pollInterval: any = null;
 
     // 1. Instant cached rates from AsyncStorage
     appStorage.getItem('gt_cached_crypto_rates').then((cached) => {
@@ -148,80 +157,30 @@ export const DashboardScreen: React.FC = () => {
           if (parsed && typeof parsed === 'object') {
             setCryptoRates((prev) => ({ ...prev, ...parsed }));
           }
-        } catch {}
+        } catch { }
       }
     });
 
-    // 2. Initial fetch from server endpoint /api/market/crypto
-    fetch(`${API_BASE_URL}/market/crypto`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && data.success && data.rates && isMounted) {
-          setCryptoRates((prev) => ({ ...prev, ...data.rates }));
-          appStorage.setItem('gt_cached_crypto_rates', JSON.stringify(data.rates)).catch(() => {});
-        }
-      })
-      .catch(() => {});
-
-    // 3. Connect to free public Coinbase WebSocket feed for real-time tick-by-tick prices
-    const connectWS = () => {
+    // 2. Fetch latest live rates from server
+    const fetchLiveRates = () => {
       if (!isMounted) return;
-      try {
-        ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
-
-        ws.onopen = () => {
-          ws?.send(
-            JSON.stringify({
-              type: 'subscribe',
-              product_ids: ['BTC-USD', 'ETH-USD', 'SOL-USD'],
-              channels: ['ticker'],
-            })
-          );
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'ticker' && data.product_id && data.price) {
-              const symbol = data.product_id.split('-')[0];
-              const price = parseFloat(data.price);
-              const open24h = parseFloat(data.open_24h || data.price);
-              const change24h = open24h > 0 ? parseFloat((((price - open24h) / open24h) * 100).toFixed(2)) : 0;
-
-              if (isMounted) {
-                setCryptoRates((prev) => ({
-                  ...prev,
-                  [symbol]: {
-                    symbol,
-                    name: symbol === 'BTC' ? 'BITCOIN' : symbol === 'ETH' ? 'ETHEREUM' : 'SOLANA',
-                    price,
-                    change24h,
-                  },
-                }));
-              }
-            }
-          } catch {}
-        };
-
-        ws.onerror = () => {};
-        ws.onclose = () => {
-          if (isMounted) {
-            reconnectTimer = setTimeout(connectWS, 6000);
+      fetch(`${API_BASE_URL}/market/crypto`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.success && data.rates && isMounted) {
+            setCryptoRates((prev) => ({ ...prev, ...data.rates }));
+            appStorage.setItem('gt_cached_crypto_rates', JSON.stringify(data.rates)).catch(() => { });
           }
-        };
-      } catch {}
+        })
+        .catch(() => { });
     };
 
-    connectWS();
+    fetchLiveRates();
+    pollInterval = setInterval(fetchLiveRates, 15000); // Smooth 15s refresh keeps UI 60fps responsive
 
     return () => {
       isMounted = false;
-      if (ws) {
-        try {
-          ws.close();
-        } catch {}
-      }
-      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, []);
 
@@ -234,7 +193,7 @@ export const DashboardScreen: React.FC = () => {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setBannerSlides(parsed);
           }
-        } catch {}
+        } catch { }
       }
     });
   }, []);
@@ -258,17 +217,17 @@ export const DashboardScreen: React.FC = () => {
               targetRoute: (b.targetRoute === '/referrals'
                 ? 'Referrals'
                 : b.targetRoute === '/wallet'
-                ? 'Wallet'
-                : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
+                  ? 'Wallet'
+                  : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
               gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
               accentColor: b.accentColor || '#22C55E',
               imageUrl: b.imageUrl || '',
             }));
             setBannerSlides(mapped);
-            appStorage.setItem('gt_cached_mobile_home_banners', JSON.stringify(mapped)).catch(() => {});
+            appStorage.setItem('gt_cached_mobile_home_banners', JSON.stringify(mapped)).catch(() => { });
           }
         }
-      } catch {}
+      } catch { }
     };
     fetchHomeBanners();
     return () => {

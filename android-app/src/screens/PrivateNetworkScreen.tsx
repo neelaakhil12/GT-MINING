@@ -146,58 +146,53 @@ export const PrivateNetworkScreen: React.FC = () => {
   const fetchCircleData = async () => {
     try {
       const token = await appStorage.getItem('gt_mobile_token');
-      const endpoints = [
-        `${API_BASE_URL}/private-network`,
-        'http://localhost:5050/api/private-network',
-      ];
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          });
-          const json = await res.json();
-          if (json && json.success) {
-            if (json.circleHost) {
-              setCircleHost(json.circleHost);
-            }
-            if (Array.isArray(json.members)) {
-              setMembers(json.members.map((m: any) => ({
-                id: m.id,
-                name: m.name,
-                maskedId: m.maskedId,
-                initials: m.initials,
-                avatarBg: m.avatarBg || '#10B981',
-                isMiningActive: !!m.isMiningActive,
-                streakDays: m.streakDays || 0,
-              })));
-            }
-            if (Array.isArray(json.messages)) {
-              setMessages(json.messages.map((msg: any) => {
-                const date = msg.createdAt ? new Date(msg.createdAt) : new Date();
-                const hours = date.getHours();
-                const minutes = date.getMinutes();
-                const ampm = hours >= 12 ? 'pm' : 'am';
-                const fHours = hours % 12 ? hours % 12 : 12;
-                const fMins = minutes < 10 ? `0${minutes}` : minutes;
-                const timeStr = `${fHours < 10 ? `0${fHours}` : fHours}:${fMins} ${ampm}`;
-                return {
-                  id: msg.id,
-                  senderId: msg.senderId,
-                  senderName: msg.senderName,
-                  senderRole: msg.senderRole || 'MEMBER',
-                  senderAvatar: msg.senderAvatar || 'M',
-                  text: msg.text,
-                  type: msg.type || 'CHAT',
-                  time: timeStr,
-                };
-              }));
-            }
-            break;
-          }
-        } catch {}
+      const res = await fetch(`${API_BASE_URL}/private-network`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await res.json();
+      if (json && json.success) {
+        if (json.circleHost) {
+          setCircleHost(json.circleHost);
+        }
+        if (Array.isArray(json.members)) {
+          setMembers(
+            json.members.map((m: any) => ({
+              id: m.id,
+              name: m.name,
+              maskedId: m.maskedId,
+              initials: m.initials,
+              avatarBg: m.avatarBg || '#10B981',
+              isMiningActive: !!m.isMiningActive,
+              streakDays: m.streakDays || 0,
+            }))
+          );
+        }
+        if (Array.isArray(json.messages)) {
+          setMessages(
+            json.messages.map((msg: any) => {
+              const date = msg.createdAt ? new Date(msg.createdAt) : new Date();
+              const hours = date.getHours();
+              const minutes = date.getMinutes();
+              const ampm = hours >= 12 ? 'pm' : 'am';
+              const fHours = hours % 12 ? hours % 12 : 12;
+              const fMins = minutes < 10 ? `0${minutes}` : minutes;
+              const timeStr = `${fHours < 10 ? `0${fHours}` : fHours}:${fMins} ${ampm}`;
+              return {
+                id: msg.id,
+                senderId: msg.senderId,
+                senderName: msg.senderName,
+                senderRole: msg.senderRole || 'MEMBER',
+                senderAvatar: msg.senderAvatar || 'M',
+                text: msg.text,
+                type: msg.type || 'CHAT',
+                time: timeStr,
+              };
+            })
+          );
+        }
       }
     } catch (e) {
       console.warn('Failed to fetch private circle data:', e);
@@ -258,27 +253,20 @@ export const PrivateNetworkScreen: React.FC = () => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
 
-    // Persist to backend API
+    // Persist to backend API directly
     try {
       const token = await appStorage.getItem('gt_mobile_token');
-      const endpoints = [
-        `${API_BASE_URL}/private-network/messages`,
-        'http://localhost:5050/api/private-network/messages',
-      ];
-      for (const url of endpoints) {
-        try {
-          await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ text, type }),
-          });
-          break;
-        } catch {}
-      }
-    } catch {}
+      await fetch(`${API_BASE_URL}/private-network/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text, type }),
+      });
+    } catch (err) {
+      console.warn('Failed to send message:', err);
+    }
   };
 
   const handlePingMember = async (member: MemberItem) => {

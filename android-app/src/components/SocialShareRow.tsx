@@ -21,28 +21,28 @@ export const SocialShareRow: React.FC<SocialShareRowProps> = ({ referralCode }) 
   const handleWhatsApp = () => {
     triggerHaptic();
     Linking.openURL(`whatsapp://send?text=${encodeURIComponent(shareMessage)}`).catch(() => {
-      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`);
+      Linking.openURL(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`).catch(() => {});
     });
   };
 
   const handleTelegram = () => {
     triggerHaptic();
     Linking.openURL(`tg://msg?text=${encodeURIComponent(shareMessage)}`).catch(() => {
-      Linking.openURL(`https://t.me/share/url?text=${encodeURIComponent(shareMessage)}`);
+      Linking.openURL(`https://t.me/share/url?text=${encodeURIComponent(shareMessage)}`).catch(() => {});
     });
   };
 
   const handleTwitter = () => {
     triggerHaptic();
     Linking.openURL(`twitter://post?message=${encodeURIComponent(shareMessage)}`).catch(() => {
-      Linking.openURL(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessage)}`);
+      Linking.openURL(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessage)}`).catch(() => {});
     });
   };
 
   const handleInstagram = () => {
     triggerHaptic();
     Linking.openURL('instagram://app').catch(() => {
-      Linking.openURL('https://instagram.com');
+      Linking.openURL('https://instagram.com').catch(() => {});
     });
   };
 
