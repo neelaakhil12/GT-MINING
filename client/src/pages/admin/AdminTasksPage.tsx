@@ -122,6 +122,16 @@ const PLATFORM_PRESETS = [
   { iconType: 'tiktok', label: 'TikTok Account Follow', category: 'social', defaultBtn: 'Follow' },
 ] as const;
 
+// YouTube Embed URL helper
+const getYouTubeEmbedUrl = (rawUrl: string): string | null => {
+  if (!rawUrl) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = rawUrl.match(regExp);
+  return match && match[2].length === 11
+    ? `https://www.youtube.com/embed/${match[2]}?autoplay=1`
+    : null;
+};
+
 export const AdminTasksPage: React.FC = () => {
   const { showToast } = useToast();
   const [tasks, setTasks] = useState<AdminTaskItem[]>([]);
@@ -131,6 +141,7 @@ export const AdminTasksPage: React.FC = () => {
   // Modal create/edit state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AdminTaskItem | null>(null);
+  const [previewVideoTask, setPreviewVideoTask] = useState<AdminTaskItem | null>(null);
 
   const [category, setCategory] = useState<'video' | 'social'>('video');
   const [title, setTitle] = useState('');
@@ -486,6 +497,17 @@ export const AdminTasksPage: React.FC = () => {
                     <span className="px-3 py-1.5 rounded-xl bg-[#22C55E]/20 text-[#86EFAC] border border-[#22C55E]/30 font-black text-xs">
                       {task.rewardLabel || `+${task.reward} GT`}
                     </span>
+
+                    {task.category === 'video' && task.url && (
+                      <button
+                        onClick={() => setPreviewVideoTask(task)}
+                        className="px-2.5 py-1.5 rounded-xl bg-[#22C55E]/20 hover:bg-[#22C55E]/30 text-[#4ADE80] border border-[#22C55E]/40 cursor-pointer transition-all flex items-center gap-1.5 text-[11px] font-bold"
+                        title="Preview & Play Uploaded Video"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Play Video</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => handleToggleActive(task)}
@@ -881,6 +903,69 @@ export const AdminTasksPage: React.FC = () => {
               </button>
             </div>
           </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Video Preview Modal */}
+      {previewVideoTask && (
+        <div
+          onClick={() => setPreviewVideoTask(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl bg-[#071F14] rounded-3xl border-2 border-[#22C55E]/40 shadow-2xl overflow-hidden my-auto flex flex-col"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-[#071F14]">
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase text-[#4ADE80] block">
+                  Admin Video Quest Preview
+                </span>
+                <h4 className="text-sm sm:text-base font-black text-white truncate">
+                  {previewVideoTask.title}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewVideoTask(null)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white cursor-pointer"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center shadow-inner border border-white/10">
+                {getYouTubeEmbedUrl(previewVideoTask.url) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(previewVideoTask.url)!}
+                    title={previewVideoTask.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                ) : previewVideoTask.url ? (
+                  <video
+                    src={previewVideoTask.url}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain bg-black"
+                  />
+                ) : (
+                  <p className="text-xs text-neutral-400">No video stream URL found</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[#A7C9B1] pt-1">
+                <span className="truncate max-w-md font-mono text-[11px] text-neutral-300">
+                  {previewVideoTask.url}
+                </span>
+                <span className="shrink-0 font-bold text-[#FBBF24]">
+                  {previewVideoTask.duration || 15}s watch duration
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}

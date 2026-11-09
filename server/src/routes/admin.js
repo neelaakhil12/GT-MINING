@@ -689,11 +689,12 @@ function processVideoUrl(url) {
     const buffer = Buffer.from(base64Data, 'base64');
     const videosDir = path.resolve('uploads', 'videos');
     if (!fs.existsSync(videosDir)) {
-      fs.mkdirSync(videosDir, { recursive: true });
+      fs.mkdirSync(videosDir, { recursive: true, mode: 0o755 });
     }
     const filename = `quest_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
     const filePath = path.join(videosDir, filename);
-    fs.writeFileSync(filePath, buffer);
+    fs.writeFileSync(filePath, buffer, { mode: 0o644 });
+    try { fs.chmodSync(filePath, 0o644); } catch {}
     return `/uploads/videos/${filename}`;
   } catch (err) {
     console.error('Error saving video upload to disk:', err);

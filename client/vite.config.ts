@@ -26,6 +26,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/uploads': {
+        target: 'https://gtnetwork.in',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 });

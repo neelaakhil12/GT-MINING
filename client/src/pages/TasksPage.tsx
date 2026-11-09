@@ -111,6 +111,16 @@ const TASKS_DATA: TaskItem[] = [
   },
 ];
 
+// YouTube Embed URL helper
+const getYouTubeEmbedUrl = (rawUrl: string): string | null => {
+  if (!rawUrl) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = rawUrl.match(regExp);
+  return match && match[2].length === 11
+    ? `https://www.youtube.com/embed/${match[2]}?autoplay=1&enablejsapi=1`
+    : null;
+};
+
 // Brand Icon Renderers matching screenshot styling exactly
 const TaskIcon: React.FC<{ type: TaskItem['iconType'] }> = ({ type }) => {
   switch (type) {
@@ -233,6 +243,7 @@ export const TasksPage: React.FC = () => {
   // Video watching simulation state
   const [tasksList, setTasksList] = useState<TaskItem[]>(TASKS_DATA);
   const [activeVideoTask, setActiveVideoTask] = useState<TaskItem | null>(null);
+  const [watchingVideoModalTask, setWatchingVideoModalTask] = useState<TaskItem | null>(null);
   const [videoTimer, setVideoTimer] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<number>(0);
 
@@ -341,13 +352,8 @@ export const TasksPage: React.FC = () => {
         setVideoTimer((prev) => {
           if (prev === null || prev <= 1) {
             clearInterval(interval);
-            // Once video is watched, open proof modal or submit video task
             setVideoProgress(100);
-            setProofModalTask(activeVideoTask);
-            setProofNote('Video completed');
-            setActiveVideoTask(null);
-            showToast('Video watched! Please submit screenshot confirmation to claim reward.', 'info');
-            return null;
+            return 0;
           }
           const next = prev - 1;
           const totalSec = (activeVideoTask as any).duration || 15;
@@ -377,15 +383,11 @@ export const TasksPage: React.FC = () => {
     }
 
     if (task.category === 'video') {
-      if (videoTimer !== null) return;
       const watchSec = (task as any).duration || 15;
       setActiveVideoTask(task);
-      setVideoTimer(watchSec);
-      setVideoProgress(0);
-      if (task.url && task.url !== '#') {
-        window.open(task.url, '_blank', 'noopener,noreferrer');
-      }
-      showToast(`Watching video quest (${watchSec}s)...`, 'info');
+      setVideoTimer((prev) => (activeVideoTask?.id === task.id && prev !== null ? prev : watchSec));
+      setVideoProgress((prev) => (activeVideoTask?.id === task.id ? prev : 0));
+      setWatchingVideoModalTask(task);
       return;
     }
 
@@ -594,7 +596,7 @@ export const TasksPage: React.FC = () => {
             const isApproved = sub?.status === 'APPROVED';
             const isPending = sub?.status === 'PENDING';
             const isRejected = sub?.status === 'REJECTED';
-            const isVideoWatching = task.id === 'task_video' && videoTimer !== null;
+            const isVideoWatching = activeVideoTask?.id === task.id && videoTimer !== null;
 
             return (
               <div
@@ -621,14 +623,14 @@ export const TasksPage: React.FC = () => {
                       {task.description}
                     </p>
 
-                    {/* Video Progress Bar in case of demo */}
-                    {task.id === 'task_video' && (
+                    {/* Video Progress Bar */}
+                    {task.category === 'video' && (
                       <div className="pt-1.5 w-full max-w-[200px]">
                         <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-[#22C55E] transition-all duration-300"
                             style={{
-                              width: isApproved ? '100%' : `${videoProgress}%`,
+                              width: isApproved ? '100%' : `${activeVideoTask?.id === task.id ? videoProgress : 0}%`,
                             }}
                           />
                         </div>
@@ -668,11 +670,12 @@ export const TasksPage: React.FC = () => {
                     </button>
                   ) : isVideoWatching ? (
                     <button
-                      disabled
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FBBF24]/20 text-[#B45309] font-black text-[11px] sm:text-xs border border-[#FBBF24]/30 shrink-0"
+                      onClick={() => setWatchingVideoModalTask(task)}
+                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FBBF24]/20 hover:bg-[#FBBF24]/30 text-[#B45309] font-black text-[11px] sm:text-xs border border-[#FBBF24]/30 shrink-0 cursor-pointer transition-all"
+                      title="Click to view video"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-ping" />
-                      <span>{videoTimer}s...</span>
+                      <span>{videoTimer === 0 ? 'Done! Tap' : `${videoTimer}s...`}</span>
                     </button>
                   ) : (
                     <button
@@ -690,23 +693,136 @@ export const TasksPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Video Watch & Quest Modal */}
+      {watchingVideoModalTask && (
+        <div
+          onClick={() => setWatchingVideoModalTask(null)}
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-xl w-full max-h-[85vh] sm:max-h-[90vh] bg-[#071F14] text-white rounded-3xl shadow-2xl flex flex-col border-2 border-[#22C55E]/40 overflow-hidden my-auto"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 p-4 sm:p-5 border-b border-white/10 shrink-0 bg-[#071F14]">
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#4ADE80] block">
+                  Video Quest Player
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-white truncate">
+                  {watchingVideoModalTask.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWatchingVideoModalTask(null)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-all cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Video Player Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 overscroll-contain">
+              <div className="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center shadow-inner border border-white/10">
+                {getYouTubeEmbedUrl(watchingVideoModalTask.url) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(watchingVideoModalTask.url)!}
+                    title={watchingVideoModalTask.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                ) : watchingVideoModalTask.url && watchingVideoModalTask.url !== '#' ? (
+                  <video
+                    src={watchingVideoModalTask.url}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain bg-black"
+                  />
+                ) : (
+                  <div className="p-6 text-center text-neutral-400 text-xs">
+                    No video stream URL provided for this task.
+                  </div>
+                )}
+              </div>
+
+              {/* Progress & Countdown Status */}
+              <div className="p-3.5 rounded-2xl bg-[#0B2A1C] border border-[#22C55E]/30 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-[#A7C9B1] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#FBBF24]" />
+                    <span>Watch Progress</span>
+                  </span>
+                  <span className="font-black text-[#FBBF24] font-mono">
+                    {videoTimer === 0 ? '✓ Requirement Completed' : `${videoTimer}s remaining`}
+                  </span>
+                </div>
+
+                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#22C55E] to-[#4ADE80] transition-all duration-300"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 pb-6 sm:pb-0">
+                <p className="text-[11px] text-[#A7C9B1] text-center sm:text-left">
+                  {videoTimer === 0
+                    ? `🎉 Video watched! You can now submit your verification screenshot to claim +${watchingVideoModalTask.reward} GT.`
+                    : `Please watch for at least ${(watchingVideoModalTask as any).duration || 15}s to complete task.`}
+                </p>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setWatchingVideoModalTask(null)}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/15 text-neutral-300 transition-all cursor-pointer"
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentTask = watchingVideoModalTask;
+                      setWatchingVideoModalTask(null);
+                      setProofModalTask(currentTask);
+                      setProofNote('Video completed');
+                      setProofImage('');
+                    }}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-black text-xs text-[#07130D] bg-gradient-to-r from-[#22C55E] to-[#4ADE80] hover:brightness-110 shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Submit Proof ↗</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Task Proof Upload Modal */}
       {proofModalTask && (
         <div
           onClick={() => !submittingProof && setProofModalTask(null)}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 border border-white/80"
+            className="relative max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] bg-white rounded-3xl shadow-2xl flex flex-col border border-white/80 overflow-hidden my-auto"
           >
             {/* Modal Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-black/5 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-black/5 p-4 sm:p-6 shrink-0 bg-white">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-[#15803D]">
                   Task Verification Required
                 </span>
-                <h3 className="text-lg sm:text-xl font-black text-[#0A341B] tracking-tight">
+                <h3 className="text-base sm:text-xl font-black text-[#0A341B] tracking-tight">
                   {proofModalTask.title}
                 </h3>
               </div>
@@ -720,101 +836,104 @@ export const TasksPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Reward Pill & Instructions */}
-            <div className="p-3.5 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 flex items-center justify-between text-xs">
-              <span className="font-bold text-[#0A341B]">Completion Reward:</span>
-              <span className="font-black text-[#15803D] bg-white px-3 py-1 rounded-full shadow-2xs">
-                +{proofModalTask.reward}.00 GT (Credited to Wallet)
-              </span>
-            </div>
-
-            <p className="text-xs text-[#1E5E36] font-medium leading-relaxed">
-              Please upload a screenshot showing that you completed this task (e.g. following or subscribing). Once reviewed and approved by the admin, your reward will be added directly into your wallet available balance.
-            </p>
-
-            <form onSubmit={handleSubmitProof} className="space-y-4">
-              {/* Hidden File Input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageFileChange}
-                accept="image/png, image/jpeg, image/jpg, image/webp"
-                className="hidden"
-              />
-
-              {/* Screenshot Preview / Drop Area */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={`w-full min-h-[140px] rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-4 cursor-pointer relative overflow-hidden ${
-                  proofImage
-                    ? 'border-[#22C55E] bg-[#EAF8EE]/40'
-                    : 'border-neutral-300 hover:border-[#22C55E] bg-neutral-50 hover:bg-[#EAF8EE]/20'
-                }`}
-              >
-                {proofImage ? (
-                  <div className="space-y-2 text-center w-full">
-                    <img
-                      src={proofImage}
-                      alt="Screenshot Proof Preview"
-                      className="max-h-48 mx-auto rounded-xl object-contain shadow-xs border border-white"
-                    />
-                    <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#15803D]">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Screenshot Loaded. Tap to change.</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center mx-auto shadow-2xs">
-                      <Camera className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-black text-[#0A341B] block">
-                        Upload Screenshot Proof
-                      </span>
-                      <span className="text-[11px] text-[#1E5E36]/70">
-                        PNG, JPG, or WebP from your device
-                      </span>
-                    </div>
-                  </div>
-                )}
+            {/* Modal Body & Form - Fully Scrollable */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
+              {/* Reward Pill & Instructions */}
+              <div className="p-3.5 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 flex items-center justify-between text-xs">
+                <span className="font-bold text-[#0A341B]">Completion Reward:</span>
+                <span className="font-black text-[#15803D] bg-white px-3 py-1 rounded-full shadow-2xs">
+                  +{proofModalTask.reward}.00 GT (Credited to Wallet)
+                </span>
               </div>
 
-              {/* User Handle / Profile Link (Optional) */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0A341B] flex justify-between">
-                  <span>Your Social Handle / Username (Optional)</span>
-                  <span className="text-[10px] text-neutral-400">for faster verification</span>
-                </label>
+              <p className="text-xs text-[#1E5E36] font-medium leading-relaxed">
+                Please upload a screenshot showing that you completed this task (e.g. following, subscribing, or watching). Once reviewed and approved by the admin, your reward will be added directly into your wallet available balance.
+              </p>
+
+              <form onSubmit={handleSubmitProof} className="space-y-4">
+                {/* Hidden File Input */}
                 <input
-                  type="text"
-                  value={proofNote}
-                  onChange={(e) => setProofNote(e.target.value)}
-                  placeholder="e.g. @your_username or profile link"
-                  className="w-full px-4 py-2.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs font-semibold text-[#0A341B] focus:outline-none focus:border-[#22C55E] focus:bg-white"
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageFileChange}
+                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                  className="hidden"
                 />
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={submittingProof}
-                  onClick={() => setProofModalTask(null)}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer"
+                {/* Screenshot Preview / Drop Area */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-full min-h-[130px] rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center p-4 cursor-pointer relative overflow-hidden ${
+                    proofImage
+                      ? 'border-[#22C55E] bg-[#EAF8EE]/40'
+                      : 'border-neutral-300 hover:border-[#22C55E] bg-neutral-50 hover:bg-[#EAF8EE]/20'
+                  }`}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingProof || !proofImage}
-                  className="px-6 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_4px_16px_rgba(34,197,94,0.35)] hover:shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>{submittingProof ? 'Submitting Proof...' : 'Submit Proof to Admin'}</span>
-                </button>
-              </div>
-            </form>
+                  {proofImage ? (
+                    <div className="space-y-2 text-center w-full">
+                      <img
+                        src={proofImage}
+                        alt="Screenshot Proof Preview"
+                        className="max-h-44 mx-auto rounded-xl object-contain shadow-xs border border-white"
+                      />
+                      <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#15803D]">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Screenshot Loaded. Tap to change.</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-center">
+                      <div className="w-11 h-11 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center mx-auto shadow-2xs">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-[#0A341B] block">
+                          Upload Screenshot Proof
+                        </span>
+                        <span className="text-[11px] text-[#1E5E36]/70">
+                          PNG, JPG, or WebP from your device
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* User Handle / Profile Link (Optional) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#0A341B] flex justify-between">
+                    <span>Your Social Handle / Username (Optional)</span>
+                    <span className="text-[10px] text-neutral-400">for faster verification</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={proofNote}
+                    onChange={(e) => setProofNote(e.target.value)}
+                    placeholder="e.g. @your_username or profile link"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs font-semibold text-[#0A341B] focus:outline-none focus:border-[#22C55E] focus:bg-white"
+                  />
+                </div>
+
+                {/* Action Buttons - pb-8 ensures buttons are never cut off by mobile nav or screen edge */}
+                <div className="flex items-center justify-end gap-3 pt-3 pb-8 sm:pb-2">
+                  <button
+                    type="button"
+                    disabled={submittingProof}
+                    onClick={() => setProofModalTask(null)}
+                    className="px-4 py-2.5 rounded-xl font-bold text-xs text-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingProof || !proofImage}
+                    className="px-6 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_4px_16px_rgba(34,197,94,0.35)] hover:shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>{submittingProof ? 'Submitting Proof...' : 'Submit Proof to Admin'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
