@@ -391,7 +391,7 @@ export const ProfilePage: React.FC = () => {
                     : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
                 }`}
               >
-                👦 Boys Avatars (5)
+                👦 Boys Avatars (3)
               </button>
               <button
                 type="button"
@@ -402,7 +402,7 @@ export const ProfilePage: React.FC = () => {
                     : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
                 }`}
               >
-                👧 Girls Avatars (5)
+                👧 Girls Avatars (3)
               </button>
             </div>
 

@@ -317,7 +317,7 @@ export const ProfileScreen: React.FC = () => {
                         activeGenderTab === 'boy' && styles.genderTabTextActive,
                       ]}
                     >
-                      👦 Boys Avatars (5)
+                      👦 Boys Avatars (3)
                     </Text>
                   </TouchableOpacity>
 
@@ -335,7 +335,7 @@ export const ProfileScreen: React.FC = () => {
                         activeGenderTab === 'girl' && styles.genderTabTextActive,
                       ]}
                     >
-                      👧 Girls Avatars (5)
+                      👧 Girls Avatars (3)
                     </Text>
                   </TouchableOpacity>
                 </View>

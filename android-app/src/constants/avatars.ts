@@ -8,68 +8,43 @@ export interface AvatarPreset {
 export const BOY_AVATARS: AvatarPreset[] = [
   {
     id: 'boy_1',
-    name: 'Emerald Miner',
+    name: 'Alex (Cool Hoodie)',
     gender: 'boy',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Felix&backgroundColor=b6e3f4,c0aede,d1d4f9',
+    url: 'https://gtnetwork.in/avatars/boy_1.png',
   },
   {
     id: 'boy_2',
-    name: 'Cyber Pioneer',
+    name: 'Leo (Smart Caesar)',
     gender: 'boy',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Jack&backgroundColor=b6e3f4,c0aede,d1d4f9',
+    url: 'https://gtnetwork.in/avatars/boy_2.png',
   },
   {
     id: 'boy_3',
-    name: 'Golden Trader',
+    name: 'Ryan (Sporty Waved)',
     gender: 'boy',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Leo&backgroundColor=b6e3f4,c0aede,d1d4f9',
-  },
-  {
-    id: 'boy_4',
-    name: 'Urban Node',
-    gender: 'boy',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Mason&backgroundColor=b6e3f4,c0aede,d1d4f9',
-  },
-  {
-    id: 'boy_5',
-    name: 'Cosmic Explorer',
-    gender: 'boy',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Oliver&backgroundColor=b6e3f4,c0aede,d1d4f9',
+    url: 'https://gtnetwork.in/avatars/boy_3.png',
   },
 ];
 
 export const GIRL_AVATARS: AvatarPreset[] = [
   {
     id: 'girl_1',
-    name: 'Emerald Queen',
+    name: 'Emma (Chic Straight)',
     gender: 'girl',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Amaya&backgroundColor=ffd5dc,ffdfbf',
+    url: 'https://gtnetwork.in/avatars/girl_1.png',
   },
   {
     id: 'girl_2',
-    name: 'Cyber Innovator',
+    name: 'Mia (Bouncy Curvy)',
     gender: 'girl',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Sophia&backgroundColor=ffd5dc,ffdfbf',
+    url: 'https://gtnetwork.in/avatars/girl_2.png',
   },
   {
     id: 'girl_3',
-    name: 'Golden VIP',
+    name: 'Chloe (Modern Bob)',
     gender: 'girl',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Luna&backgroundColor=ffd5dc,ffdfbf',
-  },
-  {
-    id: 'girl_4',
-    name: 'Urban Pioneer',
-    gender: 'girl',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Aria&backgroundColor=ffd5dc,ffdfbf',
-  },
-  {
-    id: 'girl_5',
-    name: 'Star Miner',
-    gender: 'girl',
-    url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Mia&backgroundColor=ffd5dc,ffdfbf',
+    url: 'https://gtnetwork.in/avatars/girl_3.png',
   },
 ];
 
 export const ALL_AVATARS: AvatarPreset[] = [...BOY_AVATARS, ...GIRL_AVATARS];
-
