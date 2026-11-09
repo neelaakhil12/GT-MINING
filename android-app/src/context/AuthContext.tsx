@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { User, MiningStats } from '../types';
 import { appStorage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
@@ -240,6 +241,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     await appStorage.removeItem(STORAGE_SESSION_KEY);
     await appStorage.removeItem('gt_mobile_token');
+    try {
+      await GoogleSignin.signOut();
+    } catch {}
   };
 
   const startMiningSession = () => {

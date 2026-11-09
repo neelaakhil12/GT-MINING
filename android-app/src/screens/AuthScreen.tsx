@@ -301,8 +301,15 @@ export const AuthScreen: React.FC = () => {
 
     try {
       if (Platform.OS === 'android' || Platform.OS === 'ios') {
-        // Native Google Play Services Account Chooser (works exactly like Planto Park)
+        // Native Google Play Services Account Chooser
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+        // Always sign out of cached Google session first so Google Play Services
+        // forces the Account Selector dialog to show all emails on the device every time
+        try {
+          await GoogleSignin.signOut();
+        } catch {}
+
         const response = await GoogleSignin.signIn();
         
         const userInfo = (response as any).data?.user || (response as any).user;
@@ -331,7 +338,7 @@ export const AuthScreen: React.FC = () => {
         sessionStorage.setItem('gt_app_google_mode', mode === 'SIGNUP' ? 'signup' : 'login');
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(
           redirect_uri
-        )}&response_type=token&scope=openid%20profile%20email`;
+        )}&response_type=token&scope=openid%20profile%20email&prompt=select_account`;
         window.location.href = authUrl;
       }
     } catch (error: any) {

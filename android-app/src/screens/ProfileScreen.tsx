@@ -206,8 +206,8 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     (navigation as any).reset({
       index: 0,
       routes: [{ name: 'Auth' }],
