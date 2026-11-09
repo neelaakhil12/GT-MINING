@@ -82,44 +82,6 @@ export const PrivateNetworkPage: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const DEFAULT_QUICK_REPLIES: QuickReply[] = [
-    {
-      id: '1',
-      shortcut: '/reminder',
-      label: '⏰ 4h Mining Claim',
-      text: '⏰ Reminder: Your 4-hour mining claim is ready! Claim 1 GT now.',
-      type: 'REMINDER',
-    },
-    {
-      id: '2',
-      shortcut: '/hashrate',
-      label: '🔥 Team Hash Rate Boost',
-      text: '🔥 Let’s keep our circle hash rate at 100%! Claim your mining cycle today.',
-      type: 'REMINDER',
-    },
-    {
-      id: '3',
-      shortcut: '/welcome',
-      label: '👋 Welcome to Circle',
-      text: '👋 Welcome to our private circle! Reach out here if you have any questions.',
-      type: 'CHAT',
-    },
-    {
-      id: '4',
-      shortcut: '/streak',
-      label: '⚡ Daily Streak Alert',
-      text: '⚡ Keep your daily streak going! Don’t let your mining bonus reset.',
-      type: 'REMINDER',
-    },
-    {
-      id: '5',
-      shortcut: '/sync',
-      label: '⛏️ Node Sync Check',
-      text: '⛏️ Active mining cycle in progress. Sync your node now to maximize team rewards!',
-      type: 'REMINDER',
-    },
-  ];
-
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>(() => {
     try {
       const saved = localStorage.getItem('gt_circle_quick_replies');
@@ -127,7 +89,7 @@ export const PrivateNetworkPage: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
-    return DEFAULT_QUICK_REPLIES;
+    return [];
   });
 
   const [showQuickMenu, setShowQuickMenu] = useState<boolean>(false);
@@ -400,11 +362,11 @@ export const PrivateNetworkPage: React.FC = () => {
 
   const handleResetQuickReplies = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickReplies(DEFAULT_QUICK_REPLIES);
+    setQuickReplies([]);
     try {
       localStorage.removeItem('gt_circle_quick_replies');
     } catch (err) {}
-    showToast('Quick replies reset to defaults', 'info');
+    showToast('Saved shortcuts cleared', 'info');
   };
 
   const handleSaveCustomQuickReply = (e: React.FormEvent) => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { User, MiningStats } from '../types';
 import { appStorage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
@@ -99,11 +99,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     restoreSession();
   }, []);
 
-  // Mining countdown timer
+  // Mining countdown timer - only run if mining is actively in progress
   useEffect(() => {
+    if (!isMiningActive) return;
+
     const interval = setInterval(() => {
       setMiningStats((prev) => {
-        if (prev.cycleRemainingSeconds <= 0) {
+        if (prev.cycleRemainingSeconds <= 1) {
           setIsMiningActive(false);
           return { ...prev, cycleRemainingSeconds: 0 };
         }
@@ -114,8 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       });
     }, 1000);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [isMiningActive]);
 
   // Real database verification on login
   const login = async ({ email, password }: { email: string; password?: string }) => {
@@ -334,24 +337,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isSessionLoaded,
+      miningStats,
+      isMiningActive,
+      login,
+      signup,
+      googleLogin,
+      logout,
+      startMiningSession,
+      claimCommission,
+      refreshUserData,
+      updateUserAvatar,
+    }),
+    [user, isAuthenticated, isSessionLoaded, miningStats, isMiningActive]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isSessionLoaded,
-        miningStats,
-        isMiningActive,
-        login,
-        signup,
-        googleLogin,
-        logout,
-        startMiningSession,
-        claimCommission,
-        refreshUserData,
-        updateUserAvatar,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -70,37 +70,6 @@ interface QuickReplyItem {
   type: 'REMINDER' | 'CHAT';
 }
 
-const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
-  {
-    id: 'qr_1',
-    shortcut: '/reminder',
-    label: '⏰ 4h Mining Claim',
-    text: '⏰ Reminder: Your 4-hour mining claim is ready! Claim 1 GT now.',
-    type: 'REMINDER',
-  },
-  {
-    id: 'qr_2',
-    shortcut: '/hashrate',
-    label: '🔥 Team Hash Rate Boost',
-    text: '🔥 Let’s keep our circle hash rate at 100%! Claim your mining cycle today.',
-    type: 'REMINDER',
-  },
-  {
-    id: 'qr_3',
-    shortcut: '/welcome',
-    label: '👋 Welcome to Circle',
-    text: '👋 Welcome to our private circle! Reach out here if you have any questions.',
-    type: 'CHAT',
-  },
-  {
-    id: 'qr_4',
-    shortcut: '/streak',
-    label: '⚡ Daily Streak Alert',
-    text: '⚡ Keep your daily streak going! Don’t let your mining bonus reset.',
-    type: 'REMINDER',
-  },
-];
-
 export const PrivateNetworkScreen: React.FC = () => {
   const { user } = useAuth();
   const navigation = useNavigation<any>();
@@ -111,7 +80,7 @@ export const PrivateNetworkScreen: React.FC = () => {
 
   const [members, setMembers] = useState<MemberItem[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>(DEFAULT_QUICK_REPLIES);
+  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>([]);
   const [circleHost, setCircleHost] = useState<{
     id: string;
     fullName: string;
@@ -122,6 +91,62 @@ export const PrivateNetworkScreen: React.FC = () => {
 
   const [cycleHours, setCycleHours] = useState<number>(4);
   const [miningReward, setMiningReward] = useState<number>(1.0);
+
+  // Custom Shortcut Modal states
+  const [showShortcutModal, setShowShortcutModal] = useState(false);
+  const [editingShortcutId, setEditingShortcutId] = useState<string | null>(null);
+  const [inputShortcutCode, setInputShortcutCode] = useState('');
+  const [inputShortcutLabel, setInputShortcutLabel] = useState('');
+  const [inputShortcutText, setInputShortcutText] = useState('');
+  const [inputShortcutType, setInputShortcutType] = useState<'REMINDER' | 'CHAT'>('REMINDER');
+
+  // 1. Instant Cache Initialization (0ms immediate display)
+  useEffect(() => {
+    let isMounted = true;
+
+    // A. Instant cached messages
+    appStorage.getItem('gt_cached_circle_messages').then((cached) => {
+      if (cached && isMounted) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        } catch {}
+      }
+    });
+
+    // B. Instant cached circle meta
+    appStorage.getItem('gt_cached_circle_meta').then((cached) => {
+      if (cached && isMounted) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.circleHost) setCircleHost(parsed.circleHost);
+            if (Array.isArray(parsed.members) && parsed.members.length > 0) {
+              setMembers(parsed.members);
+            }
+          }
+        } catch {}
+      }
+    });
+
+    // C. User Custom Saved Shortcuts (NO hardcoded data!)
+    appStorage.getItem('gt_circle_quick_replies').then((saved) => {
+      if (saved && isMounted) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setQuickReplies(parsed);
+          }
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/mining/config`)
@@ -142,70 +167,186 @@ export const PrivateNetworkScreen: React.FC = () => {
 
   const flatListRef = useRef<FlatList>(null);
 
-  // Load real circle data from Backend API
+  // Load real circle data from Backend API with timeout and diffing
   const fetchCircleData = async () => {
     try {
       const token = await appStorage.getItem('gt_mobile_token');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+
       const res = await fetch(`${API_BASE_URL}/private-network`, {
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
+      clearTimeout(timeoutId);
+
       const json = await res.json();
       if (json && json.success) {
         if (json.circleHost) {
-          setCircleHost(json.circleHost);
+          setCircleHost((prev) => {
+            if (prev?.id === json.circleHost.id && prev?.fullName === json.circleHost.fullName) {
+              return prev;
+            }
+            return json.circleHost;
+          });
         }
         if (Array.isArray(json.members)) {
-          setMembers(
-            json.members.map((m: any) => ({
-              id: m.id,
-              name: m.name,
-              maskedId: m.maskedId,
-              initials: m.initials,
-              avatarBg: m.avatarBg || '#10B981',
-              isMiningActive: !!m.isMiningActive,
-              streakDays: m.streakDays || 0,
-            }))
-          );
+          const mappedMembers = json.members.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            maskedId: m.maskedId,
+            initials: m.initials,
+            avatarBg: m.avatarBg || '#10B981',
+            isMiningActive: !!m.isMiningActive,
+            streakDays: m.streakDays || 0,
+          }));
+
+          setMembers((prev) => {
+            if (
+              prev.length === mappedMembers.length &&
+              prev.every(
+                (pm, idx) =>
+                  pm.isMiningActive === mappedMembers[idx]?.isMiningActive &&
+                  pm.id === mappedMembers[idx]?.id
+              )
+            ) {
+              return prev;
+            }
+            appStorage
+              .setItem(
+                'gt_cached_circle_meta',
+                JSON.stringify({ circleHost: json.circleHost, members: mappedMembers })
+              )
+              .catch(() => {});
+            return mappedMembers;
+          });
         }
         if (Array.isArray(json.messages)) {
-          setMessages(
-            json.messages.map((msg: any) => {
-              const date = msg.createdAt ? new Date(msg.createdAt) : new Date();
-              const hours = date.getHours();
-              const minutes = date.getMinutes();
-              const ampm = hours >= 12 ? 'pm' : 'am';
-              const fHours = hours % 12 ? hours % 12 : 12;
-              const fMins = minutes < 10 ? `0${minutes}` : minutes;
-              const timeStr = `${fHours < 10 ? `0${fHours}` : fHours}:${fMins} ${ampm}`;
-              return {
-                id: msg.id,
-                senderId: msg.senderId,
-                senderName: msg.senderName,
-                senderRole: msg.senderRole || 'MEMBER',
-                senderAvatar: msg.senderAvatar || 'M',
-                text: msg.text,
-                type: msg.type || 'CHAT',
-                time: timeStr,
-              };
-            })
-          );
+          const formatted = json.messages.map((msg: any) => {
+            const date = msg.createdAt ? new Date(msg.createdAt) : new Date();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'pm' : 'am';
+            const fHours = hours % 12 ? hours % 12 : 12;
+            const fMins = minutes < 10 ? `0${minutes}` : minutes;
+            const timeStr = `${fHours < 10 ? `0${fHours}` : fHours}:${fMins} ${ampm}`;
+            return {
+              id: msg.id,
+              senderId: msg.senderId,
+              senderName: msg.senderName,
+              senderRole: msg.senderRole || 'MEMBER',
+              senderAvatar: msg.senderAvatar || 'M',
+              text: msg.text,
+              type: msg.type || 'CHAT',
+              time: timeStr,
+            };
+          });
+
+          setMessages((prev) => {
+            const isSame =
+              prev.length === formatted.length &&
+              (prev.length === 0 ||
+                prev[prev.length - 1].id === formatted[formatted.length - 1].id);
+            if (!isSame) {
+              appStorage
+                .setItem('gt_cached_circle_messages', JSON.stringify(formatted))
+                .catch(() => {});
+              return formatted;
+            }
+            return prev;
+          });
         }
       }
-    } catch (e) {
-      console.warn('Failed to fetch private circle data:', e);
+    } catch {
+      // Background sync silently catches
     }
   };
 
   useEffect(() => {
     fetchCircleData();
-    const interval = setInterval(() => {
-      fetchCircleData();
-    }, 4000);
+    const interval = setInterval(fetchCircleData, 8000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, []);
+
+  const handleOpenAddShortcut = () => {
+    setEditingShortcutId(null);
+    setInputShortcutCode('');
+    setInputShortcutLabel('');
+    setInputShortcutText('');
+    setInputShortcutType('REMINDER');
+    setShowShortcutModal(true);
+  };
+
+  const handleOpenEditShortcut = (qr: QuickReplyItem) => {
+    setEditingShortcutId(qr.id);
+    setInputShortcutCode(qr.shortcut);
+    setInputShortcutLabel(qr.label);
+    setInputShortcutText(qr.text);
+    setInputShortcutType(qr.type);
+    setShowShortcutModal(true);
+  };
+
+  const handleSaveShortcut = () => {
+    if (!inputShortcutText.trim()) {
+      Alert.alert('Required', 'Please enter message text for the shortcut.');
+      return;
+    }
+    let code = inputShortcutCode.trim();
+    if (!code) code = 'msg';
+    if (!code.startsWith('/')) code = `/${code}`;
+
+    const label = inputShortcutLabel.trim() || code;
+
+    if (editingShortcutId) {
+      const updated = quickReplies.map((qr) =>
+        qr.id === editingShortcutId
+          ? { ...qr, shortcut: code, label, text: inputShortcutText.trim(), type: inputShortcutType }
+          : qr
+      );
+      setQuickReplies(updated);
+      appStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated)).catch(() => {});
+    } else {
+      const newQR: QuickReplyItem = {
+        id: `qr_${Date.now()}`,
+        shortcut: code,
+        label,
+        text: inputShortcutText.trim(),
+        type: inputShortcutType,
+      };
+      const updated = [...quickReplies, newQR];
+      setQuickReplies(updated);
+      appStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated)).catch(() => {});
+    }
+
+    setShowShortcutModal(false);
+  };
+
+  const handleDeleteShortcut = (id: string) => {
+    const updated = quickReplies.filter((q) => q.id !== id);
+    setQuickReplies(updated);
+    appStorage.setItem('gt_circle_quick_replies', JSON.stringify(updated)).catch(() => {});
+  };
+
+  const handleClearShortcuts = () => {
+    Alert.alert(
+      'Clear Shortcuts',
+      'Are you sure you want to remove all saved custom shortcuts?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: () => {
+            setQuickReplies([]);
+            appStorage.removeItem('gt_circle_quick_replies').catch(() => {});
+          },
+        },
+      ]
+    );
+  };
 
   const totalMembersCount = members.length;
   const activeMembersCount = members.filter((m) => m.isMiningActive).length;
@@ -245,7 +386,11 @@ export const PrivateNetworkScreen: React.FC = () => {
       time: timeStr,
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => {
+      const updated = [...prev, newMsg];
+      appStorage.setItem('gt_cached_circle_messages', JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
     if (!textToSend) setInputText('');
     setShowQuickSheet(false);
 
@@ -821,24 +966,17 @@ export const PrivateNetworkScreen: React.FC = () => {
 
               <View style={styles.quickHeaderActions}>
                 <TouchableOpacity
-                  onPress={() => setQuickReplies(DEFAULT_QUICK_REPLIES)}
+                  onPress={handleClearShortcuts}
                   style={styles.quickActionIconBtn}
+                  accessibilityLabel="Clear shortcuts"
                 >
                   <RotateCcw size={14} color="#1E5E36" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => {
-                    const newQR: QuickReplyItem = {
-                      id: `qr_${Date.now()}`,
-                      shortcut: '/custom',
-                      label: '⚡ Custom Boost',
-                      text: '⚡ Keep mining daily to maximize hash rate dividend!',
-                      type: 'CHAT',
-                    };
-                    setQuickReplies((prev) => [...prev, newQR]);
-                  }}
+                  onPress={handleOpenAddShortcut}
                   style={styles.quickNewBtn}
+                  accessibilityLabel="Create New Shortcut"
                 >
                   <Plus size={12} color="#15803D" />
                   <Text style={styles.quickNewBtnText}>New</Text>
@@ -847,6 +985,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                 <TouchableOpacity
                   onPress={() => setShowQuickSheet(false)}
                   style={styles.quickCloseBtn}
+                  accessibilityLabel="Close Quick Replies"
                 >
                   <X size={14} color="#1E5E36" />
                 </TouchableOpacity>
@@ -858,61 +997,68 @@ export const PrivateNetworkScreen: React.FC = () => {
               style={styles.quickListScroll}
               showsVerticalScrollIndicator={false}
             >
-              {quickReplies.map((qr) => (
-                <TouchableOpacity
-                  key={qr.id}
-                  onPress={() => handleSend(qr.text, qr.type)}
-                  style={styles.quickItemRow}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.quickItemLeft}>
-                    <View style={styles.quickTagRow}>
-                      <View style={styles.shortcutBadge}>
-                        <Text style={styles.shortcutText}>{qr.shortcut}</Text>
-                      </View>
-                      <Text style={styles.qrLabelText} numberOfLines={1}>
-                        {qr.label}
-                      </Text>
-                      {qr.type === 'REMINDER' && (
-                        <View style={styles.alertBadge}>
-                          <Text style={styles.alertBadgeText}>ALERT</Text>
+              {quickReplies.length === 0 ? (
+                <View style={styles.emptyShortcutsBox}>
+                  <View style={styles.emptyShortcutsIconCircle}>
+                    <Zap size={20} color="#16A34A" />
+                  </View>
+                  <Text style={styles.emptyShortcutsTitle}>No shortcuts added yet</Text>
+                  <Text style={styles.emptyShortcutsText}>
+                    Tap "+ New" above to create your own custom shortcuts for instant sending.
+                  </Text>
+                </View>
+              ) : (
+                quickReplies.map((qr) => (
+                  <TouchableOpacity
+                    key={qr.id}
+                    onPress={() => handleSend(qr.text, qr.type)}
+                    style={styles.quickItemRow}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.quickItemLeft}>
+                      <View style={styles.quickTagRow}>
+                        <View style={styles.shortcutBadge}>
+                          <Text style={styles.shortcutText}>{qr.shortcut}</Text>
                         </View>
-                      )}
+                        <Text style={styles.qrLabelText} numberOfLines={1}>
+                          {qr.label}
+                        </Text>
+                        {qr.type === 'REMINDER' && (
+                          <View style={styles.alertBadge}>
+                            <Text style={styles.alertBadgeText}>ALERT</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.qrMessagePreview} numberOfLines={1}>
+                        {qr.text}
+                      </Text>
                     </View>
-                    <Text style={styles.qrMessagePreview} numberOfLines={1}>
-                      {qr.text}
-                    </Text>
-                  </View>
 
-                  <View style={styles.quickItemActions}>
-                    <TouchableOpacity
-                      onPress={() => handleSend(qr.text, qr.type)}
-                      style={styles.sendShortcutBtn}
-                    >
-                      <Send size={13} color="#FFFFFF" />
-                    </TouchableOpacity>
+                    <View style={styles.quickItemActions}>
+                      <TouchableOpacity
+                        onPress={() => handleSend(qr.text, qr.type)}
+                        style={styles.sendShortcutBtn}
+                      >
+                        <Send size={13} color="#FFFFFF" />
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => {
-                        setInputText(qr.text);
-                        setShowQuickSheet(false);
-                      }}
-                      style={styles.editShortcutBtn}
-                    >
-                      <Pencil size={13} color="#059669" />
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleOpenEditShortcut(qr)}
+                        style={styles.editShortcutBtn}
+                      >
+                        <Pencil size={13} color="#059669" />
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => {
-                        setQuickReplies((prev) => prev.filter((q) => q.id !== qr.id));
-                      }}
-                      style={styles.deleteShortcutBtn}
-                    >
-                      <Trash2 size={13} color="#DC2626" />
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                      <TouchableOpacity
+                        onPress={() => handleDeleteShortcut(qr.id)}
+                        style={styles.deleteShortcutBtn}
+                      >
+                        <Trash2 size={13} color="#DC2626" />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </ScrollView>
           </View>
         )}
@@ -1025,6 +1171,128 @@ export const PrivateNetworkScreen: React.FC = () => {
                     : 'All Miners Active ⚡'}
                 </Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* 8. CREATE / EDIT SHORTCUT MODAL */}
+        <Modal
+          visible={showShortcutModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowShortcutModal(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.shortcutModalCard}>
+              <View style={styles.modalHeaderRow}>
+                <View style={styles.modalHeaderLeft}>
+                  <View style={styles.modalBarChartBox}>
+                    <Zap size={18} color="#15803D" />
+                  </View>
+                  <View>
+                    <Text style={styles.modalTitle}>
+                      {editingShortcutId ? 'Edit Shortcut' : 'Create Custom Shortcut'}
+                    </Text>
+                    <Text style={styles.modalSubTitle}>
+                      Save reusable messages for your circle
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowShortcutModal(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <X size={15} color="#1E5E36" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.shortcutFormBody}>
+                <Text style={styles.shortcutFieldLabel}>Command Name (e.g. /mine, /hi)</Text>
+                <TextInput
+                  style={styles.shortcutInput}
+                  placeholder="/reminder"
+                  placeholderTextColor="#94A3B8"
+                  value={inputShortcutCode}
+                  onChangeText={setInputShortcutCode}
+                  autoCapitalize="none"
+                />
+
+                <Text style={styles.shortcutFieldLabel}>Shortcut Title</Text>
+                <TextInput
+                  style={styles.shortcutInput}
+                  placeholder="Mining Reminder"
+                  placeholderTextColor="#94A3B8"
+                  value={inputShortcutLabel}
+                  onChangeText={setInputShortcutLabel}
+                />
+
+                <Text style={styles.shortcutFieldLabel}>Message Text</Text>
+                <TextInput
+                  style={[styles.shortcutInput, styles.shortcutInputMultiline]}
+                  placeholder="Type message to send when tapped..."
+                  placeholderTextColor="#94A3B8"
+                  value={inputShortcutText}
+                  onChangeText={setInputShortcutText}
+                  multiline
+                />
+
+                <Text style={styles.shortcutFieldLabel}>Message Style</Text>
+                <View style={styles.shortcutTypeToggleRow}>
+                  <TouchableOpacity
+                    onPress={() => setInputShortcutType('REMINDER')}
+                    style={[
+                      styles.typeSelectorBtn,
+                      inputShortcutType === 'REMINDER' && styles.typeSelectorBtnActive,
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <Bell
+                      size={13}
+                      color={inputShortcutType === 'REMINDER' ? '#FFFFFF' : '#15803D'}
+                    />
+                    <Text
+                      style={[
+                        styles.typeSelectorText,
+                        inputShortcutType === 'REMINDER' && styles.typeSelectorTextActive,
+                      ]}
+                    >
+                      Alert Card (Gold)
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setInputShortcutType('CHAT')}
+                    style={[
+                      styles.typeSelectorBtn,
+                      inputShortcutType === 'CHAT' && styles.typeSelectorBtnActive,
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <MessageSquare
+                      size={13}
+                      color={inputShortcutType === 'CHAT' ? '#FFFFFF' : '#15803D'}
+                    />
+                    <Text
+                      style={[
+                        styles.typeSelectorText,
+                        inputShortcutType === 'CHAT' && styles.typeSelectorTextActive,
+                      ]}
+                    >
+                      Chat Bubble
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleSaveShortcut}
+                  style={styles.saveShortcutModalBtn}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.saveShortcutModalBtnText}>
+                    {editingShortcutId ? 'Update Shortcut' : 'Save Shortcut'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -2118,6 +2386,114 @@ const styles = StyleSheet.create({
   },
   emptyInviteBtnText: {
     fontSize: 11.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+
+  /* Empty Shortcuts State & Modal Styles */
+  emptyShortcutsBox: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyShortcutsIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyShortcutsTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0A341B',
+  },
+  emptyShortcutsText: {
+    fontSize: 11,
+    color: '#4B5563',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  shortcutModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  shortcutFormBody: {
+    marginTop: 14,
+    gap: 8,
+  },
+  shortcutFieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1E5E36',
+    marginTop: 4,
+  },
+  shortcutInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: '#0F172A',
+  },
+  shortcutInputMultiline: {
+    height: 60,
+    textAlignVertical: 'top',
+  },
+  shortcutTypeToggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  typeSelectorBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  typeSelectorBtnActive: {
+    backgroundColor: '#16A34A',
+    borderColor: '#16A34A',
+  },
+  typeSelectorText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  typeSelectorTextActive: {
+    color: '#FFFFFF',
+  },
+  saveShortcutModalBtn: {
+    backgroundColor: '#16A34A',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  saveShortcutModalBtnText: {
+    fontSize: 13,
     fontWeight: '900',
     color: '#FFFFFF',
   },
