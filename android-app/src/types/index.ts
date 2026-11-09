@@ -8,6 +8,9 @@ export interface User {
   miningRate: number;
   isMining: boolean;
   miningExpiresAt: number | null;
+  avatar?: string;
+  profileImage?: string;
+  avatarUrl?: string;
 }
 
 export interface MiningStats {

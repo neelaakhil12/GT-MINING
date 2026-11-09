@@ -32,6 +32,7 @@ import { RootStackParamList } from '../types';
 import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { cleanListSpacing } from '../utils/textFormatter';
+import { useAppSafeArea } from '../utils/safeArea';
 
 interface PostItem {
   id: string;
@@ -77,6 +78,7 @@ const categories = ['All', 'Latest'] as const;
 export const CommunityScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Latest'>('All');
   const [posts, setPosts] = useState<PostItem[]>(defaultCommunityPosts);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
@@ -298,13 +300,13 @@ export const CommunityScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. Header Banner matching video */}
           <View style={styles.headerCard}>
@@ -464,7 +466,7 @@ export const CommunityScreen: React.FC = () => {
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       {/* Comments Drawer Modal */}
       <Modal

@@ -23,9 +23,11 @@ import { AppNavbar } from '../components/AppNavbar';
 import { FloatingBottomNav } from '../components/FloatingBottomNav';
 import { appStorage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
+import { useAppSafeArea } from '../utils/safeArea';
 
 export const WalletScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [filterType, setFilterType] = useState<string>('ALL');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [walletStats, setWalletStats] = useState({
@@ -96,13 +98,13 @@ export const WalletScreen: React.FC = () => {
       {/* 3D Floating Green Spheres Background */}
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Header with 'Wallet' active pill */}
         <AppNavbar activeTab="Wallet" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. Primary Virtual Asset Hero Card (matching screenshot 1) */}
           <View style={styles.heroCard}>
@@ -267,7 +269,7 @@ export const WalletScreen: React.FC = () => {
 
         {/* Floating Bottom Navigation Bar (matching all 4 screenshots) */}
         <FloatingBottomNav activeTab="Wallet" />
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

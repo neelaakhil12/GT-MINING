@@ -32,10 +32,12 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { API_BASE_URL } from '../config/api';
+import { useAppSafeArea } from '../utils/safeArea';
 
 export const AuthScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { login, signup, googleLogin, isAuthenticated } = useAuth();
+  const { top, stackContentPaddingBottom } = useAppSafeArea();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -349,7 +351,7 @@ export const AuthScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.safeArea, { paddingTop: top, paddingBottom: stackContentPaddingBottom }]}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -888,7 +890,7 @@ export const AuthScreen: React.FC = () => {
             </TouchableOpacity>
           </TouchableOpacity>
         </Modal>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

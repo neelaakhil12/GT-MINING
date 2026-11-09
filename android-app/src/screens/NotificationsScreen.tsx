@@ -10,9 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Bell, Gift, Zap, ShieldCheck } from 'lucide-react-native';
 import { OrbBackground } from '../components/OrbBackground';
 import { useNavigation } from '@react-navigation/native';
+import { useAppSafeArea } from '../utils/safeArea';
 
 export const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { top, stackContentPaddingBottom } = useAppSafeArea();
 
   const notifications = [
     {
@@ -42,7 +44,7 @@ export const NotificationsScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -57,7 +59,7 @@ export const NotificationsScreen: React.FC = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
         >
           <View style={styles.listCard}>
             {notifications.map((item) => {
@@ -77,7 +79,7 @@ export const NotificationsScreen: React.FC = () => {
             })}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

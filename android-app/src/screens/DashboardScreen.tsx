@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,6 +28,8 @@ import { Colors } from '../theme/colors';
 import { GtCoinOrbit } from '../components/GtCoinOrbit';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
+import { useAppSafeArea } from '../utils/safeArea';
+import { appStorage } from '../utils/storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -73,8 +76,23 @@ const DEFAULT_BANNER_SLIDES = [
 export const DashboardScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [bannerSlides, setBannerSlides] = useState(DEFAULT_BANNER_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Restore cached banners from storage immediately so there is never a hardcoded banner flash
+  useEffect(() => {
+    appStorage.getItem('gt_cached_mobile_home_banners').then((cached) => {
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBannerSlides(parsed);
+          }
+        } catch {}
+      }
+    });
+  }, []);
 
   // Fetch live home carousel banners from production server
   useEffect(() => {
@@ -86,23 +104,23 @@ export const DashboardScreen: React.FC = () => {
         if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
           const active = data.banners.filter((b: any) => b.isActive !== false);
           if (active.length > 0 && isMounted) {
-            setBannerSlides(
-              active.map((b: any, idx: number) => ({
-                id: b.order || idx + 1,
-                tag: b.tag || 'GT ECOSYSTEM',
-                title: b.title,
-                description: b.description,
-                ctaText: b.ctaText || 'Explore Now',
-                targetRoute: (b.targetRoute === '/referrals'
-                  ? 'Referrals'
-                  : b.targetRoute === '/wallet'
-                  ? 'Wallet'
-                  : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
-                gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
-                accentColor: b.accentColor || '#22C55E',
-                imageUrl: b.imageUrl || '',
-              }))
-            );
+            const mapped = active.map((b: any, idx: number) => ({
+              id: b.order || idx + 1,
+              tag: b.tag || 'GT ECOSYSTEM',
+              title: b.title,
+              description: b.description,
+              ctaText: b.ctaText || 'Explore Now',
+              targetRoute: (b.targetRoute === '/referrals'
+                ? 'Referrals'
+                : b.targetRoute === '/wallet'
+                ? 'Wallet'
+                : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
+              gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
+              accentColor: b.accentColor || '#22C55E',
+              imageUrl: b.imageUrl || '',
+            }));
+            setBannerSlides(mapped);
+            appStorage.setItem('gt_cached_mobile_home_banners', JSON.stringify(mapped)).catch(() => {});
           }
         }
       } catch {}
@@ -124,7 +142,7 @@ export const DashboardScreen: React.FC = () => {
       setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, []);
+  }, [bannerSlides.length]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -145,13 +163,13 @@ export const DashboardScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar matching website mobile view */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. Dashboard Greeting Header matching website mobile */}
           <View style={styles.greetingHeader}>
@@ -519,7 +537,7 @@ export const DashboardScreen: React.FC = () => {
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

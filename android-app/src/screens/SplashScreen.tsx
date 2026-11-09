@@ -13,12 +13,14 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
 
 export const SplashScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isAuthenticated, isSessionLoaded } = useAuth();
+  const { top, bottom } = useAppSafeArea();
 
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('INITIALIZING NODE...');
@@ -100,7 +102,7 @@ export const SplashScreen: React.FC = () => {
       onPress={handleSkip}
       style={styles.container}
     >
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.safeArea, { paddingTop: top, paddingBottom: bottom + 16 }]}>
         {/* Top Header Row (Skip Button on top right, V2.6 protocol removed) */}
         <View style={styles.topRow}>
           <View style={{ flex: 1 }} />
@@ -151,7 +153,7 @@ export const SplashScreen: React.FC = () => {
 
           <Text style={styles.tapPrompt}>Tap anywhere to continue</Text>
         </View>
-      </SafeAreaView>
+      </View>
     </TouchableOpacity>
   );
 };

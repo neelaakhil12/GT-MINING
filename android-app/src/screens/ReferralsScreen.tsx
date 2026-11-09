@@ -31,6 +31,7 @@ import { AppNavbar } from '../components/AppNavbar';
 import * as Haptics from 'expo-haptics';
 import { appStorage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
+import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
 
@@ -54,6 +55,7 @@ const dividendSlides = [
 
 export const ReferralsScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [claimableAmount, setClaimableAmount] = useState<number>(0.0);
   const [claimedTotal, setClaimedTotal] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
@@ -209,13 +211,13 @@ export const ReferralsScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL matching real_web_referrals.png */}
           <View style={styles.carouselBannerCard}>
@@ -599,7 +601,7 @@ export const ReferralsScreen: React.FC = () => {
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,39 +8,59 @@ import {
   Alert,
   Linking,
   Platform,
+  Image,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle, Rect, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import {
   ArrowLeft,
   Check,
   Play,
+  Upload,
+  Camera,
+  X,
+  Clock,
+  CheckCircle2,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, SERVER_HOST } from '../config/api';
+import { appStorage } from '../utils/storage';
+import { useAppSafeArea } from '../utils/safeArea';
+
+const { width } = Dimensions.get('window');
 
 interface TaskItem {
   id: string;
   category: 'social' | 'video';
   title: string;
   description: string;
+  reward: number;
   rewardLabel: string;
   buttonLabel: string;
   url: string;
+  duration?: number;
   iconType: 'x' | 'instagram' | 'youtube' | 'telegram' | 'facebook' | 'tiktok' | 'video';
 }
 
-const TASKS_DATA: TaskItem[] = [
+const DEFAULT_TASKS_DATA: TaskItem[] = [
   {
     id: 'task_x',
     category: 'social',
     title: 'Follow us on X',
-    description: 'Follow the official GT...',
-    rewardLabel: '+2 GT',
+    description: 'Follow the official GT protocol account for instant announcements',
+    reward: 1,
+    rewardLabel: '+1 GT',
     buttonLabel: 'Follow on X',
     url: 'https://x.com',
     iconType: 'x',
@@ -49,7 +69,8 @@ const TASKS_DATA: TaskItem[] = [
     id: 'task_instagram',
     category: 'social',
     title: 'Follow on Instagram',
-    description: 'Join our official community',
+    description: 'Join our official global community',
+    reward: 2,
     rewardLabel: '+2 GT',
     buttonLabel: 'Follow',
     url: 'https://instagram.com',
@@ -58,8 +79,9 @@ const TASKS_DATA: TaskItem[] = [
   {
     id: 'task_youtube',
     category: 'social',
-    title: 'Subscribe on You...',
-    description: 'Subscribe to the GT ch...',
+    title: 'Subscribe on YouTube',
+    description: 'Subscribe to the GT channel for node guides',
+    reward: 2,
     rewardLabel: '+2 GT',
     buttonLabel: 'Subscribe',
     url: 'https://youtube.com',
@@ -69,7 +91,8 @@ const TASKS_DATA: TaskItem[] = [
     id: 'task_telegram',
     category: 'social',
     title: 'Join Telegram',
-    description: 'Join the official GT channel',
+    description: 'Join the official GT announcements channel',
+    reward: 1,
     rewardLabel: '+1 GT',
     buttonLabel: 'Join',
     url: 'https://t.me',
@@ -79,7 +102,8 @@ const TASKS_DATA: TaskItem[] = [
     id: 'task_facebook',
     category: 'social',
     title: 'Follow on Facebook',
-    description: 'Stay updated with GT news',
+    description: 'Stay updated with GT ecosystem news',
+    reward: 1,
     rewardLabel: '+1 GT',
     buttonLabel: 'Follow',
     url: 'https://facebook.com',
@@ -89,7 +113,8 @@ const TASKS_DATA: TaskItem[] = [
     id: 'task_tiktok',
     category: 'social',
     title: 'Follow on TikTok',
-    description: 'Discover GT short videos',
+    description: 'Discover GT short updates and viral reels',
+    reward: 1,
     rewardLabel: '+1 GT',
     buttonLabel: 'Follow',
     url: 'https://tiktok.com',
@@ -98,11 +123,13 @@ const TASKS_DATA: TaskItem[] = [
   {
     id: 'task_video',
     category: 'video',
-    title: 'Watch GT intr...',
-    description: 'Watch the assigned ...',
+    title: 'Watch GT introduction',
+    description: 'Watch the assigned video (15 seconds)',
+    reward: 2,
     rewardLabel: '+2 GT',
     buttonLabel: 'Watch video',
     url: '#',
+    duration: 15,
     iconType: 'video',
   },
 ];
@@ -119,7 +146,7 @@ const TASK_SLIDES = [
     id: 2,
     tag: 'GLOBAL COMMUNITY',
     title: 'Connect & Multiply',
-    description: 'Join official GT channels across X, Telegram, and...',
+    description: 'Join official GT channels across X, Telegram, and YouTube.',
     accentColor: '#38BDF8',
   },
   {
@@ -133,14 +160,30 @@ const TASK_SLIDES = [
 
 export const TasksScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState<'all' | 'social' | 'video'>('all');
-  const [currentSlide, setCurrentSlide] = useState(1);
-  const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
-  const [taskRewards, setTaskRewards] = useState<number>(0);
-  const [tasksList, setTasksList] = useState<TaskItem[]>(TASKS_DATA);
+  const { user, refreshUserData } = useAuth();
+  const { top, stackContentPaddingBottom, modalPaddingBottom } = useAppSafeArea();
 
-  // Auto-cycle slider
+  const [selectedTab, setSelectedTab] = useState<'all' | 'social' | 'video'>('all');
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Live tasks and backend-tracked submissions
+  const [tasksList, setTasksList] = useState<TaskItem[]>(DEFAULT_TASKS_DATA);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Proof Modal state
+  const [proofModalTask, setProofModalTask] = useState<TaskItem | null>(null);
+  const [proofImage, setProofImage] = useState<string>('');
+  const [proofNote, setProofNote] = useState<string>('');
+  const [submittingProof, setSubmittingProof] = useState<boolean>(false);
+
+  // Video Watching Quest Player state
+  const [activeVideoTask, setActiveVideoTask] = useState<TaskItem | null>(null);
+  const [watchingVideoModalTask, setWatchingVideoModalTask] = useState<TaskItem | null>(null);
+  const [videoTimer, setVideoTimer] = useState<number | null>(null);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
+
+  // Auto-cycle hero slider (4 seconds)
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % TASK_SLIDES.length);
@@ -148,26 +191,185 @@ export const TasksScreen: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch live tasks from backend API
-  useEffect(() => {
-    const fetchLiveTasks = async () => {
-      const endpoints = [
-        `${API_BASE_URL}/tasks`,
-        'http://localhost:5050/api/tasks',
-      ];
-      for (const endpoint of endpoints) {
+  // Fetch live tasks and user submissions from backend API
+  const fetchTasksAndSubmissions = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      // 1. Fetch public tasks
+      try {
+        const tasksRes = await fetch(`${API_BASE_URL}/tasks`);
+        const tasksData = await tasksRes.json();
+        if (tasksData && tasksData.success && Array.isArray(tasksData.tasks) && tasksData.tasks.length > 0) {
+          setTasksList(tasksData.tasks);
+        }
+      } catch {}
+
+      // 2. Fetch my submissions
+      if (token) {
         try {
-          const res = await fetch(endpoint);
-          const data = await res.json();
-          if (data && data.success && Array.isArray(data.tasks) && data.tasks.length > 0) {
-            setTasksList(data.tasks);
-            break;
+          const subsRes = await fetch(`${API_BASE_URL}/tasks/my-submissions`, {
+            headers: authHeaders,
+          });
+          const subsData = await subsRes.json();
+          if (subsData && subsData.success && Array.isArray(subsData.submissions)) {
+            setSubmissions(subsData.submissions);
           }
         } catch {}
       }
-    };
-    fetchLiveTasks();
+    } catch (err) {
+      console.error('Error fetching tasks data in mobile app:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasksAndSubmissions();
+    const interval = setInterval(fetchTasksAndSubmissions, 8000);
+    return () => clearInterval(interval);
   }, []);
+
+  // Video Countdown Timer Effect
+  useEffect(() => {
+    let interval: any = null;
+    if (activeVideoTask && videoTimer !== null && videoTimer > 0) {
+      interval = setInterval(() => {
+        setVideoTimer((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(interval);
+            setVideoProgress(100);
+            return 0;
+          }
+          const next = prev - 1;
+          const totalSec = (activeVideoTask as any).duration || 15;
+          setVideoProgress(Math.round(((totalSec - next) / totalSec) * 100));
+          return next;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [videoTimer, activeVideoTask]);
+
+  // Pick proof screenshot from phone gallery
+  const handlePickProofImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Please grant access to your photo library to select a verification screenshot.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const mimeType = asset.mimeType || 'image/jpeg';
+          setProofImage(`data:${mimeType};base64,${asset.base64}`);
+        } else if (asset.uri) {
+          setProofImage(asset.uri);
+        }
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to pick image from photo library.');
+    }
+  };
+
+  // Submit proof to backend API
+  const handleSubmitProof = async () => {
+    if (!proofModalTask) return;
+    if (!proofImage) {
+      Alert.alert('Screenshot Required', 'Please select a screenshot showing that you completed the task.');
+      return;
+    }
+
+    setSubmittingProof(true);
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const res = await fetch(`${API_BASE_URL}/tasks/submit-proof`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          taskId: proofModalTask.id,
+          proofImage,
+          proofNote,
+        }),
+      });
+
+      const data = await res.json();
+      if (data && data.success) {
+        Alert.alert(
+          '🎉 Proof Submitted!',
+          'Sent to admin for review. Your reward will be credited directly to your wallet upon approval.'
+        );
+        setProofModalTask(null);
+        setProofImage('');
+        setProofNote('');
+        await fetchTasksAndSubmissions();
+        refreshUserData();
+      } else {
+        throw new Error(data?.message || 'Failed to submit proof');
+      }
+    } catch (err: any) {
+      Alert.alert('Submission Error', err.message || 'Failed to submit task proof');
+    } finally {
+      setSubmittingProof(false);
+    }
+  };
+
+  // Handle Action Button on any Task
+  const handleTaskAction = (task: TaskItem) => {
+    const existingSub = submissions.find((s) => s.taskId === task.id);
+    if (existingSub?.status === 'APPROVED') {
+      Alert.alert('Completed', 'You have already completed this task and claimed your reward.');
+      return;
+    }
+
+    if (existingSub?.status === 'PENDING') {
+      Alert.alert('Under Review', 'Your proof is already submitted and pending admin review. You can re-upload if needed.');
+      setProofModalTask(task);
+      setProofImage(existingSub.proofImage || '');
+      setProofNote(existingSub.proofNote || '');
+      return;
+    }
+
+    // Video watch quest
+    if (task.category === 'video') {
+      const watchSec = (task as any).duration || 15;
+      setActiveVideoTask(task);
+      setVideoTimer((prev) => (activeVideoTask?.id === task.id && prev !== null ? prev : watchSec));
+      setVideoProgress((prev) => (activeVideoTask?.id === task.id ? prev : 0));
+      setWatchingVideoModalTask(task);
+      return;
+    }
+
+    // Social task: open external link then open proof modal
+    if (task.url && task.url.startsWith('http')) {
+      Linking.openURL(task.url).catch(() => {});
+    }
+
+    setProofModalTask(task);
+    setProofImage('');
+    setProofNote('');
+  };
 
   const filterTabs = [
     { key: 'all', label: 'All tasks' },
@@ -175,23 +377,21 @@ export const TasksScreen: React.FC = () => {
     { key: 'video', label: 'Video tasks' },
   ] as const;
 
-  const handleTaskAction = (task: TaskItem) => {
-    if (task.url && task.url.startsWith('http')) {
-      Linking.openURL(task.url).catch(() => {});
-    }
-    const rewardVal = task.rewardLabel.includes('+2') ? 2 : 1;
-    setCompletedTaskIds((prev) => ({ ...prev, [task.id]: true }));
-    setTaskRewards((prev) => prev + rewardVal);
-    Alert.alert('Task Completed!', `${task.rewardLabel} added to your task rewards.`);
-  };
-
   const filteredTasks = tasksList.filter((t) => {
     if (selectedTab === 'all') return true;
     return t.category === selectedTab;
   });
 
-  const completedCount = Object.keys(completedTaskIds).length;
+  const completedCount = submissions.filter((s) => s.status === 'APPROVED').length;
   const activeSlideData = TASK_SLIDES[currentSlide];
+
+  // Resolve absolute video URL if hosted on server
+  const resolveVideoUrl = (rawUrl: string) => {
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('http')) return rawUrl;
+    if (rawUrl.startsWith('/')) return `${SERVER_HOST}${rawUrl}`;
+    return rawUrl;
+  };
 
   const renderBrandIcon = (iconType: TaskItem['iconType']) => {
     switch (iconType) {
@@ -256,11 +456,11 @@ export const TasksScreen: React.FC = () => {
         );
       case 'tiktok':
         return (
-          <View style={[styles.brandIconBox, { backgroundColor: '#000000' }]}>
+          <View style={[styles.brandIconBox, { backgroundColor: '#000000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }]}>
             <Svg width={18} height={18} viewBox="0 0 24 24">
               <Path
                 fill="#FFFFFF"
-                d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.87-4.49V8.6a8.28 8.28 0 0 0 5.2 1.87v-3.78a4.84 4.84 0 0 1-1.3-.0z"
+                d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"
               />
             </Svg>
           </View>
@@ -272,7 +472,11 @@ export const TasksScreen: React.FC = () => {
           </View>
         );
       default:
-        return null;
+        return (
+          <View style={[styles.brandIconBox, { backgroundColor: '#14532D' }]}>
+            <Play size={18} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 2 }} />
+          </View>
+        );
     }
   };
 
@@ -280,13 +484,13 @@ export const TasksScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
         >
           {/* Breadcrumb Navigation Row matching website */}
           <View style={styles.subHeader}>
@@ -309,7 +513,6 @@ export const TasksScreen: React.FC = () => {
               end={{ x: 1, y: 1 }}
               style={styles.carouselInner}
             >
-              {/* Subtle ambient network glow */}
               <View style={styles.carouselGlow} pointerEvents="none" />
 
               <View style={styles.carouselTagBadge}>
@@ -318,20 +521,16 @@ export const TasksScreen: React.FC = () => {
               </View>
 
               <Text style={styles.carouselTitle}>{activeSlideData.title}</Text>
-              <Text style={styles.carouselDesc} numberOfLines={2}>
-                {activeSlideData.description}
-              </Text>
+              <Text style={styles.carouselDesc}>{activeSlideData.description}</Text>
 
-              {/* Indicator Dots at bottom */}
+              {/* Indicator Dots */}
               <View style={styles.dotsRow}>
-                {TASK_SLIDES.map((_, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => setCurrentSlide(idx)}
-                    activeOpacity={0.7}
+                {TASK_SLIDES.map((_, i) => (
+                  <View
+                    key={i}
                     style={[
                       styles.dot,
-                      currentSlide === idx ? styles.dotActive : styles.dotInactive,
+                      i === currentSlide ? styles.dotActive : styles.dotInactive,
                     ]}
                   />
                 ))}
@@ -339,31 +538,33 @@ export const TasksScreen: React.FC = () => {
             </LinearGradient>
           </View>
 
-          {/* 2. Tasks Rewards Summary Card matching website */}
-          <View style={styles.rewardsCard}>
-            <View style={styles.rewardsAmbientGlow} pointerEvents="none" />
-
-            <View style={styles.rewardsContentRow}>
-              <View style={styles.rewardsLeftCol}>
-                <View style={styles.rewardsBadge}>
-                  <Text style={styles.rewardsBadgeText}>COMMUNITY REWARDS</Text>
-                </View>
-
-                <Text style={styles.rewardsTitle}>Tasks to Earn GT</Text>
-                <Text style={styles.rewardsDesc} numberOfLines={1}>
-                  Complete social tasks, watch videos and...
+          {/* 2. Tasks Rewards Summary Card */}
+          <View style={styles.rewardsSummaryCard}>
+            <View style={styles.rewardsLeft}>
+              <View style={styles.communityRewardsTag}>
+                <Text style={styles.communityRewardsText}>COMMUNITY REWARDS</Text>
+              </View>
+              <Text style={styles.rewardsTitle}>Tasks to Earn GT</Text>
+              <Text style={styles.rewardsSubtitle}>
+                Complete social tasks, watch videos and grow with the GT community.
+              </Text>
+              <View style={styles.rewardsEarnedRow}>
+                <Text style={styles.rewardsEarnedLabel}>Your task rewards:</Text>
+                <Text style={styles.rewardsEarnedValue}>
+                  {submissions
+                    .filter((s) => s.status === 'APPROVED')
+                    .reduce((acc, s) => acc + Number(s.reward || 1), 0)
+                    .toFixed(2)}{' '}
+                  GT
                 </Text>
-
-                <View style={styles.taskRewardsRow}>
-                  <Text style={styles.taskRewardsLabel}>Your task rewards:</Text>
-                  <Text style={styles.taskRewardsValue}>{taskRewards.toFixed(2)} GT</Text>
+                <View style={styles.creditedPill}>
+                  <Text style={styles.creditedText}>Credited to Wallet</Text>
                 </View>
               </View>
+            </View>
 
-              {/* Right GT Brand Emblem */}
-              <View style={styles.rewardsRightEmblem}>
-                <Text style={styles.rewardsGtText}>GT</Text>
-              </View>
+            <View style={styles.rewardsBadgeRight}>
+              <Text style={styles.rewardsBadgeText}>GT</Text>
             </View>
           </View>
 
@@ -373,12 +574,14 @@ export const TasksScreen: React.FC = () => {
               <View style={{ gap: 2 }}>
                 <Text style={styles.sectionTitle}>DAILY & SOCIAL TASKS</Text>
                 <Text style={styles.sectionSubtitle}>
-                  Complete tasks and collect rewards
+                  Complete tasks and upload screenshot proof to collect wallet rewards
                 </Text>
               </View>
 
               <View style={styles.doneBadge}>
-                <Text style={styles.doneBadgeText}>{completedCount} / 7 DONE</Text>
+                <Text style={styles.doneBadgeText}>
+                  {completedCount} / {tasksList.length} DONE
+                </Text>
               </View>
             </View>
 
@@ -409,10 +612,14 @@ export const TasksScreen: React.FC = () => {
               })}
             </View>
 
-            {/* 4. Tasks List (Single compact horizontal card matching website) */}
+            {/* 4. Tasks List */}
             <View style={styles.tasksList}>
               {filteredTasks.map((task) => {
-                const isCompleted = !!completedTaskIds[task.id];
+                const sub = submissions.find((s) => s.taskId === task.id);
+                const isApproved = sub?.status === 'APPROVED';
+                const isPending = sub?.status === 'PENDING';
+                const isRejected = sub?.status === 'REJECTED';
+                const isVideoWatching = activeVideoTask?.id === task.id && videoTimer !== null;
 
                 return (
                   <View key={task.id} style={styles.taskCard}>
@@ -421,12 +628,30 @@ export const TasksScreen: React.FC = () => {
                       {renderBrandIcon(task.iconType)}
 
                       <View style={styles.taskInfoCol}>
-                        <Text style={styles.taskTitle} numberOfLines={1}>
-                          {task.title}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={styles.taskTitle} numberOfLines={1}>
+                            {task.title}
+                          </Text>
+                        </View>
                         <Text style={styles.taskDesc} numberOfLines={1}>
                           {task.description}
                         </Text>
+
+                        {/* Video Progress Bar */}
+                        {task.category === 'video' && (
+                          <View style={styles.videoProgressTrack}>
+                            <View
+                              style={[
+                                styles.videoProgressBar,
+                                {
+                                  width: isApproved
+                                    ? '100%'
+                                    : `${activeVideoTask?.id === task.id ? videoProgress : 0}%`,
+                                },
+                              ]}
+                            />
+                          </View>
+                        )}
                       </View>
                     </View>
 
@@ -434,11 +659,39 @@ export const TasksScreen: React.FC = () => {
                     <View style={styles.taskRightCol}>
                       <Text style={styles.rewardText}>{task.rewardLabel}</Text>
 
-                      {isCompleted ? (
+                      {isApproved ? (
                         <View style={styles.completedPill}>
                           <Check size={12} color="#15803D" strokeWidth={3} />
                           <Text style={styles.completedPillText}>Completed</Text>
                         </View>
+                      ) : isPending ? (
+                        <TouchableOpacity
+                          onPress={() => handleTaskAction(task)}
+                          style={styles.pendingPill}
+                          activeOpacity={0.8}
+                        >
+                          <Clock size={11} color="#B45309" />
+                          <Text style={styles.pendingPillText}>Under Review</Text>
+                        </TouchableOpacity>
+                      ) : isRejected ? (
+                        <TouchableOpacity
+                          onPress={() => handleTaskAction(task)}
+                          style={styles.rejectedPill}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.rejectedPillText}>Resubmit ↗</Text>
+                        </TouchableOpacity>
+                      ) : isVideoWatching ? (
+                        <TouchableOpacity
+                          onPress={() => setWatchingVideoModalTask(task)}
+                          style={styles.watchingPill}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.pingDot} />
+                          <Text style={styles.watchingPillText}>
+                            {videoTimer === 0 ? 'Done! Tap' : `${videoTimer}s...`}
+                          </Text>
+                        </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
                           onPress={() => handleTaskAction(task)}
@@ -457,17 +710,259 @@ export const TasksScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* 5. Reward Security Disclaimer matching website */}
+          {/* 5. Reward Security Disclaimer */}
           <View style={styles.securityBox}>
             <Text style={styles.securityText}>
-              <Text style={styles.securityTextBold}>Reward security: </Text>
-              This HTML is a front-end demo. A production app must verify follows, subscriptions, memberships and video completion with a trusted backend before crediting GT. Returning to this page alone is not proof of completion.
+              <Text style={styles.securityTextBold}>Reward Verification: </Text>
+              Tasks are verified by administrators via uploaded screenshot proof. Once approved, the reward amount is credited automatically into your wallet balance and lifetime earnings.
             </Text>
           </View>
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
+
+      {/* Task Proof Upload Modal */}
+      {proofModalTask && (
+        <Modal
+          visible={!!proofModalTask}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => !submittingProof && setProofModalTask(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.modalCenterWrapper}
+            >
+              <View style={styles.modalCard}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalHeaderTag}>TASK VERIFICATION REQUIRED</Text>
+                    <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                      {proofModalTask.title}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setProofModalTask(null)}
+                    disabled={submittingProof}
+                    style={styles.modalCloseBtn}
+                  >
+                    <X size={18} color="#4B5563" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Scrollable Form Body */}
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={[styles.modalScrollBody, { paddingBottom: modalPaddingBottom }]}
+                >
+                  {/* Reward Pill */}
+                  <View style={styles.modalRewardPill}>
+                    <Text style={styles.modalRewardLabel}>Completion Reward:</Text>
+                    <View style={styles.modalRewardBadge}>
+                      <Text style={styles.modalRewardBadgeText}>
+                        +{proofModalTask.reward}.00 GT (Credited to Wallet)
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.modalInstructions}>
+                    Please upload a screenshot showing that you completed this task (e.g. following, subscribing, or watching). Once reviewed and approved by the admin, your reward will be added directly into your wallet.
+                  </Text>
+
+                  {/* Screenshot Picker Card */}
+                  <TouchableOpacity
+                    onPress={handlePickProofImage}
+                    activeOpacity={0.85}
+                    style={[
+                      styles.screenshotDropArea,
+                      proofImage && styles.screenshotDropAreaActive,
+                    ]}
+                  >
+                    {proofImage ? (
+                      <View style={{ alignItems: 'center', width: '100%', gap: 8 }}>
+                        <Image
+                          source={{ uri: proofImage }}
+                          style={styles.proofPreviewImg}
+                          resizeMode="contain"
+                        />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <CheckCircle2 size={16} color="#15803D" />
+                          <Text style={styles.proofLoadedText}>Screenshot Loaded. Tap to change.</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={{ alignItems: 'center', gap: 6 }}>
+                        <View style={styles.cameraIconBox}>
+                          <Camera size={22} color="#15803D" />
+                        </View>
+                        <Text style={styles.uploadPromptTitle}>Upload Screenshot Proof</Text>
+                        <Text style={styles.uploadPromptSub}>Tap to pick PNG, JPG from photos</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Username / Handle (Optional) */}
+                  <View style={{ gap: 6 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={styles.inputLabel}>Your Social Handle / Username (Optional)</Text>
+                      <Text style={styles.inputSubLabel}>for faster verification</Text>
+                    </View>
+                    <TextInput
+                      value={proofNote}
+                      onChangeText={setProofNote}
+                      placeholder="e.g. @your_username or profile link"
+                      placeholderTextColor="#9CA3AF"
+                      style={styles.textInput}
+                    />
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.modalActionsRow}>
+                    <TouchableOpacity
+                      onPress={() => setProofModalTask(null)}
+                      disabled={submittingProof}
+                      style={styles.modalCancelBtn}
+                    >
+                      <Text style={styles.modalCancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={handleSubmitProof}
+                      disabled={submittingProof || !proofImage}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.modalSubmitBtn,
+                        (!proofImage || submittingProof) && { opacity: 0.5 },
+                      ]}
+                    >
+                      {submittingProof ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <>
+                          <Upload size={14} color="#FFFFFF" />
+                          <Text style={styles.modalSubmitBtnText}>Submit Proof to Admin</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </Modal>
+      )}
+
+      {/* Video Watch Quest Modal */}
+      {watchingVideoModalTask && (
+        <Modal
+          visible={!!watchingVideoModalTask}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setWatchingVideoModalTask(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.videoPlayerCard}>
+              {/* Header */}
+              <View style={styles.videoHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.videoHeaderTag}>VIDEO QUEST PLAYER</Text>
+                  <Text style={styles.videoHeaderTitle} numberOfLines={1}>
+                    {watchingVideoModalTask.title}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setWatchingVideoModalTask(null)}
+                  style={styles.videoCloseBtn}
+                >
+                  <X size={18} color="#D1D5DB" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[styles.modalScrollBody, { paddingBottom: modalPaddingBottom }]}
+              >
+                {/* Video Info Display */}
+                <View style={styles.videoScreenPlaceholder}>
+                  <Play size={36} color="#4ADE80" fill="#4ADE80" />
+                  <Text style={styles.videoPlayingTitle} numberOfLines={2}>
+                    {watchingVideoModalTask.title}
+                  </Text>
+                  <Text style={styles.videoPlayingUrl} numberOfLines={1}>
+                    {watchingVideoModalTask.url && watchingVideoModalTask.url !== '#'
+                      ? watchingVideoModalTask.url
+                      : 'GT Protocol Official Ecosystem Video'}
+                  </Text>
+                  {watchingVideoModalTask.url && watchingVideoModalTask.url.startsWith('http') && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(watchingVideoModalTask.url)}
+                      style={styles.externalVideoLinkBtn}
+                    >
+                      <ExternalLink size={13} color="#FFFFFF" />
+                      <Text style={styles.externalVideoLinkText}>Open Stream in Player / Browser</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Watch Progress Card */}
+                <View style={styles.watchProgressCard}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Clock size={14} color="#FBBF24" />
+                      <Text style={styles.watchProgressLabel}>Watch Progress</Text>
+                    </View>
+                    <Text style={styles.watchTimerValue}>
+                      {videoTimer === 0 ? '✓ Requirement Completed' : `${videoTimer}s remaining`}
+                    </Text>
+                  </View>
+
+                  <View style={styles.watchProgressBarTrack}>
+                    <View
+                      style={[
+                        styles.watchProgressBarFill,
+                        { width: `${videoProgress}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                <Text style={styles.videoHintText}>
+                  {videoTimer === 0
+                    ? `🎉 Watch completed! Tap below to submit your verification screenshot to claim +${watchingVideoModalTask.reward} GT.`
+                    : `Please watch for at least ${watchingVideoModalTask.duration || 15}s to complete task.`}
+                </Text>
+
+                {/* Actions */}
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity
+                    onPress={() => setWatchingVideoModalTask(null)}
+                    style={styles.modalCancelBtn}
+                  >
+                    <Text style={styles.modalCancelBtnText}>Close</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const currentTask = watchingVideoModalTask;
+                      setWatchingVideoModalTask(null);
+                      setProofModalTask(currentTask);
+                      setProofNote('Video completed');
+                      setProofImage('');
+                    }}
+                    style={styles.videoSubmitBtn}
+                  >
+                    <CheckCircle2 size={15} color="#07130D" />
+                    <Text style={styles.videoSubmitBtnText}>Submit Proof ↗</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -482,16 +977,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 110,
-    gap: 14,
+    paddingTop: 10,
+    gap: 16,
   },
   subHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
-    paddingVertical: 2,
   },
   backRow: {
     flexDirection: 'row',
@@ -500,59 +993,57 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 12.5,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1E5E36',
   },
   stationTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '900',
-    color: '#15803D',
     letterSpacing: 0.8,
+    color: '#15803D',
+    textTransform: 'uppercase',
   },
   carouselBannerCard: {
     borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowRadius: 20,
+    elevation: 6,
   },
   carouselInner: {
-    padding: 18,
-    minHeight: 155,
+    padding: 20,
+    minHeight: 165,
     justifyContent: 'flex-end',
     position: 'relative',
-    gap: 4,
+    gap: 6,
   },
   carouselGlow: {
     position: 'absolute',
-    top: -20,
-    right: -20,
+    bottom: -30,
+    left: -30,
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    backgroundColor: 'rgba(34, 197, 94, 0.25)',
   },
   carouselTagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 3.5,
-    borderRadius: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   carouselTagDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   carouselTagText: {
     fontSize: 9.5,
@@ -561,7 +1052,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   carouselTitle: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.3,
@@ -569,19 +1060,19 @@ const styles = StyleSheet.create({
   carouselDesc: {
     fontSize: 11.5,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.88)',
+    color: 'rgba(255, 255, 255, 0.85)',
     lineHeight: 16,
-    marginBottom: 6,
   },
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
+    gap: 6,
+    marginTop: 6,
+    alignSelf: 'center',
   },
   dot: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 3,
   },
   dotActive: {
     width: 18,
@@ -591,86 +1082,83 @@ const styles = StyleSheet.create({
     width: 5,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
-  rewardsCard: {
-    borderRadius: 24,
+  rewardsSummaryCard: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  rewardsAmbientGlow: {
-    position: 'absolute',
-    top: -15,
-    right: -15,
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#DCFCE7',
-  },
-  rewardsContentRow: {
+    borderRadius: 24,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  rewardsLeftCol: {
+  rewardsLeft: {
     flex: 1,
-    gap: 3,
-    paddingRight: 10,
+    gap: 4,
   },
-  rewardsBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+  communityRewardsTag: {
     backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 10,
     alignSelf: 'flex-start',
-    marginBottom: 2,
   },
-  rewardsBadgeText: {
-    fontSize: 9.5,
+  communityRewardsText: {
+    fontSize: 9,
     fontWeight: '900',
     color: '#15803D',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   rewardsTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '900',
     color: '#0A341B',
     letterSpacing: -0.3,
   },
-  rewardsDesc: {
-    fontSize: 11.5,
-    fontWeight: '500',
+  rewardsSubtitle: {
+    fontSize: 11,
     color: '#1E5E36',
+    fontWeight: '500',
   },
-  taskRewardsRow: {
+  rewardsEarnedRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     marginTop: 4,
   },
-  taskRewardsLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
+  rewardsEarnedLabel: {
+    fontSize: 11,
+    fontWeight: '700',
     color: '#1E5E36',
   },
-  taskRewardsValue: {
-    fontSize: 14,
+  rewardsEarnedValue: {
+    fontSize: 15,
     fontWeight: '900',
     color: '#0A341B',
   },
-  rewardsRightEmblem: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
+  creditedPill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+  },
+  creditedText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  rewardsBadgeRight: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     backgroundColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -678,10 +1166,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
-    elevation: 1,
+    elevation: 2,
+    marginLeft: 10,
   },
-  rewardsGtText: {
-    fontSize: 22,
+  rewardsBadgeText: {
+    fontSize: 18,
     fontWeight: '900',
     fontStyle: 'italic',
     color: '#15803D',
@@ -696,31 +1185,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   sectionTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '900',
     color: '#0A341B',
-    letterSpacing: 0.8,
+    letterSpacing: 0.3,
   },
   sectionSubtitle: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#1E5E36',
+    fontWeight: '500',
   },
   doneBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4.5,
-    borderRadius: 16,
     backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.35)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: '#E2E8F0',
   },
   doneBadgeText: {
-    fontSize: 11.5,
+    fontSize: 10,
     fontWeight: '900',
     color: '#0A341B',
   },
@@ -730,27 +1214,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tabPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 7.5,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
   },
   tabPillActive: {
     backgroundColor: '#14532D',
-    shadowColor: '#14532D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
   },
   tabPillInactive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '900',
   },
   tabTextActive: {
@@ -763,45 +1238,42 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   taskCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 2,
-    gap: 10,
   },
   taskLeftRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
-    minWidth: 0,
+    marginRight: 8,
   },
   brandIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 1,
+    elevation: 2,
   },
   taskInfoCol: {
     flex: 1,
     gap: 2,
-    minWidth: 0,
   },
   taskTitle: {
     fontSize: 13.5,
@@ -811,13 +1283,23 @@ const styles = StyleSheet.create({
   },
   taskDesc: {
     fontSize: 11,
+    color: 'rgba(30, 94, 54, 0.8)',
     fontWeight: '500',
-    color: '#6B7280',
+  },
+  videoProgressTrack: {
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  videoProgressBar: {
+    height: '100%',
+    backgroundColor: '#22C55E',
   },
   taskRightCol: {
     alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 4,
+    gap: 5,
     flexShrink: 0,
   },
   rewardText: {
@@ -827,19 +1309,12 @@ const styles = StyleSheet.create({
   },
   taskActionBtn: {
     backgroundColor: '#14532D',
-    paddingHorizontal: 12,
-    paddingVertical: 5.5,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   taskActionBtnText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '900',
     color: '#FFFFFF',
   },
@@ -847,10 +1322,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: '#DCFCE7',
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(34, 197, 94, 0.3)',
   },
@@ -859,17 +1334,66 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#15803D',
   },
-  securityBox: {
-    borderRadius: 20,
-    backgroundColor: '#F0FAF3',
+  pendingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#DCF2E4',
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  pendingPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#92400E',
+  },
+  rejectedPill: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  rejectedPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B91C1C',
+  },
+  watchingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.4)',
+  },
+  pingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F59E0B',
+  },
+  watchingPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B45309',
+  },
+  securityBox: {
+    backgroundColor: 'rgba(234, 248, 238, 0.85)',
+    borderRadius: 20,
     padding: 14,
-    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(134, 239, 172, 0.4)',
   },
   securityText: {
     fontSize: 11,
-    fontWeight: '500',
     color: '#1E5E36',
     lineHeight: 16,
   },
@@ -878,6 +1402,316 @@ const styles = StyleSheet.create({
     color: '#0A341B',
   },
   bottomSpacer: {
-    height: 30,
+    height: 10,
+  },
+
+  // Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCenterWrapper: {
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '88%',
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  modalHeaderTag: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#15803D',
+    letterSpacing: 0.8,
+  },
+  modalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0A341B',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  modalScrollBody: {
+    padding: 20,
+    gap: 14,
+  },
+  modalRewardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EAF8EE',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+  },
+  modalRewardLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0A341B',
+  },
+  modalRewardBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  modalRewardBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  modalInstructions: {
+    fontSize: 11.5,
+    color: '#1E5E36',
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+  screenshotDropArea: {
+    minHeight: 130,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  screenshotDropAreaActive: {
+    borderColor: '#22C55E',
+    backgroundColor: 'rgba(234, 248, 238, 0.4)',
+    borderStyle: 'solid',
+  },
+  cameraIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadPromptTitle: {
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#0A341B',
+  },
+  uploadPromptSub: {
+    fontSize: 10.5,
+    color: 'rgba(30, 94, 54, 0.7)',
+  },
+  proofPreviewImg: {
+    width: '100%',
+    height: 160,
+    borderRadius: 14,
+  },
+  proofLoadedText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  inputLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0A341B',
+  },
+  inputSubLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  textInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0A341B',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 6,
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  modalCancelBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  modalSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  modalSubmitBtnText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+
+  // Video Quest Player Modal
+  videoPlayerCard: {
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '90%',
+    backgroundColor: '#071F14',
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
+    overflow: 'hidden',
+  },
+  videoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  videoHeaderTag: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#4ADE80',
+    letterSpacing: 0.8,
+  },
+  videoHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 2,
+  },
+  videoCloseBtn: {
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  videoScreenPlaceholder: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000000',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  videoPlayingTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  videoPlayingUrl: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    textAlign: 'center',
+  },
+  externalVideoLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  externalVideoLinkText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#07130D',
+  },
+  watchProgressCard: {
+    backgroundColor: '#0B2A1C',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+    gap: 10,
+  },
+  watchProgressLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#A7C9B1',
+  },
+  watchTimerValue: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FBBF24',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  watchProgressBarTrack: {
+    height: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  watchProgressBarFill: {
+    height: '100%',
+    backgroundColor: '#4ADE80',
+  },
+  videoHintText: {
+    fontSize: 11,
+    color: '#A7C9B1',
+    lineHeight: 16,
+  },
+  videoSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#4ADE80',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  videoSubmitBtnText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#07130D',
   },
 });

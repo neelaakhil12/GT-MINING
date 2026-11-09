@@ -38,6 +38,7 @@ import { AppNavbar } from '../components/AppNavbar';
 import { OrbBackground } from '../components/OrbBackground';
 import { useAuth } from '../context/AuthContext';
 import { appStorage } from '../utils/storage';
+import { useAppSafeArea } from '../utils/safeArea';
 import { API_BASE_URL } from '../config/api';
 
 interface ChatMsg {
@@ -103,6 +104,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 export const PrivateNetworkScreen: React.FC = () => {
   const { user } = useAuth();
   const navigation = useNavigation<any>();
+  const { top, stackContentPaddingBottom } = useAppSafeArea();
 
   const [activeTab, setActiveTab] = useState<'CHAT' | 'STATUS'>('CHAT');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'IDLE'>('ALL');
@@ -322,7 +324,7 @@ export const PrivateNetworkScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* 1. Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
@@ -995,7 +997,7 @@ export const PrivateNetworkScreen: React.FC = () => {
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

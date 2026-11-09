@@ -29,10 +29,12 @@ import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../config/api';
 import { appStorage } from '../utils/storage';
+import { useAppSafeArea } from '../utils/safeArea';
 
 export const ProfileScreen: React.FC = () => {
   const { user, refreshUserData, logout } = useAuth();
   const navigation = useNavigation();
+  const { top, stackContentPaddingBottom } = useAppSafeArea();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [newEmail, setNewEmail] = useState('');
@@ -126,13 +128,13 @@ export const ProfileScreen: React.FC = () => {
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
         >
           {/* 1. Header Profile Summary Card matching video */}
           <View style={styles.headerProfileCard}>
@@ -307,7 +309,7 @@ export const ProfileScreen: React.FC = () => {
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };

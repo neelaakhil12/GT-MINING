@@ -25,14 +25,35 @@ import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { MiningGlobe3D } from '../components/MiningGlobe3D';
+import { useAppSafeArea } from '../utils/safeArea';
+import { API_BASE_URL } from '../config/api';
 import * as Haptics from 'expo-haptics';
 
 export const MiningScreen: React.FC = () => {
   const { user, miningStats, isMiningActive, startMiningSession } = useAuth();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const [isFastSpinning, setIsFastSpinning] = useState(false);
+
+  // Dynamic mining config from server
+  const [cycleHours, setCycleHours] = useState<number>(4);
+  const [cooldownSec, setCooldownSec] = useState<number>(14400);
+  const [rewardAmount, setRewardAmount] = useState<number>(1.0);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/mining/config`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success) {
+          if (data.cycleHours) setCycleHours(Number(data.cycleHours));
+          if (data.cooldownSeconds) setCooldownSec(Number(data.cooldownSeconds));
+          if (data.miningReward) setRewardAmount(Number(data.miningReward));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Pulse animation for active mining node
@@ -106,23 +127,23 @@ export const MiningScreen: React.FC = () => {
     Alert.alert('Mining Block Verified!', '+1.00 GT added to your balance.');
   };
 
-  // Progress percentage (4 hours = 14400s)
-  const totalCycleSec = 14400;
+  // Progress percentage (Dynamic cycle duration from backend)
+  const totalCycleSec = cooldownSec || 14400;
   const elapsedSec = Math.max(0, totalCycleSec - miningStats.cycleRemainingSeconds);
-  const progressPct = Math.min(100, Math.max(5, (elapsedSec / totalCycleSec) * 100));
+  const progressPct = isEligible ? 100 : Math.min(100, Math.max(5, (elapsedSec / totalCycleSec) * 100));
 
   return (
     <View style={styles.container}>
       <OrbBackground />
 
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View style={[styles.safeArea, { paddingTop: top }]}>
         {/* Universal Top Navbar */}
         <AppNavbar activeTab="App" />
 
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 matching website */}
           <View style={styles.networkSubHeader}>
@@ -145,7 +166,7 @@ export const MiningScreen: React.FC = () => {
               </View>
 
               <View style={styles.ratePillBadge}>
-                <Text style={styles.rateBadgeText}>Rate: +24.00 GT / 4h</Text>
+                <Text style={styles.rateBadgeText}>Rate: +{rewardAmount.toFixed(2)} GT / {cycleHours}h</Text>
               </View>
             </View>
 
@@ -216,7 +237,7 @@ export const MiningScreen: React.FC = () => {
               <Text style={styles.progressPercentText}>
                 Progress <Text style={styles.boldPercentText}>{progressPct.toFixed(1)}%</Text>
               </Text>
-              <Text style={styles.cycleRewardBadgeText}>Cycle Reward +24.00 GT</Text>
+              <Text style={styles.cycleRewardBadgeText}>Cycle Reward +{rewardAmount.toFixed(2)} GT</Text>
             </View>
 
             <View style={styles.dashedDivider} />
@@ -267,19 +288,19 @@ export const MiningScreen: React.FC = () => {
                   ]}
                 >
                   {isEligible
-                    ? 'Activate 4-Hour Mining (+1.0 GT)'
+                    ? `Activate ${cycleHours}-Hour Mining (+${rewardAmount.toFixed(1)} GT)`
                     : `Mining Active (${formatCountdown(miningStats.cycleRemainingSeconds)})`}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
             <Text style={styles.actionHintText}>
               {isEligible
-                ? 'Tap above to activate mining session and test live block animation'
+                ? `Tap above to activate ${cycleHours}-hour mining session and test live block animation`
                 : `Mining session in progress. Next claim unlock in ${formatCountdown(miningStats.cycleRemainingSeconds)}`}
             </Text>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };
