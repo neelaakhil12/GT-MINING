@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.35,
     shadowRadius: 28,
-    elevation: 8,
   },
   orbMedium: {
     position: 'absolute',
@@ -139,7 +138,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.3,
     shadowRadius: 22,
-    elevation: 6,
   },
   orbSmall: {
     position: 'absolute',

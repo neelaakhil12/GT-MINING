@@ -112,6 +112,13 @@ export const PrivateNetworkScreen: React.FC = () => {
   const [members, setMembers] = useState<MemberItem[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>(DEFAULT_QUICK_REPLIES);
+  const [circleHost, setCircleHost] = useState<{
+    id: string;
+    fullName: string;
+    email?: string;
+    referralCode?: string;
+    isCurrentUserHost?: boolean;
+  } | null>(null);
 
   const [inputText, setInputText] = useState('');
   const [showQuickSheet, setShowQuickSheet] = useState(false);
@@ -138,6 +145,9 @@ export const PrivateNetworkScreen: React.FC = () => {
           });
           const json = await res.json();
           if (json && json.success) {
+            if (json.circleHost) {
+              setCircleHost(json.circleHost);
+            }
             if (Array.isArray(json.members)) {
               setMembers(json.members.map((m: any) => ({
                 id: m.id,
@@ -201,8 +211,10 @@ export const PrivateNetworkScreen: React.FC = () => {
     const text = (textToSend || inputText).trim();
     if (!text) return;
 
-    const senderName = user?.fullName || 'Circle Host';
-    const senderAvatar = senderName.charAt(0).toUpperCase();
+    const isCurrentUserHost = circleHost?.isCurrentUserHost !== false;
+    const myRole = isCurrentUserHost ? 'HOST' : 'MEMBER';
+    const senderName = user?.fullName || (isCurrentUserHost ? 'Circle Host' : 'Miner');
+    const senderAvatar = user?.avatar || user?.profileImage || senderName.charAt(0).toUpperCase();
 
     const now = new Date();
     const hours = now.getHours();
@@ -214,9 +226,9 @@ export const PrivateNetworkScreen: React.FC = () => {
 
     const newMsg: ChatMsg = {
       id: `msg_${Date.now()}`,
-      senderId: user?.id || 'host_1',
+      senderId: user?.id || 'usr_me',
       senderName,
-      senderRole: 'HOST',
+      senderRole: myRole,
       senderAvatar,
       text,
       type,
@@ -255,8 +267,10 @@ export const PrivateNetworkScreen: React.FC = () => {
   };
 
   const handlePingMember = async (member: MemberItem) => {
-    const senderName = user?.fullName || 'Circle Host';
-    const senderAvatar = senderName.charAt(0).toUpperCase();
+    const isCurrentUserHost = circleHost?.isCurrentUserHost !== false;
+    const myRole = isCurrentUserHost ? 'HOST' : 'MEMBER';
+    const senderName = user?.fullName || (isCurrentUserHost ? 'Circle Host' : 'Miner');
+    const senderAvatar = user?.avatar || user?.profileImage || senderName.charAt(0).toUpperCase();
 
     const now = new Date();
     const hours = now.getHours();
@@ -270,9 +284,9 @@ export const PrivateNetworkScreen: React.FC = () => {
 
     const pingMsg: ChatMsg = {
       id: `msg_ping_${Date.now()}`,
-      senderId: user?.id || 'host_1',
+      senderId: user?.id || 'usr_me',
       senderName,
-      senderRole: 'HOST',
+      senderRole: myRole,
       senderAvatar,
       text: pingText,
       type: 'REMINDER',
@@ -313,7 +327,7 @@ export const PrivateNetworkScreen: React.FC = () => {
   };
 
   const copyReferralCode = () => {
-    const code = user?.referralCode || 'GTMINING';
+    const code = circleHost?.referralCode || user?.referralCode || 'GTMINING';
     Clipboard.setString(code);
     setCopiedCode(true);
     Alert.alert('Referral Code Copied!', code);
@@ -332,9 +346,16 @@ export const PrivateNetworkScreen: React.FC = () => {
         <View style={styles.subHeader}>
           <View style={styles.subHeaderLeft}>
             <TouchableOpacity
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate('MainTabs');
+                }
+              }}
               style={styles.backButton}
               activeOpacity={0.8}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <ArrowLeft size={18} color="#1E5E36" />
             </TouchableOpacity>
@@ -346,7 +367,7 @@ export const PrivateNetworkScreen: React.FC = () => {
             >
               <View style={styles.leaderAvatarBox}>
                 <Text style={styles.leaderAvatarText}>
-                  {(user?.fullName || 'H').charAt(0).toUpperCase()}
+                  {(circleHost?.fullName || user?.fullName || 'H').charAt(0).toUpperCase()}
                 </Text>
                 <View style={styles.onlineBadgeRing} />
               </View>
@@ -452,21 +473,21 @@ export const PrivateNetworkScreen: React.FC = () => {
                 </View>
               }
               renderItem={({ item }) => {
-                const isHost = item.senderRole === 'HOST';
+                const isMyMessage = item.senderId === user?.id;
                 const isReminder = item.type === 'REMINDER';
 
                 return (
                   <View
                     style={[
                       styles.messageRow,
-                      isHost ? styles.messageRowHost : styles.messageRowMember,
+                      isMyMessage ? styles.messageRowHost : styles.messageRowMember,
                     ]}
                   >
-                    {/* Member Avatar on Left */}
-                    {!isHost && (
+                    {/* Other Member Avatar on Left */}
+                    {!isMyMessage && (
                       <View style={styles.memberAvatarBox}>
                         <Text style={styles.memberAvatarText}>
-                          {item.senderAvatar}
+                          {item.senderAvatar || (item.senderName ? item.senderName.charAt(0).toUpperCase() : 'M')}
                         </Text>
                       </View>
                     )}
@@ -475,17 +496,22 @@ export const PrivateNetworkScreen: React.FC = () => {
                     <View
                       style={[
                         styles.bubbleWrapper,
-                        isHost ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
+                        isMyMessage ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
                       ]}
                     >
                       {/* Name + Time Row */}
                       <View
                         style={[
                           styles.bubbleHeaderRow,
-                          isHost ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
+                          isMyMessage ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
                         ]}
                       >
                         <Text style={styles.senderNameText}>{item.senderName}</Text>
+                        {item.senderRole === 'HOST' && (
+                          <View style={styles.hostBadge}>
+                            <Text style={styles.hostBadgeText}>HOST</Text>
+                          </View>
+                        )}
                         <Text style={styles.messageTimeText}>{item.time}</Text>
                       </View>
 
@@ -493,7 +519,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                       <View
                         style={[
                           styles.bubbleBox,
-                          isHost ? styles.bubbleBoxHost : styles.bubbleBoxMember,
+                          isMyMessage ? styles.bubbleBoxHost : styles.bubbleBoxMember,
                           isReminder && styles.bubbleBoxReminder,
                         ]}
                       >
@@ -509,7 +535,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                         <Text
                           style={[
                             styles.bubbleText,
-                            isHost ? styles.bubbleTextHost : styles.bubbleTextMember,
+                            isMyMessage ? styles.bubbleTextHost : styles.bubbleTextMember,
                           ]}
                         >
                           {item.text}
@@ -534,10 +560,12 @@ export const PrivateNetworkScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    {/* Host Avatar on Right */}
-                    {isHost && (
+                    {/* My Avatar on Right */}
+                    {isMyMessage && (
                       <View style={styles.hostAvatarBox}>
-                        <Text style={styles.hostAvatarText}>A</Text>
+                        <Text style={styles.hostAvatarText}>
+                          {item.senderAvatar || (user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U')}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -921,13 +949,13 @@ export const PrivateNetworkScreen: React.FC = () => {
               <View style={styles.modalHostCard}>
                 <View style={styles.modalHostAvatar}>
                   <Text style={styles.modalHostAvatarText}>
-                    {(user?.fullName || 'H').charAt(0).toUpperCase()}
+                    {(circleHost?.fullName || user?.fullName || 'H').charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.modalHostInfo}>
                   <View style={styles.modalHostNameRow}>
                     <Text style={styles.modalHostName}>
-                      {user?.fullName || 'Circle Host'}
+                      {circleHost?.fullName || user?.fullName || 'Circle Host'}
                     </Text>
                     <View style={styles.modalLeaderBadge}>
                       <Text style={styles.modalLeaderBadgeText}>Leader</Text>
@@ -940,7 +968,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                       style={styles.modalCodeBox}
                     >
                       <Text style={styles.modalCodeText}>
-                        {user?.referralCode || 'GTMINING'}
+                        {circleHost?.referralCode || user?.referralCode || 'GTMINING'}
                       </Text>
                       {copiedCode ? (
                         <Check size={11} color="#16A34A" />
@@ -1009,6 +1037,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    zIndex: 10,
   },
 
   /* 2. Subheader */
@@ -1019,6 +1048,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     width: '100%',
+    zIndex: 20,
   },
   subHeaderLeft: {
     flexDirection: 'row',

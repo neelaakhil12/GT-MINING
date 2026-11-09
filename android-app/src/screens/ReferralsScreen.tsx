@@ -10,6 +10,7 @@ import {
   Share,
   Platform,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -197,10 +198,88 @@ export const ReferralsScreen: React.FC = () => {
     }
   };
 
+  const shareMessage = `⛏️ Join me on GT Mining! Mine virtual GT coins every 4 hours. Use referral code: ${referralCode}\n${referralLink}`;
+  const encodedText = encodeURIComponent(shareMessage);
+
+  const shareWhatsApp = async () => {
+    const appUrl = `whatsapp://send?text=${encodedText}`;
+    const webUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    try {
+      const supported = await Linking.canOpenURL(appUrl);
+      if (supported) {
+        await Linking.openURL(appUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch {
+      await Linking.openURL(webUrl);
+    }
+  };
+
+  const shareTelegram = async () => {
+    const appUrl = `tg://msg?text=${encodedText}`;
+    const webUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`⛏️ Join me on GT Mining! Use referral code: ${referralCode}`)}`;
+    try {
+      const supported = await Linking.canOpenURL(appUrl);
+      if (supported) {
+        await Linking.openURL(appUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch {
+      await Linking.openURL(webUrl);
+    }
+  };
+
+  const shareTwitter = async () => {
+    const appUrl = `twitter://post?message=${encodedText}`;
+    const webUrl = `https://twitter.com/intent/tweet?text=${encodedText}`;
+    try {
+      const supported = await Linking.canOpenURL(appUrl);
+      if (supported) {
+        await Linking.openURL(appUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch {
+      await Linking.openURL(webUrl);
+    }
+  };
+
+  const shareInstagram = async () => {
+    try {
+      Clipboard.setString(referralLink);
+      Alert.alert(
+        'Link Copied for Instagram!',
+        'Your referral link has been copied to clipboard. Opening Instagram so you can paste it in your Story sticker or DM/Bio.',
+        [
+          {
+            text: 'Open Instagram',
+            onPress: async () => {
+              const appUrl = 'instagram://app';
+              const webUrl = 'https://www.instagram.com';
+              try {
+                const supported = await Linking.canOpenURL(appUrl);
+                if (supported) {
+                  await Linking.openURL(appUrl);
+                } else {
+                  await Linking.openURL(webUrl);
+                }
+              } catch {
+                await Linking.openURL(webUrl);
+              }
+            },
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    } catch {}
+  };
+
   const handleNativeShare = async () => {
     try {
       await Share.share({
-        message: `Mine virtual GT coins every 4 hours! Use referral code: ${referralCode} - ${referralLink}`,
+        message: shareMessage,
       });
     } catch (e) {}
   };
@@ -359,7 +438,7 @@ export const ReferralsScreen: React.FC = () => {
             <View style={styles.socialButtonsRow}>
               {/* WhatsApp */}
               <TouchableOpacity
-                onPress={handleNativeShare}
+                onPress={shareWhatsApp}
                 style={styles.socialBtn}
                 activeOpacity={0.8}
               >
@@ -377,7 +456,7 @@ export const ReferralsScreen: React.FC = () => {
 
               {/* Telegram */}
               <TouchableOpacity
-                onPress={handleNativeShare}
+                onPress={shareTelegram}
                 style={styles.socialBtn}
                 activeOpacity={0.8}
               >
@@ -392,7 +471,7 @@ export const ReferralsScreen: React.FC = () => {
 
               {/* Twitter / X */}
               <TouchableOpacity
-                onPress={handleNativeShare}
+                onPress={shareTwitter}
                 style={styles.socialBtn}
                 activeOpacity={0.8}
               >
@@ -406,7 +485,7 @@ export const ReferralsScreen: React.FC = () => {
 
               {/* Instagram */}
               <TouchableOpacity
-                onPress={handleNativeShare}
+                onPress={shareInstagram}
                 style={styles.socialBtn}
                 activeOpacity={0.8}
               >

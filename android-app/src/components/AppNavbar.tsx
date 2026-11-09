@@ -28,6 +28,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
         onPress={() => navigation.navigate('MainTabs')}
         activeOpacity={0.8}
         style={styles.logoBtn}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Image
           source={require('../../assets/gt-logo.png')}
@@ -42,6 +43,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
           onPress={() => navigation.navigate('MainTabs')}
           style={[styles.pillBtn, activeTab === 'App' && styles.pillBtnActive]}
           activeOpacity={0.85}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Text
             style={[
@@ -57,6 +59,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
           onPress={() => navigation.navigate('Wallet')}
           style={[styles.pillBtn, activeTab === 'Wallet' && styles.pillBtnActive]}
           activeOpacity={0.85}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Text
             style={[
@@ -75,6 +78,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ activeTab = 'App' }) => {
           onPress={() => navigation.navigate('Profile')}
           style={styles.avatarCircle}
           activeOpacity={0.8}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Profile"
         >
           {user?.avatar || user?.profileImage || user?.avatarUrl ? (
@@ -102,12 +106,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.95)',
-    zIndex: 50,
+    zIndex: 100,
     shadowColor: '#166534',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 4,
   },
   logoBtn: {
     width: 38,
