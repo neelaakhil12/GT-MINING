@@ -32,11 +32,11 @@
     "plugins": [
       "@react-native-google-signin/google-signin"
     ],
+    "owner": "neelaakhil12",
     "extra": {
       "eas": {
-        "projectId": "0ce96532-48cd-490b-84c7-fa7ff61e34b7"
+        "projectId": "b9282fb3-3e05-4484-9125-7ec714fcfd3f"
       }
-    },
-    "owner": "student222"
+    }
   }
 }
