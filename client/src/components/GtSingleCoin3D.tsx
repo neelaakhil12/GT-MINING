@@ -348,3 +348,4 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
     </div>
   );
 };
+

@@ -7,12 +7,16 @@ import {
   Mail,
   Lock,
   User,
+  Phone,
   Gift,
   AlertCircle,
   Eye,
   EyeOff,
   Sparkles,
   ShieldCheck,
+  CheckCircle2,
+  RefreshCw,
+  ArrowLeft,
   Zap,
   Globe,
   Coins,
@@ -109,7 +113,7 @@ const getInitialSlides = (): OnboardingSlide[] => {
 };
 
 export const LandingPage: React.FC = () => {
-  const { user, isAuthenticated, login, signup, googleLogin } = useAuth();
+  const { user, isAuthenticated, login, signup, completeSignup, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -215,22 +219,51 @@ export const LandingPage: React.FC = () => {
 
   // Auth form states
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [signupStep, setSignupStep] = useState<'DETAILS' | 'OTP' | 'PASSWORD'>('DETAILS');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [signupCountdown, setSignupCountdown] = useState(60);
+  const [canResendSignupOtp, setCanResendSignupOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Prevent browser autofill injection on page load
   const [unlocked, setUnlocked] = useState(false);
 
+  // Signup OTP countdown timer
+  useEffect(() => {
+    let interval: any = null;
+    if (authMode === 'signup' && signupStep === 'OTP' && signupCountdown > 0) {
+      interval = setInterval(() => {
+        setSignupCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResendSignupOtp(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [authMode, signupStep, signupCountdown]);
+
   useEffect(() => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setPhone('');
+    setOtpCode('');
+    setSignupStep('DETAILS');
+    setError(null);
     const timer = setTimeout(() => setUnlocked(true), 350);
     const handleTouch = () => setUnlocked(true);
     window.addEventListener('click', handleTouch, { once: true });
@@ -353,7 +386,112 @@ export const LandingPage: React.FC = () => {
     }
   };
 
-  const handleSignupSubmit = async (e: React.FormEvent) => {
+  // Step 1: Send OTP to email
+  const handleSendSignupOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!fullName.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!phone.trim() || phone.trim().length < 8) {
+      setError('Please enter a valid phone number (at least 8 digits).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.sendSignupOtp({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        referralCode: referralCode.trim() || undefined,
+      });
+
+      if (res.success) {
+        showToast(`Verification code sent to ${email.trim()}!`, 'success');
+        setSignupStep('OTP');
+        setSignupCountdown(60);
+        setCanResendSignupOtp(false);
+        setOtpCode('');
+      } else {
+        setError(res.message || 'Failed to send verification code.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send verification code.');
+      showToast(err.message || 'Error sending OTP', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const handleResendSignupOtp = async () => {
+    if (!canResendSignupOtp || loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await api.sendSignupOtp({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        referralCode: referralCode.trim() || undefined,
+      });
+
+      if (res.success) {
+        showToast('New verification code sent! Check your inbox.', 'success');
+        setSignupCountdown(60);
+        setCanResendSignupOtp(false);
+        setOtpCode('');
+      } else {
+        setError(res.message || 'Could not resend code.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP
+  const handleVerifySignupOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const cleanCode = otpCode.trim();
+    if (cleanCode.length !== 6) {
+      setError('Please enter the full 6-digit verification code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.verifySignupOtp({
+        email: email.trim().toLowerCase(),
+        otpCode: cleanCode,
+      });
+
+      if (res.success) {
+        showToast('Email verified successfully! Now set your password.', 'success');
+        setSignupStep('PASSWORD');
+      } else {
+        setError(res.message || 'Invalid verification code.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Verification failed. Please check your code.');
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Complete signup
+  const handleCompleteSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -368,13 +506,12 @@ export const LandingPage: React.FC = () => {
 
     setLoading(true);
     try {
-      await signup({
-        fullName,
-        email,
+      await completeSignup({
+        email: email.trim().toLowerCase(),
         password,
         confirmPassword,
-        referralCode: referralCode.trim() || undefined,
       });
+
       showToast('Account created! Welcome to GT Mining!', 'success');
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
@@ -671,7 +808,11 @@ export const LandingPage: React.FC = () => {
           <p className="text-xs text-[#1E5E36] font-medium">
             {authMode === 'login'
               ? 'Access your GT coin wallet & 4-hour mining node'
-              : 'Join the decentralized GT mining peer network'}
+              : signupStep === 'DETAILS'
+              ? 'Step 1 of 3: Enter profile details'
+              : signupStep === 'OTP'
+              ? 'Step 2 of 3: Verify email with 6-digit OTP'
+              : 'Step 3 of 3: Create account password'}
           </p>
         </div>
 
@@ -788,129 +929,268 @@ export const LandingPage: React.FC = () => {
             </button>
           </form>
         ) : (
-          /* SIGNUP FORM */
-          <form onSubmit={handleSignupSubmit} autoComplete="off" className="space-y-3">
-            {/* Decoy inputs to trap browser autofill */}
-            <input type="text" name="fake_landing_signup_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-            <input type="password" name="fake_landing_signup_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
-                  type="text"
-                  name="gt_landing_signup_name"
-                  autoComplete="off"
-                  readOnly={!unlocked}
-                  onFocus={() => setUnlocked(true)}
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Arjun Reddy"
-                  className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                />
-              </div>
+          /* MULTI-STEP SIGNUP FORM */
+          <div className="space-y-3.5">
+            {/* Step Progress Indicators */}
+            <div className="flex items-center justify-between gap-1.5 px-1 pb-1">
+              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'DETAILS' || signupStep === 'OTP' || signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
+              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'OTP' || signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
+              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
-                  type="email"
-                  name="gt_landing_signup_email"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  readOnly={!unlocked}
-                  onFocus={() => setUnlocked(true)}
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="miner@example.com"
-                  className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                />
-              </div>
-            </div>
+            {/* ======================================================== */}
+            {/* STEP 1: DETAILS (Name, Email, Phone, Referral) */}
+            {/* ======================================================== */}
+            {signupStep === 'DETAILS' && (
+              <form onSubmit={handleSendSignupOtp} autoComplete="off" className="space-y-3">
+                {/* Decoy inputs */}
+                <input type="text" name="fake_landing_signup_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
+                <input type="password" name="fake_landing_signup_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-3 pointer-events-none" />
-                  <input
-                    type="password"
-                    name="gt_landing_signup_pwd"
-                    autoComplete="new-password"
-                    readOnly={!unlocked}
-                    onFocus={() => setUnlocked(true)}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white border border-neutral-200 text-xs text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                  />
+                {/* Full Name */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      type="text"
+                      name="gt_landing_signup_name"
+                      autoComplete="off"
+                      readOnly={!unlocked}
+                      onFocus={() => setUnlocked(true)}
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Enter miner name"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                  Confirm
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-3 pointer-events-none" />
-                  <input
-                    type="password"
-                    name="gt_landing_signup_conf"
-                    autoComplete="new-password"
-                    readOnly={!unlocked}
-                    onFocus={() => setUnlocked(true)}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white border border-neutral-200 text-xs text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                  />
+                {/* Email Address */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      type="email"
+                      name="gt_landing_signup_email"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      readOnly={!unlocked}
+                      onFocus={() => setUnlocked(true)}
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="miner@example.com"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                Referral Code (Optional)
-              </label>
-              <div className="relative">
-                <Gift className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3 pointer-events-none" />
-                <input
-                  type="text"
-                  name="gt_landing_signup_ref"
-                  autoComplete="off"
-                  readOnly={!unlocked}
-                  onFocus={() => setUnlocked(true)}
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  placeholder="GT-VIP-779"
-                  className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white border border-neutral-200 font-mono text-xs text-[#0A341B] uppercase focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                />
-              </div>
-            </div>
+                {/* Phone Number */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      type="tel"
+                      name="gt_landing_signup_phone"
+                      autoComplete="off"
+                      readOnly={!unlocked}
+                      onFocus={() => setUnlocked(true)}
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Enter mobile number"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50"
-            >
-              {loading ? 'Creating Node...' : 'Register Mining Account'}
-            </button>
-          </form>
+                {/* Referral Code */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Referral Code (Optional)
+                  </label>
+                  <div className="relative">
+                    <Gift className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      name="gt_landing_signup_ref"
+                      autoComplete="off"
+                      readOnly={!unlocked}
+                      onFocus={() => setUnlocked(true)}
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="GT-VIP-779"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 font-mono text-xs text-[#0A341B] uppercase focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 mt-1 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>{loading ? 'Sending Code...' : 'Send Verification Code'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+
+            {/* ======================================================== */}
+            {/* STEP 2: OTP VERIFICATION */}
+            {/* ======================================================== */}
+            {signupStep === 'OTP' && (
+              <form onSubmit={handleVerifySignupOtp} className="space-y-4">
+                <div className="p-3 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 text-center space-y-1">
+                  <div className="text-xs font-bold text-[#0A341B]">Code sent to {email}</div>
+                  <div className="text-[11px] text-[#1E5E36]">Please enter the 6-digit verification code below</div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D] text-center block">
+                    6-Digit Email Code
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck className="w-5 h-5 text-[#16A34A] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      maxLength={6}
+                      autoFocus
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••••"
+                      className="w-full py-2.5 px-10 rounded-2xl bg-white border-2 border-[#22C55E]/50 text-center text-xl font-mono font-black tracking-[8px] text-[#0A341B] focus:outline-none focus:border-[#22C55E]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setSignupStep('DETAILS');
+                    }}
+                    className="flex items-center gap-1 font-bold text-[#1E5E36] hover:text-[#0A341B] cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Edit Details</span>
+                  </button>
+
+                  {canResendSignupOtp ? (
+                    <button
+                      type="button"
+                      onClick={handleResendSignupOtp}
+                      disabled={loading}
+                      className="flex items-center gap-1 font-black text-[#16A34A] hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Resend Code</span>
+                    </button>
+                  ) : (
+                    <span className="text-neutral-500 font-semibold text-[11px]">
+                      Resend in <strong className="text-[#0A341B] font-mono">{signupCountdown}s</strong>
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otpCode.length !== 6}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{loading ? 'Verifying...' : 'Verify Code & Continue'}</span>
+                </button>
+              </form>
+            )}
+
+            {/* ======================================================== */}
+            {/* STEP 3: CREATE PASSWORD */}
+            {/* ======================================================== */}
+            {signupStep === 'PASSWORD' && (
+              <form onSubmit={handleCompleteSignup} autoComplete="off" className="space-y-3.5">
+                <div className="p-2.5 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 text-center text-xs font-bold text-[#16A34A]">
+                  Email Verified ✓! Set your secure password:
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Password (min 6 characters)
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Complete Button */}
+                <button
+                  type="submit"
+                  disabled={loading || password.length < 6 || password !== confirmPassword}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 mt-1 cursor-pointer"
+                >
+                  {loading ? 'Creating Account...' : 'Complete Registration & Start Mining'}
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         {/* Divider */}

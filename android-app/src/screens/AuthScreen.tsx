@@ -718,7 +718,7 @@ export const AuthScreen: React.FC = () => {
                             <UserIcon size={16} color="#16A34A" style={styles.inputIcon} />
                             <TextInput
                               style={styles.input}
-                              placeholder="e.g. Rahul Sharma"
+                              placeholder="Enter miner name"
                               placeholderTextColor="#9CA3AF"
                               value={fullName}
                               onChangeText={setFullName}
