@@ -115,7 +115,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           height: coinSize,
           borderRadius: coinSize / 2,
           backfaceVisibility: 'hidden',
-          transform: isBack ? [{ rotateY: '180deg' }] : [],
+          transform: isBack ? [{ rotateX: '180deg' }] : [],
         },
       ]}
     >
@@ -193,9 +193,9 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             transform: [
               { translateY },
               { perspective: 900 },
-              { rotateX: '22deg' }, // Tilted forward like reference video
-              { rotateZ: '-12deg' }, // Dynamic slant like reference video
-              { rotateY: spin },     // Smooth 360 3D spin
+              { rotateY: '24deg' },  // Isometric 3D angle so edge thickness is visible
+              { rotateZ: '-10deg' }, // Dynamic tilt
+              { rotateX: spin },     // Continuous horizontal flip around horizontal X axis
             ],
           },
         ]}
