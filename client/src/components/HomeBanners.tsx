@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { GtLogo } from './GtLogo';
 import { GtCoinStream3D } from './GtCoinStream3D';
-import { GtCoinOrbitWeb } from './GtCoinOrbitWeb';
+import { GtSingleCoin3D } from './GtSingleCoin3D';
 import { api } from '../services/api';
 
 interface CryptoRate {
@@ -290,15 +290,15 @@ export const HomeBanners: React.FC = () => {
         {/* 2 cards side-by-side on mobile, responsive grid on desktop */}
         <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
           
-          {/* Card 1: GT with 3D Animated Coin Stream */}
+          {/* Card 1: GT with 3D Animated Single Coin */}
           <div className="relative overflow-hidden w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/95 border border-white shadow-sm flex flex-col justify-between gap-2.5 group">
-            {/* 3D Animated GT Coins Orbit with continuous loop & crystal logo */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-              <GtCoinOrbitWeb width={150} height={110} />
+            {/* 3D Animated Single GT Coin with 3D rotation & GT logo */}
+            <div className="absolute -right-1 top-0 z-0 pointer-events-none">
+              <GtSingleCoin3D width={105} height={92} />
             </div>
 
             {/* Subtle ambient corner glow */}
-            <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#22C55E]/12 rounded-full blur-xl pointer-events-none" />
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#22C55E]/15 rounded-full blur-xl pointer-events-none" />
 
             {/* Card Content Overlay */}
             <div className="relative z-10 space-y-0.5">

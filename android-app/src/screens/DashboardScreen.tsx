@@ -35,7 +35,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
-import { GtCoinOrbit } from '../components/GtCoinOrbit';
+import { GtSingleCoin3D } from '../components/GtSingleCoin3D';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useAppSafeArea } from '../utils/safeArea';
@@ -373,8 +373,8 @@ export const DashboardScreen: React.FC = () => {
                 <Text style={styles.cardTokenAmount}>5,200</Text>
               </View>
 
-              {/* Continuous 3D 11-Coin Orbit with GT Logo */}
-              <GtCoinOrbit width={138} height={96} />
+              {/* Single 3D Green GT Coin with Smooth 360 Spin & Specular Glint */}
+              <GtSingleCoin3D width={90} height={90} />
 
               <View style={styles.cardFooter}>
                 <Text style={styles.cardPriceText}>$1,200</Text>
