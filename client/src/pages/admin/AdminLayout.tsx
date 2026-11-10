@@ -70,42 +70,27 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     };
   }, [location.pathname]);
 
-  const navSections = [
+  const navItems = [
+    { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Node', path: '/admin/community', icon: Globe },
+    { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
+    { label: 'Tasks', path: '/admin/tasks', icon: Video },
     {
-      heading: 'ANALYTICS & METRICS',
-      items: [
-        { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-      ],
+      label: 'Submissions',
+      path: '/admin/task-submissions',
+      icon: CheckSquare,
+      badge: pendingTaskCount,
     },
+    { label: 'Users Directory', path: '/admin/users', icon: Users },
     {
-      heading: 'CONTENT & BANNERS',
-      items: [
-        { label: 'Node', path: '/admin/community', icon: Globe },
-        { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
-        { label: 'Tasks', path: '/admin/tasks', icon: Video },
-        {
-          label: 'Submissions',
-          path: '/admin/task-submissions',
-          icon: CheckSquare,
-          badge: pendingTaskCount,
-        },
-      ],
+      label: 'Email Change Requests',
+      path: '/admin/email-requests',
+      icon: Mail,
+      badge: pendingEmailCount,
     },
-    {
-      heading: 'NETWORK MANAGEMENT',
-      items: [
-        { label: 'Users Directory', path: '/admin/users', icon: Users },
-        {
-          label: 'Email Change Requests',
-          path: '/admin/email-requests',
-          icon: Mail,
-          badge: pendingEmailCount,
-        },
-        { label: 'Mining Settings', path: '/admin/mining-settings', icon: Pickaxe },
-        { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
-        { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
-      ],
-    },
+    { label: 'Mining Settings', path: '/admin/mining-settings', icon: Pickaxe },
+    { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
+    { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
   ];
 
   const handleLogout = () => {
@@ -180,47 +165,38 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
 
           {/* Navigation Links List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none">
-            {navSections.map((sec, sIdx) => (
-              <div key={sIdx} className="space-y-1.5">
-                <span className="text-[10px] font-black tracking-widest text-[#86EFAC]/70 px-3 uppercase block">
-                  {sec.heading}
-                </span>
-                <div className="space-y-1">
-                  {sec.items.map((item) => {
-                    const Icon = item.icon;
-                    const badge = (item as any).badge;
-                    return (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setMobileSidebarOpen(false)}
-                        className={({ isActive }) =>
-                          `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all group ${
-                            isActive
-                              ? 'bg-gradient-to-r from-[#22C55E]/20 to-[#22C55E]/5 text-white border-l-4 border-[#22C55E] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
-                              : 'text-[#A7C9B1] hover:text-white hover:bg-white/5'
-                          }`
-                        }
-                      >
-                        <div className="flex items-center gap-3 min-w-0 truncate">
-                          <Icon className="w-4 h-4 text-[#86EFAC] shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                        </div>
-                        {typeof badge === 'number' && badge > 0 && (
-                          <span
-                            title={`${badge} pending email change request${badge > 1 ? 's' : ''}`}
-                            className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EF4444] text-white shadow-md shadow-red-500/50 flex items-center justify-center shrink-0 min-w-[20px] animate-pulse"
-                          >
-                            {badge}
-                          </span>
-                        )}
-                      </NavLink>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="flex-1 overflow-y-auto p-4 space-y-1.5 scrollbar-none">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const badge = (item as any).badge;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all group ${
+                      isActive
+                        ? 'bg-gradient-to-r from-[#22C55E]/20 to-[#22C55E]/5 text-white border-l-4 border-[#22C55E] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
+                        : 'text-[#A7C9B1] hover:text-white hover:bg-white/5'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-3 min-w-0 truncate">
+                    <Icon className="w-4 h-4 text-[#86EFAC] shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {typeof badge === 'number' && badge > 0 && (
+                    <span
+                      title={`${badge} pending email change request${badge > 1 ? 's' : ''}`}
+                      className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#EF4444] text-white shadow-md shadow-red-500/50 flex items-center justify-center shrink-0 min-w-[20px] animate-pulse"
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
           </div>
 
           {/* Sidebar Footer: Admin Profile & Exit */}
