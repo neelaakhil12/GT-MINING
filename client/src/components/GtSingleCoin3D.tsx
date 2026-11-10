@@ -29,8 +29,8 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
       camera.position.set(0, 0, 5.2);
 
-      // Camera Headlight: attached to camera so BOTH sides of the coin are brilliantly lit as it flips!
-      const cameraHeadlight = new THREE.DirectionalLight(0xffffff, 3.5);
+      // Camera Headlight: provides gentle, clear forward illumination so BOTH sides are crisp
+      const cameraHeadlight = new THREE.DirectionalLight(0xffffff, 1.4);
       cameraHeadlight.position.set(0, 0, 1);
       camera.add(cameraHeadlight);
       scene.add(camera);
@@ -44,22 +44,22 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.35;
+      renderer.toneMappingExposure = 1.0; // Balanced exposure to prevent washing out colors!
       container.appendChild(renderer.domElement);
 
-      // 4. Ambient and Directional Lights for rich emerald coin luster
-      const ambientLight = new THREE.AmbientLight(0xf0fdf4, 2.5);
+      // 4. Soft Ambient & Directional Lights for rich emerald coin luster
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      const topKeyLight = new THREE.DirectionalLight(0xfffbe8, 3.2);
+      const topKeyLight = new THREE.DirectionalLight(0xfffae0, 1.3);
       topKeyLight.position.set(-2, 4, 3);
       scene.add(topKeyLight);
 
-      const bottomRimLight = new THREE.DirectionalLight(0x86efac, 2.2);
+      const bottomRimLight = new THREE.DirectionalLight(0x86efac, 1.0);
       bottomRimLight.position.set(2.5, -3, -2);
       scene.add(bottomRimLight);
 
-      // 5. Canvas Face Texture with High-Contrast Center Medallion & GT Logo
+      // 5. Canvas Face Texture with Vibrant Green Coin & Crystal-Clear GT Logo
       const faceCanvas = document.createElement('canvas');
       faceCanvas.width = 512;
       faceCanvas.height = 512;
@@ -77,13 +77,12 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         const cy = 256;
         const r = 240;
 
-        // Rich Emerald Metallic Coin Field
-        const bgGrad = ctx.createRadialGradient(cx - 40, cy - 50, 20, cx, cy, r);
-        bgGrad.addColorStop(0, '#4ADE80');    // Bright emerald mint
-        bgGrad.addColorStop(0.3, '#22C55E');  // GT Primary Green
-        bgGrad.addColorStop(0.7, '#15803D');  // Deep rich green
-        bgGrad.addColorStop(0.95, '#052E16'); // Dark perimeter bevel
-        bgGrad.addColorStop(1, '#02210F');
+        // Rich Vibrant Emerald Green Coin Field
+        const bgGrad = ctx.createRadialGradient(cx - 30, cy - 40, 30, cx, cy, r);
+        bgGrad.addColorStop(0, '#22C55E');    // Primary GT Green
+        bgGrad.addColorStop(0.4, '#16A34A');  // Rich emerald
+        bgGrad.addColorStop(0.8, '#15803D');  // Deep coin green
+        bgGrad.addColorStop(1, '#052E16');    // Dark perimeter rim bevel
 
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -92,161 +91,146 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         // Outer Polished Metallic Gold/Green Rim
         const rimGrad = ctx.createLinearGradient(40, 40, 470, 470);
-        rimGrad.addColorStop(0, '#FEF08A');    // Warm gold accent
-        rimGrad.addColorStop(0.25, '#86EFAC'); // Mint highlight
-        rimGrad.addColorStop(0.65, '#22C55E'); // Emerald
-        rimGrad.addColorStop(1, '#0F5327');    // Dark green
+        rimGrad.addColorStop(0, '#FEF08A');    // Warm bright gold
+        rimGrad.addColorStop(0.3, '#F59E0B');  // Amber gold
+        rimGrad.addColorStop(0.7, '#86EFAC');  // Mint sheen
+        rimGrad.addColorStop(1, '#15803D');    // Emerald depth
 
-        ctx.lineWidth = 18;
+        ctx.lineWidth = 16;
         ctx.strokeStyle = rimGrad;
         ctx.stroke();
 
         // Inner Specular Bevel Line
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 14, 0, Math.PI * 2);
-        ctx.lineWidth = 3.5;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-        ctx.stroke();
-
-        // Deep Recessed Groove
-        ctx.beginPath();
-        ctx.arc(cx, cy, r - 22, 0, Math.PI * 2);
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = 'rgba(2, 33, 15, 0.9)';
+        ctx.arc(cx, cy, r - 12, 0, Math.PI * 2);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.85)';
         ctx.stroke();
 
         // Minted Dashed Ring
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 38, 0, Math.PI * 2);
-        ctx.lineWidth = 4.5;
-        ctx.setLineDash([12, 10]);
-        ctx.strokeStyle = 'rgba(220, 252, 231, 0.9)';
+        ctx.arc(cx, cy, r - 32, 0, Math.PI * 2);
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 8]);
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)';
         ctx.stroke();
         ctx.restore();
 
         // -----------------------------------------------------------
-        // HIGH-CONTRAST LUMINOUS CENTER MEDALLION FOR GT LOGO
+        // DEEP CONTRASTING CENTER MEDALLION FOR MAXIMUM LOGO CLARITY
         // -----------------------------------------------------------
-        const coreRadius = 148;
+        const coreRadius = 152;
 
-        // Luminous Radial Medallion Core (gives the logo crystal clarity!)
-        const coreGrad = ctx.createRadialGradient(cx - 20, cy - 30, 10, cx, cy, coreRadius);
-        coreGrad.addColorStop(0, '#FFFFFF');          // Bright white center
-        coreGrad.addColorStop(0.4, '#F0FDF4');        // Soft emerald mint
-        coreGrad.addColorStop(0.8, '#BBF7D0');        // Pale mint highlight
-        coreGrad.addColorStop(1, '#16A34A');          // Crisp emerald boundary
+        // Deep rich emerald core creates maximum contrast against the bright logo!
+        const coreGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, coreRadius);
+        coreGrad.addColorStop(0, '#064E3B');   // Deep forest emerald
+        coreGrad.addColorStop(0.7, '#022C17'); // Dark crypto green
+        coreGrad.addColorStop(1, '#01190C');   // Ultra-crisp border
 
         ctx.save();
         ctx.beginPath();
         ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
         ctx.fillStyle = coreGrad;
-        ctx.shadowColor = 'rgba(2, 33, 15, 0.5)';
-        ctx.shadowBlur = 14;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 12;
         ctx.shadowOffsetY = 4;
         ctx.fill();
 
         // Medallion Gold Border
-        ctx.lineWidth = 5.5;
+        ctx.lineWidth = 5;
         ctx.strokeStyle = '#FEF08A';
         ctx.stroke();
         ctx.restore();
 
-        // Inner Decorative Ring
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, coreRadius - 10, 0, Math.PI * 2);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(21, 128, 61, 0.5)';
-        ctx.stroke();
-        ctx.restore();
-
         // -----------------------------------------------------------
-        // DRAW GT LOGO (Faceted Crystal + High-Res PNG Composite)
+        // DRAW GT LOGO (Crystal Pyramid + PNG + Bold "GT" Typography)
         // -----------------------------------------------------------
-        // 1. Faceted Emerald Crystal (always available immediately)
-        ctx.save();
-        ctx.translate(cx, cy - 8);
+        const logoCenterY = cy - 24;
 
-        // Left Crystal Facet
+        // 1. Faceted Emerald Crystal Pyramid
+        ctx.save();
+        ctx.translate(cx, logoCenterY);
+
+        // Left Crystal Facet (Bright Mint to Vibrant Emerald)
         ctx.beginPath();
-        ctx.moveTo(0, -82);
-        ctx.lineTo(-72, 42);
-        ctx.lineTo(0, 70);
+        ctx.moveTo(0, -68);
+        ctx.lineTo(-58, 36);
+        ctx.lineTo(0, 58);
         ctx.closePath();
-        const leftFacetGrad = ctx.createLinearGradient(-72, -82, 0, 70);
-        leftFacetGrad.addColorStop(0, '#86EFAC');
-        leftFacetGrad.addColorStop(0.6, '#22C55E');
-        leftFacetGrad.addColorStop(1, '#15803D');
+        const leftFacetGrad = ctx.createLinearGradient(-58, -68, 0, 58);
+        leftFacetGrad.addColorStop(0, '#A7F3D0');
+        leftFacetGrad.addColorStop(0.5, '#34D399');
+        leftFacetGrad.addColorStop(1, '#059669');
         ctx.fillStyle = leftFacetGrad;
         ctx.fill();
 
-        // Right Crystal Facet
+        // Right Crystal Facet (Luminous Mint to Rich Deep Emerald)
         ctx.beginPath();
-        ctx.moveTo(0, -82);
-        ctx.lineTo(72, 42);
-        ctx.lineTo(0, 70);
+        ctx.moveTo(0, -68);
+        ctx.lineTo(58, 36);
+        ctx.lineTo(0, 58);
         ctx.closePath();
-        const rightFacetGrad = ctx.createLinearGradient(0, -82, 72, 70);
-        rightFacetGrad.addColorStop(0, '#DCFCE7');
-        rightFacetGrad.addColorStop(0.5, '#16A34A');
-        rightFacetGrad.addColorStop(1, '#0A341B');
+        const rightFacetGrad = ctx.createLinearGradient(0, -68, 58, 58);
+        rightFacetGrad.addColorStop(0, '#ECFDF5');
+        rightFacetGrad.addColorStop(0.5, '#10B981');
+        rightFacetGrad.addColorStop(1, '#047857');
         ctx.fillStyle = rightFacetGrad;
         ctx.fill();
 
-        // Center Triangular Cutout
+        // Center Triangular Highlight Cutout
         ctx.beginPath();
-        ctx.moveTo(0, -24);
-        ctx.lineTo(-42, 42);
-        ctx.lineTo(0, 70);
-        ctx.lineTo(42, 42);
+        ctx.moveTo(0, -18);
+        ctx.lineTo(-32, 34);
+        ctx.lineTo(0, 58);
+        ctx.lineTo(32, 34);
         ctx.closePath();
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
 
-        // Center Facet Dividing Line
+        // Facet Bevel Highlights
         ctx.beginPath();
-        ctx.moveTo(0, -82);
-        ctx.lineTo(0, 70);
+        ctx.moveTo(0, -68);
+        ctx.lineTo(0, 58);
         ctx.lineWidth = 2.5;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = '#FFFFFF';
         ctx.stroke();
 
         ctx.restore();
 
-        // 2. Overlay gt-header-logo.png if loaded
+        // 2. Overlay gt-header-logo.png if loaded for photo-real fidelity
         if (logoImg.complete && logoImg.naturalWidth > 0) {
-          const logoSize = 185;
+          const logoSize = 145;
           ctx.save();
-          ctx.shadowColor = 'rgba(2, 33, 15, 0.4)';
-          ctx.shadowBlur = 10;
-          ctx.shadowOffsetY = 4;
-          ctx.drawImage(logoImg, cx - logoSize / 2, cy - logoSize / 2 - 8, logoSize, logoSize);
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+          ctx.drawImage(logoImg, cx - logoSize / 2, logoCenterY - logoSize / 2, logoSize, logoSize);
           ctx.restore();
         }
 
-        // 3. Crisp Embossed "GT" Monogram
+        // 3. Crisp Bold Embossed "GT" Text below the logo
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = '900 38px "Arial Black", "Montserrat", system-ui, sans-serif';
+        ctx.font = '900 46px "Arial Black", "Montserrat", system-ui, sans-serif';
 
-        // Dark text outline/shadow for readability
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#052E16';
-        ctx.strokeText('GT', cx, cy + 92);
+        // Dark text outline for 100% legibility
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#02210F';
+        ctx.strokeText('GT', cx, cy + 86);
 
-        // Metallic text fill
-        const textGrad = ctx.createLinearGradient(cx, cy + 70, cx, cy + 105);
+        // Brilliant Metallic Gold/White Text Fill
+        const textGrad = ctx.createLinearGradient(cx, cy + 64, cx, cy + 104);
         textGrad.addColorStop(0, '#FFFFFF');
-        textGrad.addColorStop(0.5, '#FEF08A');
-        textGrad.addColorStop(1, '#86EFAC');
+        textGrad.addColorStop(0.45, '#FEF08A');
+        textGrad.addColorStop(1, '#F59E0B');
         ctx.fillStyle = textGrad;
-        ctx.fillText('GT', cx, cy + 92);
+        ctx.fillText('GT', cx, cy + 86);
         ctx.restore();
 
         // 4 Cardinal Gold Accent Pips
-        const pipRadius = r - 38;
+        const pipRadius = r - 32;
         const pips = [
           { x: cx, y: cy - pipRadius },
           { x: cx, y: cy + pipRadius },
@@ -255,7 +239,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         ];
         pips.forEach((p) => {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
           ctx.fillStyle = '#FEF08A';
           ctx.fill();
           ctx.lineWidth = 1.5;
@@ -293,11 +277,11 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       rimTexture.wrapT = THREE.ClampToEdgeWrapping;
       rimTexture.repeat.set(4, 1);
 
-      // Materials: Low metalness ensures rich vibrant colors at all angles without darkening!
+      // Low metalness ensures rich green colors without dark shadows or white glare
       const faceMaterial = new THREE.MeshStandardMaterial({
         map: faceTexture,
-        roughness: 0.28,
-        metalness: 0.12,
+        roughness: 0.32,
+        metalness: 0.06,
       });
 
       const rimMaterial = new THREE.MeshStandardMaterial({
@@ -319,9 +303,9 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       coinGroup.add(coinMesh);
       scene.add(coinGroup);
 
-      // Tilt angle: isometric angle so the 3D rim thickness is clearly visible during the horizontal flip
-      coinGroup.rotation.y = 0.26;
-      coinGroup.rotation.z = -0.12;
+      // Isometric slant so the 3D rim thickness is clearly visible during the horizontal flip
+      coinGroup.rotation.y = 0.24;
+      coinGroup.rotation.z = -0.10;
 
       // Initial coin orientation
       coinMesh.rotation.x = Math.PI / 2;

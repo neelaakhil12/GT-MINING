@@ -133,9 +133,9 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             { width: coinSize - 16, height: coinSize - 16, borderRadius: (coinSize - 16) / 2 },
           ]}
         >
-          {/* Luminous Center Medallion Core for High Logo Clarity */}
+          {/* Deep Contrasting Center Medallion Core for High Logo Clarity */}
           <LinearGradient
-            colors={['#FFFFFF', '#DCFCE7', '#86EFAC']}
+            colors={['#064E3B', '#022C17', '#01190C']}
             start={{ x: 0.1, y: 0.1 }}
             end={{ x: 0.9, y: 0.9 }}
             style={styles.logoMedallionCore}
@@ -143,7 +143,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             {/* GT Crystal Logo */}
             <Image
               source={require('../../assets/gt-logo.png')}
-              style={{ width: coinSize * 0.44, height: coinSize * 0.44 }}
+              style={{ width: coinSize * 0.42, height: coinSize * 0.42 }}
               resizeMode="contain"
             />
             {/* Embossed GT Text */}
@@ -298,11 +298,14 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   coinGtText: {
-    fontSize: 7.5,
+    fontSize: 8,
     fontWeight: '900',
-    color: '#052E16',
+    color: '#FEF08A',
     letterSpacing: 0.5,
     marginTop: -2,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   specularShineContainer: {
     position: 'absolute',
