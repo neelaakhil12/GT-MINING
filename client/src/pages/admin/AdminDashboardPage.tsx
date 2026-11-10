@@ -69,78 +69,78 @@ export const AdminDashboardPage: React.FC = () => {
       <AdminNav />
 
       {/* DASHBOARD HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-gradient-to-r from-[#0B2516] via-[#071F14] to-[#04130C] border border-[#86EFAC]/25 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0B2516] via-[#071F14] to-[#04130C] border border-[#86EFAC]/25 shadow-lg">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#86EFAC]">
-              <Activity className="w-5 h-5 text-[#22C55E]" />
+            <div className="p-2 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#86EFAC]">
+              <Activity className="w-4 h-4 text-[#22C55E]" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">
                 Dashboard
               </h1>
-              <p className="text-xs text-[#A7C9B1]">
+              <p className="text-[11px] text-[#A7C9B1]">
                 Real-time network miner statistics and GT mining volume metrics
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-2xl bg-[#05160E] border border-[#86EFAC]/20 text-xs font-bold text-white flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E] animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/20 text-[11px] font-bold text-white flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
             <span>Live Node Ledger Synchronized</span>
           </div>
         </div>
       </div>
 
       {/* 3 PRIMARY METRIC BOXES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* ======================================================== */}
         {/* BOX 1: TOTAL MINERS COUNT */}
         {/* ======================================================== */}
-        <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-[#0B2516] via-[#071F14] to-[#04130C] border-2 border-[#22C55E]/40 shadow-[0_12px_32px_rgba(34,197,94,0.15)] flex flex-col justify-between group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#22C55E]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#22C55E]/20 transition-all" />
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0B2516] via-[#071F14] to-[#04130C] border border-[#22C55E]/30 shadow-md flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[#22C55E]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#22C55E]/20 transition-all" />
 
           {/* Header */}
           <div className="flex items-center justify-between z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/20 border border-[#22C55E]/40 flex items-center justify-center text-[#22C55E] shadow-sm">
-                <Users className="w-6 h-6" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#22C55E]/20 border border-[#22C55E]/40 flex items-center justify-center text-[#22C55E]">
+                <Users className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-black tracking-wider text-[#86EFAC] uppercase block">
+                <span className="text-[11px] font-black tracking-wider text-[#86EFAC] uppercase block">
                   Total Miners Count
                 </span>
-                <span className="text-[11px] text-[#A7C9B1]">Registered platform miners</span>
+                <span className="text-[10px] text-[#A7C9B1]">Registered platform miners</span>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#22C55E]/20 text-[#4ADE80] border border-[#22C55E]/40">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/20 text-[#4ADE80] border border-[#22C55E]/30">
               Miners
             </span>
           </div>
 
           {/* Big Count */}
-          <div className="my-6 z-10 flex items-baseline gap-3">
-            <span className="text-5xl sm:text-6xl font-black text-white tracking-tight">
+          <div className="my-3 z-10 flex items-baseline gap-2">
+            <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               {totalUsers.toLocaleString()}
             </span>
-            <span className="text-sm font-bold text-[#86EFAC]">Total Miners</span>
+            <span className="text-xs font-bold text-[#86EFAC]">Total Miners</span>
           </div>
 
           {/* Bottom Info / Link */}
-          <div className="pt-4 border-t border-white/10 z-10 flex items-center justify-between text-xs">
+          <div className="pt-3 border-t border-white/10 z-10 flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 text-[#A7C9B1]">
-              <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
-              <span className="text-[11px]">Verified Node Accounts</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
+              <span className="text-[10px]">Verified Node Accounts</span>
             </div>
             <Link
               to="/admin/users"
-              className="text-[11px] font-bold text-[#86EFAC] hover:text-white transition-colors inline-flex items-center gap-1"
+              className="text-[10px] font-bold text-[#86EFAC] hover:text-white transition-colors inline-flex items-center gap-1"
             >
               <span>View Directory</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -148,73 +148,73 @@ export const AdminDashboardPage: React.FC = () => {
         {/* ======================================================== */}
         {/* BOX 2: DAILY MINING COUNT (WITH ACTIVE & INACTIVE INSIDE) */}
         {/* ======================================================== */}
-        <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-[#122A1A] via-[#092215] to-[#05160E] border-2 border-[#FBBF24]/40 shadow-[0_12px_32px_rgba(251,191,36,0.15)] flex flex-col justify-between group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#FBBF24]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#FBBF24]/20 transition-all" />
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#122A1A] via-[#092215] to-[#05160E] border border-[#FBBF24]/30 shadow-md flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[#FBBF24]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#FBBF24]/20 transition-all" />
 
           {/* Header */}
           <div className="flex items-center justify-between z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FBBF24]/20 border border-[#FBBF24]/40 flex items-center justify-center text-[#FBBF24] shadow-sm">
-                <Pickaxe className="w-6 h-6 animate-bounce" style={{ animationDuration: '3s' }} />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#FBBF24]/20 border border-[#FBBF24]/40 flex items-center justify-center text-[#FBBF24]">
+                <Pickaxe className="w-4 h-4 animate-bounce" style={{ animationDuration: '3s' }} />
               </div>
               <div>
-                <span className="text-xs font-black tracking-wider text-[#FCD34D] uppercase block">
+                <span className="text-[11px] font-black tracking-wider text-[#FCD34D] uppercase block">
                   Daily Mining Count
                 </span>
-                <span className="text-[11px] text-[#A7C9B1]">Miners active in last 24 hours</span>
+                <span className="text-[10px] text-[#A7C9B1]">Miners active in last 24h</span>
               </div>
             </div>
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FBBF24]/20 text-[#FBBF24] border border-[#FBBF24]/40">
-              <span className="w-2 h-2 rounded-full bg-[#FBBF24] animate-pulse" />
+            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FBBF24]/20 text-[#FBBF24] border border-[#FBBF24]/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24] animate-pulse" />
               <span>Today</span>
             </span>
           </div>
 
           {/* Big Daily Count */}
-          <div className="my-5 z-10 flex items-baseline gap-3">
-            <span className="text-5xl sm:text-6xl font-black text-white tracking-tight">
+          <div className="my-3 z-10 flex items-baseline gap-2">
+            <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               {dailyMiners.toLocaleString()}
             </span>
-            <span className="text-sm font-bold text-[#FCD34D]">
+            <span className="text-xs font-bold text-[#FCD34D]">
               Mining Today ({miningRatio}% of network)
             </span>
           </div>
 
           {/* SUB-SECTION INSIDE BOX: ACTIVE MINERS COUNT & INACTIVE MINERS COUNT */}
-          <div className="p-4 rounded-2xl bg-[#05160E]/90 border border-[#FBBF24]/25 z-10 space-y-3">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 rounded-xl bg-[#05160E]/90 border border-[#FBBF24]/20 z-10 space-y-2">
+            <div className="grid grid-cols-2 gap-3">
               {/* Active Miners */}
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#86EFAC]">
-                  <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-ping" />
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#86EFAC]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-ping" />
                   <span>Active Miners Count</span>
                 </div>
-                <div className="text-2xl font-black text-white">
+                <div className="text-lg font-black text-white">
                   {activeUsers.toLocaleString()}
                 </div>
-                <span className="text-[10px] text-[#A7C9B1] block">Mining in active epoch</span>
+                <span className="text-[9px] text-[#A7C9B1] block">Mining in active epoch</span>
               </div>
 
               {/* Inactive Miners */}
-              <div className="space-y-0.5 border-l border-white/10 pl-4">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/60">
-                  <span className="w-2 h-2 rounded-full bg-white/40" />
+              <div className="space-y-0.5 border-l border-white/10 pl-3">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/60">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
                   <span>Inactive Miners Count</span>
                 </div>
-                <div className="text-2xl font-black text-white/70">
+                <div className="text-lg font-black text-white/70">
                   {inactiveUsers.toLocaleString()}
                 </div>
-                <span className="text-[10px] text-[#A7C9B1] block">Dormant miners</span>
+                <span className="text-[9px] text-[#A7C9B1] block">Dormant miners</span>
               </div>
             </div>
 
             {/* Participation Progress Bar */}
-            <div className="space-y-1 pt-1 border-t border-white/10">
-              <div className="flex items-center justify-between text-[10px] text-[#A7C9B1]">
+            <div className="space-y-1 pt-1.5 border-t border-white/10">
+              <div className="flex items-center justify-between text-[9px] text-[#A7C9B1]">
                 <span>24h Mining Epoch Participation</span>
                 <span className="font-bold text-[#FCD34D]">{dailyMiners} of {totalUsers} Active</span>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#FBBF24] to-[#22C55E] transition-all duration-700"
                   style={{ width: `${Math.min(100, Math.max(10, miningRatio))}%` }}
@@ -227,51 +227,51 @@ export const AdminDashboardPage: React.FC = () => {
         {/* ======================================================== */}
         {/* BOX 3: TOTAL GT MINING COUNT */}
         {/* ======================================================== */}
-        <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-[#0B2A1E] via-[#071F14] to-[#04150E] border-2 border-[#10B981]/40 shadow-[0_12px_32px_rgba(16,185,129,0.15)] flex flex-col justify-between group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#10B981]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#10B981]/20 transition-all" />
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0B2A1E] via-[#071F14] to-[#04150E] border border-[#10B981]/30 shadow-md flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[#10B981]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#10B981]/20 transition-all" />
 
           {/* Header */}
           <div className="flex items-center justify-between z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#10B981]/20 border border-[#10B981]/40 flex items-center justify-center text-[#34D399] shadow-sm">
-                <Coins className="w-6 h-6" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#10B981]/20 border border-[#10B981]/40 flex items-center justify-center text-[#34D399]">
+                <Coins className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-black tracking-wider text-[#6EE7B7] uppercase block">
+                <span className="text-[11px] font-black tracking-wider text-[#6EE7B7] uppercase block">
                   Total GT Mining Count
                 </span>
-                <span className="text-[11px] text-[#A7C9B1]">Cumulative tokens mined</span>
+                <span className="text-[10px] text-[#A7C9B1]">Cumulative tokens mined</span>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#10B981]/20 text-[#6EE7B7] border border-[#10B981]/40">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#10B981]/20 text-[#6EE7B7] border border-[#10B981]/30">
               Total Mined
             </span>
           </div>
 
-          {/* Big Amount */}
-          <div className="my-6 z-10 space-y-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+          {/* Amount */}
+          <div className="my-3 z-10 space-y-0.5">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
                 {Number(totalGtMined).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className="text-2xl font-black text-[#34D399]">GT</span>
+              <span className="text-xl font-black text-[#34D399]">GT</span>
             </div>
-            <p className="text-xs text-[#A7C9B1]">
+            <p className="text-[10px] text-[#A7C9B1]">
               Total GT tokens successfully mined by all network nodes
             </p>
           </div>
 
           {/* Sub Stats inside Box */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10 z-10 text-xs">
-            <div className="p-3 rounded-2xl bg-[#05160E]/80 border border-white/10">
-              <span className="text-[10px] text-[#A7C9B1] block">Confirmed Claims</span>
-              <span className="text-base font-bold text-[#34D399]">{totalClaims.toLocaleString()}</span>
-              <span className="text-[9px] text-[#A7C9B1] block">Completed blocks</span>
+          <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-white/10 z-10 text-xs">
+            <div className="p-2.5 rounded-xl bg-[#05160E]/80 border border-white/10">
+              <span className="text-[9px] text-[#A7C9B1] block">Confirmed Claims</span>
+              <span className="text-sm font-bold text-[#34D399]">{totalClaims.toLocaleString()}</span>
+              <span className="text-[8px] text-[#A7C9B1] block">Completed blocks</span>
             </div>
-            <div className="p-3 rounded-2xl bg-[#05160E]/80 border border-white/10">
-              <span className="text-[10px] text-[#A7C9B1] block">Block Reward</span>
-              <span className="text-base font-bold text-[#FCD34D]">1.0 GT</span>
-              <span className="text-[9px] text-[#A7C9B1] block">Per 4-hour cycle</span>
+            <div className="p-2.5 rounded-xl bg-[#05160E]/80 border border-white/10">
+              <span className="text-[9px] text-[#A7C9B1] block">Block Reward</span>
+              <span className="text-sm font-bold text-[#FCD34D]">1.0 GT</span>
+              <span className="text-[8px] text-[#A7C9B1] block">Per 4-hour cycle</span>
             </div>
           </div>
         </div>
