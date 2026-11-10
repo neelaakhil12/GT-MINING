@@ -82,9 +82,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       items: [
         { label: 'Node', path: '/admin/community', icon: Globe },
         { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
-        { label: 'Tasks & Video Quests', path: '/admin/tasks', icon: Video },
+        { label: 'Tasks', path: '/admin/tasks', icon: Video },
         {
-          label: 'Task Submissions',
+          label: 'Submissions',
           path: '/admin/task-submissions',
           icon: CheckSquare,
           badge: pendingTaskCount,
@@ -118,7 +118,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/dashboard')) return 'Dashboard';
     if (p.includes('/community')) return 'Node';
     if (p.includes('/sliders') || p.includes('/onboarding-banners') || p.includes('/home-banners') || p.includes('/referral-banners')) return 'Sliders';
-    if (p.includes('/tasks')) return 'Daily & Video Tasks Quests';
+    if (p.includes('/task-submissions')) return 'Submissions';
+    if (p.includes('/tasks')) return 'Tasks';
     if (p.includes('/users')) return 'Users Directory';
     if (p.includes('/email-requests')) {
       return pendingEmailCount > 0

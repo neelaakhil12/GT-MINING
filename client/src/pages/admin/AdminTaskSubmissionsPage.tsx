@@ -143,7 +143,7 @@ export const AdminTaskSubmissionsPage: React.FC = () => {
             ADMIN PANEL / Task Verification
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-            <span>Task Proof Submissions</span>
+            <span>Submissions</span>
             {pendingCount > 0 && (
               <span className="px-3 py-1 rounded-full text-xs font-black bg-[#F59E0B] text-black animate-pulse">
                 {pendingCount} Pending Review

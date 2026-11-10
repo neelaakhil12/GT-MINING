@@ -323,7 +323,7 @@ export const AdminTasksPage: React.FC = () => {
               <Video className="w-4 h-4" />
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Daily & Video Tasks Management
+              Tasks
             </h2>
           </div>
           <p className="text-xs text-[#A7C9B1] mt-1.5">
