@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GT 3D Gold Coin 360 Degree Continuous Flip</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    body {
+      background: #0B2516;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      gap: 30px;
+      font-family: system-ui, sans-serif;
+    }
+    .card-white {
+      position: relative;
+      width: 175px;
+      height: 140px;
+      background: #FFFFFF;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    #coin-box {
+      position: absolute;
+      right: -8px;
+      top: -6px;
+      width: 120px;
+      height: 110px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card-white">
+    <div id="coin-box"></div>
+    <div>
+      <div style="font-size: 11px; font-weight: 800; color: #1E5E36;">GT</div>
+      <div style="font-size: 24px; font-weight: 900; color: #0A341B; letter-spacing: -0.5px;">5,200</div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+      <span style="font-weight: 600; color: #1E5E36;">$1,200</span>
+      <span style="font-weight: 800; color: #16A34A;">+12.4%</span>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('coin-box');
+    const width = 120;
+    const height = 110;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    camera.position.set(0, 0, 4.4);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    container.appendChild(renderer.domElement);
+
+    // 1. Ambient & Directional Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfffae0, 3.2);
+    keyLight.position.set(3, 4, 3.5);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x86efac, 1.8);
+    rimLight.position.set(-3, -2.5, 2);
+    scene.add(rimLight);
+
+    // Point Light for glistening highlights
+    const gleamLight = new THREE.PointLight(0xffffff, 2.5, 8);
+    gleamLight.position.set(1.5, 2.5, 3.0);
+    scene.add(gleamLight);
+
+    // 2. 512x512 High-Res Embossed Gold & Emerald Coin Face
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
+    logoImg.src = '/gt-header-logo.png';
+
+    function drawFace() {
+      ctx.clearRect(0, 0, 512, 512);
+      const cx = 256, cy = 256, r = 246;
+
+      // Outer Polished Metallic Gold Rim
+      const goldGrad = ctx.createLinearGradient(0, 0, 512, 512);
+      goldGrad.addColorStop(0, '#FFF5BA');
+      goldGrad.addColorStop(0.25, '#F59E0B');
+      goldGrad.addColorStop(0.5, '#FEF08A');
+      goldGrad.addColorStop(0.75, '#D97706');
+      goldGrad.addColorStop(1, '#FEF08A');
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = goldGrad;
+      ctx.fill();
+
+      // Deep Dark Crypto Ambiance Inner Medallion Field
+      const bgGrad = ctx.createRadialGradient(cx - 20, cy - 30, 20, cx, cy, r - 18);
+      bgGrad.addColorStop(0, '#0F3820');
+      bgGrad.addColorStop(0.4, '#072414');
+      bgGrad.addColorStop(0.8, '#03170C');
+      bgGrad.addColorStop(1, '#020D07');
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 18, 0, Math.PI * 2);
+      ctx.fillStyle = bgGrad;
+      ctx.fill();
+
+      // Beveled Gold Ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 34, 0, Math.PI * 2);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#FEF08A';
+      ctx.stroke();
+
+      // Dashed Mint Security Ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 50, 0, Math.PI * 2);
+      ctx.lineWidth = 3;
+      ctx.setLineDash([9, 6]);
+      ctx.strokeStyle = 'rgba(254, 240, 138, 0.85)';
+      ctx.stroke();
+      ctx.restore();
+
+      // Inner Core Gold Rim
+      ctx.beginPath();
+      ctx.arc(cx, cy, 145, 0, Math.PI * 2);
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = '#F59E0B';
+      ctx.stroke();
+
+      // Embossed GT Center Logo
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        const s = 195;
+        ctx.save();
+        ctx.shadowColor = 'rgba(254, 240, 138, 0.6)';
+        ctx.shadowBlur = 15;
+        ctx.drawImage(logoImg, cx - s / 2, cy - s / 2, s, s);
+        ctx.restore();
+      }
+    }
+
+    drawFace();
+    logoImg.onload = () => {
+      drawFace();
+      faceTexture.needsUpdate = true;
+    };
+
+    const faceTexture = new THREE.CanvasTexture(canvas);
+    faceTexture.anisotropy = 8;
+
+    // 3. Materials: Gold for side edge, face texture for coin faces
+    const sideMaterial = new THREE.MeshStandardMaterial({
+      color: 0xEAB308,
+      metalness: 0.96,
+      roughness: 0.16,
+    });
+
+    const faceMaterial = new THREE.MeshStandardMaterial({
+      map: faceTexture,
+      metalness: 0.65,
+      roughness: 0.22,
+    });
+
+    // 4. Real 3D Cylinder Coin
+    const geometry = new THREE.CylinderGeometry(1.22, 1.22, 0.18, 64);
+    const materials = [sideMaterial, faceMaterial, faceMaterial];
+    const coinMesh = new THREE.Mesh(geometry, materials);
+
+    // Slant Group for diagonal posture matching reference video
+    const slantGroup = new THREE.Group();
+    slantGroup.rotation.z = -0.35; // diagonal slant
+    slantGroup.rotation.y = 0.22;  // subtle isometric angle
+    slantGroup.add(coinMesh);
+
+    scene.add(slantGroup);
+
+    // 5. Subtle Floating Sparkle Particles around coin
+    const particleCount = 28;
+    const particleGeo = new THREE.BufferGeometry();
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 3.2;
+      pos[i + 1] = (Math.random() - 0.5) * 3.2;
+      pos[i + 2] = (Math.random() - 0.5) * 1.8;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0xFEF08A,
+      size: 0.055,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // 6. CONTINUOUS 360-DEGREE FULL ROTATION FLIP!
+    // No sine oscillation, continuously increments 360 degrees full loop!
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Full 360° continuous flip over horizontal X-axis (up & down)
+      coinMesh.rotation.x += 0.024;
+
+      // Particle floating drift
+      particles.rotation.y += 0.003;
+      particles.rotation.x += 0.002;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
