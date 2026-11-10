@@ -115,7 +115,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           height: coinSize,
           borderRadius: coinSize / 2,
           backfaceVisibility: 'hidden',
-          transform: isBack ? [{ rotateX: '180deg' }] : [],
+          transform: isBack ? [{ rotateY: '180deg' }] : [],
         },
       ]}
     >
@@ -140,14 +140,12 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             end={{ x: 0.9, y: 0.9 }}
             style={styles.logoMedallionCore}
           >
-            {/* GT Crystal Logo */}
+            {/* GT Crystal Logo (gt-header-logo.png) */}
             <Image
               source={require('../../assets/gt-logo.png')}
-              style={{ width: coinSize * 0.42, height: coinSize * 0.42 }}
+              style={{ width: coinSize * 0.58, height: coinSize * 0.58 }}
               resizeMode="contain"
             />
-            {/* Embossed GT Text */}
-            <Text style={styles.coinGtText}>GT</Text>
           </LinearGradient>
         </View>
       </View>
@@ -193,9 +191,9 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             transform: [
               { translateY },
               { perspective: 900 },
-              { rotateZ: '-25deg' }, // Cross-horizontal slant angle matching video
-              { rotateY: '24deg' },  // Isometric 3D angle so edge thickness is visible
-              { rotateX: spin },     // Continuous cross-horizontal flip
+              { rotateX: '12deg' },  // Subtle forward tilt so top rim is visible from above (matching video)
+              { rotateZ: '-2deg' },  // Subtle natural angle
+              { rotateY: spin },     // Continuous HORIZONTAL rotation around vertical axis!
             ],
           },
         ]}
@@ -210,7 +208,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
                 width: coinSize,
                 height: coinSize,
                 borderRadius: coinSize / 2,
-                transform: [{ translateY: depth * 0.8 }, { translateX: depth * 0.4 }],
+                transform: [{ translateY: depth * 0.3 }],
               },
             ]}
           />

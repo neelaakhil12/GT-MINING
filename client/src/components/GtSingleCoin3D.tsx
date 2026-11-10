@@ -7,6 +7,13 @@ interface GtSingleCoin3DProps {
   height?: number;
 }
 
+// Module-level preload for official GT header logo
+const cachedLogoImg = typeof Image !== 'undefined' ? new Image() : null;
+if (cachedLogoImg) {
+  cachedLogoImg.crossOrigin = 'anonymous';
+  cachedLogoImg.src = '/gt-header-logo.png';
+}
+
 export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   className = '',
   width = 110,
@@ -65,10 +72,12 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       faceCanvas.height = 512;
       const ctx = faceCanvas.getContext('2d')!;
 
-      // Load official GT Logo image
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      logoImg.src = '/gt-header-logo.png';
+      // Load official GT Logo image (preloaded gt-header-logo.png)
+      const logoImg = cachedLogoImg || new Image();
+      if (!cachedLogoImg) {
+        logoImg.crossOrigin = 'anonymous';
+        logoImg.src = '/gt-header-logo.png';
+      }
 
       const renderFace = () => {
         ctx.clearRect(0, 0, 512, 512);
@@ -96,23 +105,23 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         rimGrad.addColorStop(0.7, '#86EFAC');  // Mint sheen
         rimGrad.addColorStop(1, '#15803D');    // Emerald depth
 
-        ctx.lineWidth = 16;
+        ctx.lineWidth = 15;
         ctx.strokeStyle = rimGrad;
         ctx.stroke();
 
         // Inner Specular Bevel Line
         ctx.beginPath();
         ctx.arc(cx, cy, r - 12, 0, Math.PI * 2);
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.strokeStyle = 'rgba(254, 240, 138, 0.85)';
         ctx.stroke();
 
         // Minted Dashed Ring
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 30, 0, Math.PI * 2);
-        ctx.lineWidth = 4;
-        ctx.setLineDash([10, 8]);
+        ctx.arc(cx, cy, r - 28, 0, Math.PI * 2);
+        ctx.lineWidth = 3.5;
+        ctx.setLineDash([9, 7]);
         ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)';
         ctx.stroke();
         ctx.restore();
@@ -120,7 +129,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         // -----------------------------------------------------------
         // DEEP CONTRASTING CENTER MEDALLION FOR MAXIMUM LOGO CLARITY
         // -----------------------------------------------------------
-        const coreRadius = 155;
+        const coreRadius = 160;
 
         // Deep rich emerald core creates maximum contrast against the bright logo!
         const coreGrad = ctx.createRadialGradient(cx, cy - 10, 20, cx, cy, coreRadius);
@@ -138,96 +147,24 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         ctx.fill();
 
         // Medallion Gold Border
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 4.5;
         ctx.strokeStyle = '#FEF08A';
         ctx.stroke();
         ctx.restore();
 
         // -----------------------------------------------------------
-        // DRAW GT LOGO (Crystal Pyramid + PNG + Bold "GT" Typography)
+        // OFFICIAL GT HEADER LOGO (gt-header-logo.png) DIRECTLY
         // -----------------------------------------------------------
-        const logoCenterY = cy - 24;
-
-        // 1. Faceted Emerald Crystal Pyramid (prominent & bold)
-        ctx.save();
-        ctx.translate(cx, logoCenterY);
-
-        // Left Crystal Facet (Bright Mint to Vibrant Emerald)
-        ctx.beginPath();
-        ctx.moveTo(0, -70);
-        ctx.lineTo(-60, 36);
-        ctx.lineTo(0, 60);
-        ctx.closePath();
-        const leftFacetGrad = ctx.createLinearGradient(-60, -70, 0, 60);
-        leftFacetGrad.addColorStop(0, '#A7F3D0');
-        leftFacetGrad.addColorStop(0.5, '#34D399');
-        leftFacetGrad.addColorStop(1, '#059669');
-        ctx.fillStyle = leftFacetGrad;
-        ctx.fill();
-
-        // Right Crystal Facet (Luminous Mint to Rich Deep Emerald)
-        ctx.beginPath();
-        ctx.moveTo(0, -70);
-        ctx.lineTo(60, 36);
-        ctx.lineTo(0, 60);
-        ctx.closePath();
-        const rightFacetGrad = ctx.createLinearGradient(0, -70, 60, 60);
-        rightFacetGrad.addColorStop(0, '#ECFDF5');
-        rightFacetGrad.addColorStop(0.5, '#10B981');
-        rightFacetGrad.addColorStop(1, '#047857');
-        ctx.fillStyle = rightFacetGrad;
-        ctx.fill();
-
-        // Center Triangular Highlight Cutout
-        ctx.beginPath();
-        ctx.moveTo(0, -20);
-        ctx.lineTo(-34, 34);
-        ctx.lineTo(0, 60);
-        ctx.lineTo(34, 34);
-        ctx.closePath();
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fill();
-
-        // Facet Bevel Highlights
-        ctx.beginPath();
-        ctx.moveTo(0, -70);
-        ctx.lineTo(0, 60);
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.stroke();
-
-        ctx.restore();
-
-        // 2. Overlay gt-header-logo.png if loaded for photo-real fidelity
         if (logoImg.complete && logoImg.naturalWidth > 0) {
-          const logoSize = 148;
+          const logoSize = 210;
           ctx.save();
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-          ctx.shadowBlur = 8;
-          ctx.shadowOffsetY = 2;
-          ctx.drawImage(logoImg, cx - logoSize / 2, logoCenterY - logoSize / 2, logoSize, logoSize);
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          // Centered directly on the coin face
+          ctx.drawImage(logoImg, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
           ctx.restore();
         }
-
-        // 3. Crisp Bold Embossed "GT" Text below the logo
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '900 48px "Arial Black", "Montserrat", system-ui, sans-serif';
-
-        // Dark text outline for 100% legibility
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = '#02210F';
-        ctx.strokeText('GT', cx, cy + 86);
-
-        // Brilliant Metallic Gold/White Text Fill
-        const textGrad = ctx.createLinearGradient(cx, cy + 64, cx, cy + 104);
-        textGrad.addColorStop(0, '#FFFFFF');
-        textGrad.addColorStop(0.45, '#FEF08A');
-        textGrad.addColorStop(1, '#F59E0B');
-        ctx.fillStyle = textGrad;
-        ctx.fillText('GT', cx, cy + 86);
-        ctx.restore();
 
         // 4 Cardinal Gold Accent Pips
         const pipRadius = r - 30;
@@ -250,7 +187,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
       renderFace();
 
-      // Milled Reeded Edge Texture
+      // Milled Reeded Edge Texture (Polished Gold)
       const rimCanvas = document.createElement('canvas');
       rimCanvas.width = 512;
       rimCanvas.height = 64;
@@ -258,14 +195,13 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       const stripeWidth = 512 / 80;
       for (let i = 0; i < 80; i++) {
         const x = i * stripeWidth;
-        rimCtx.fillStyle = i % 2 === 0 ? '#15803D' : '#86EFAC';
-        rimCtx.fillRect(x, 0, stripeWidth * 0.7, 64);
-        rimCtx.fillStyle = '#052E16';
-        rimCtx.fillRect(x + stripeWidth * 0.7, 0, stripeWidth * 0.3, 64);
+        rimCtx.fillStyle = i % 2 === 0 ? '#FEF08A' : '#B45309';
+        rimCtx.fillRect(x, 0, stripeWidth, 64);
       }
 
       const faceTexture = new THREE.CanvasTexture(faceCanvas);
       faceTexture.colorSpace = THREE.SRGBColorSpace;
+      faceTexture.anisotropy = 8;
 
       logoImg.onload = () => {
         renderFace();
@@ -281,40 +217,58 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       const faceMaterial = new THREE.MeshStandardMaterial({
         map: faceTexture,
         roughness: 0.32,
-        metalness: 0.06,
+        metalness: 0.08,
       });
 
       const rimMaterial = new THREE.MeshStandardMaterial({
         map: rimTexture,
-        roughness: 0.35,
+        roughness: 0.3,
         metalness: 0.85,
-        color: 0x86efac,
+        color: 0xFDE047,
       });
 
-      // Coin Geometry
+      // -----------------------------------------------------------
+      // COIN GEOMETRY WITH PERFECT FRONT & BACK FACE UV ALIGNMENT
+      // -----------------------------------------------------------
       const coinRadius = 1.45;
       const coinThickness = 0.22;
-      const geometry = new THREE.CylinderGeometry(coinRadius, coinRadius, coinThickness, 64);
-      // Both Face 1 (top cap) and Face 2 (bottom cap) use faceMaterial so the GT logo appears on BOTH sides!
-      const materials = [rimMaterial, faceMaterial, faceMaterial];
-      const coinMesh = new THREE.Mesh(geometry, materials);
 
+      // Front Face (Circle in XY plane, facing +Z towards camera)
+      const frontGeo = new THREE.CircleGeometry(coinRadius, 64);
+      const frontMesh = new THREE.Mesh(frontGeo, faceMaterial);
+      frontMesh.position.z = coinThickness / 2;
+
+      // Back Face (Circle rotated 180° around Y, facing -Z away from camera)
+      // When the coin rotates 180° horizontally, the back face is 100% upright and un-mirrored!
+      const backGeo = new THREE.CircleGeometry(coinRadius, 64);
+      backGeo.rotateY(Math.PI);
+      const backMesh = new THREE.Mesh(backGeo, faceMaterial);
+      backMesh.position.z = -coinThickness / 2;
+
+      // Milled Outer Rim Cylinder connecting front and back faces
+      const rimGeo = new THREE.CylinderGeometry(coinRadius, coinRadius, coinThickness, 64, 1, true);
+      rimGeo.rotateX(Math.PI / 2); // Align cylinder axis with Z
+      const rimMesh = new THREE.Mesh(rimGeo, rimMaterial);
+
+      // Coin Assembly Mesh
+      const coinMesh = new THREE.Group();
+      coinMesh.add(frontMesh);
+      coinMesh.add(backMesh);
+      coinMesh.add(rimMesh);
+
+      // Parent Group for Perspective Tilt
       const coinGroup = new THREE.Group();
       coinGroup.add(coinMesh);
       scene.add(coinGroup);
 
       // -----------------------------------------------------------
-      // EXACT CROSS-HORIZONTAL SLANT MATCHING REFERENCE VIDEO
+      // EXACT POSE & HORIZONTAL ROTATION MATCHING REFERENCE VIDEO
       // -----------------------------------------------------------
       // Reference video pose:
-      // Tilted slightly backward (X ~ 0.18), isometric depth (Y ~ 0.32),
-      // and diagonal cross-slant (Z ~ -0.44 rad ≈ -25 deg)!
-      coinGroup.rotation.x = 0.18;
-      coinGroup.rotation.y = 0.32;
-      coinGroup.rotation.z = -0.44; // Cross-horizontal angle!
-
-      // Initial coin orientation
-      coinMesh.rotation.x = Math.PI / 2;
+      // Tilted slightly forward on X (~12 deg = 0.21 rad) so the top rim is visible from above.
+      // NO sideways tilt (Z = 0) so the coin and logo stay perfectly level and upright!
+      coinGroup.rotation.x = 0.21;
+      coinGroup.rotation.z = -0.02;
 
       // 8. Animation Loop
       let startTime = performance.now();
@@ -324,13 +278,13 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         const elapsed = (time - startTime) * 0.001;
 
-        // EXACT CROSS-HORIZONTAL COIN FLIP MATCHING REFERENCE VIDEO:
-        // Because coinGroup has a -0.44 rad (-25 deg) cross slant, rotating around local X
-        // causes the coin to flip end-over-end across the diagonal/cross horizontal axis!
-        coinMesh.rotation.x = Math.PI / 2 + elapsed * 1.6;
+        // EXACT HORIZONTAL COIN ROTATION MATCHING REFERENCE VIDEO:
+        // Rotates around the vertical Y-axis!
+        // Logo stays 100% upright, never turns upside down, perfectly level!
+        coinMesh.rotation.y = elapsed * 1.5;
 
         // Gentle floating bob up and down
-        coinGroup.position.y = Math.sin(elapsed * 2.2) * 0.05;
+        coinGroup.position.y = Math.sin(elapsed * 2.0) * 0.04;
 
         renderer?.render(scene, camera);
       };
