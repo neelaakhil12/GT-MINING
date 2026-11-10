@@ -74,7 +74,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       heading: 'ANALYTICS & METRICS',
       items: [
-        { label: 'Dashboard & Counts', path: '/admin/dashboard', icon: LayoutDashboard },
+        { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
       ],
     },
     {
@@ -117,7 +117,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const getPageTitle = () => {
     const p = location.pathname;
-    if (p.includes('/dashboard')) return 'Overview & Real-Time Counts';
+    if (p.includes('/dashboard')) return 'Dashboard';
     if (p.includes('/community')) return 'Node & Social Media Content';
     if (p.includes('/onboarding-banners')) return 'Pre-Opening Slider Banners';
     if (p.includes('/home-banners')) return 'Home Page Carousel Banners';
