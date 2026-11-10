@@ -26,10 +26,16 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       const scene = new THREE.Scene();
 
       // 2. Camera with isometric perspective
-      const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+      const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
       camera.position.set(0, 0, 5.2);
 
-      // 3. Renderer
+      // Camera Headlight: moves with the camera to ensure BOTH sides of the coin are brilliantly lit!
+      const cameraHeadlight = new THREE.DirectionalLight(0xffffff, 3.2);
+      cameraHeadlight.position.set(0, 0, 1);
+      camera.add(cameraHeadlight);
+      scene.add(camera);
+
+      // 3. Renderer with high performance & alpha transparency
       renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: true,
@@ -41,30 +47,22 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       renderer.toneMappingExposure = 1.35;
       container.appendChild(renderer.domElement);
 
-      // 4. Lights
-      const ambientLight = new THREE.AmbientLight(0xdcfce7, 1.8);
+      // 4. Ambient and Rim Lights for rich metallic emerald luster
+      const ambientLight = new THREE.AmbientLight(0xe8fdf0, 2.2);
       scene.add(ambientLight);
 
-      const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
-      keyLight.position.set(-3, 3.5, 4.5);
-      scene.add(keyLight);
+      const topKeyLight = new THREE.DirectionalLight(0xfffbe8, 3.5);
+      topKeyLight.position.set(-2.5, 4, 3);
+      scene.add(topKeyLight);
 
-      const fillLight = new THREE.DirectionalLight(0x22c55e, 2.8);
-      fillLight.position.set(3.5, -2, 2.5);
-      scene.add(fillLight);
+      const bottomRimLight = new THREE.DirectionalLight(0x86efac, 2.5);
+      bottomRimLight.position.set(3, -3, -2);
+      scene.add(bottomRimLight);
 
-      const rimLight = new THREE.DirectionalLight(0x86efac, 2.5);
-      rimLight.position.set(0, 3, -2);
-      scene.add(rimLight);
-
-      // Sweeping specular glint light (moves across coin like in the video)
-      const sweepLight = new THREE.PointLight(0xffffff, 3.5, 6);
-      sweepLight.position.set(-1.5, 1.5, 2.5);
-      scene.add(sweepLight);
-
-      // 5. Canvas Textures for Coin Faces and Reeded Rim
+      // 5. High-Resolution Face Textures with Crystal-Clear GT Logo on BOTH SIDES
       const logoImg = new Image();
-      logoImg.src = '/gt-logo.png';
+      logoImg.crossOrigin = 'anonymous';
+      logoImg.src = '/gt-header-logo.png';
 
       const createFaceCanvas = (isBack: boolean) => {
         const canvas = document.createElement('canvas');
@@ -85,13 +83,13 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           const cy = 256;
           const r = 240;
 
-          // Radial Emerald Metallic Gradient
-          const bgGrad = ctx.createRadialGradient(cx - 50, cy - 60, 20, cx, cy, r);
-          bgGrad.addColorStop(0, '#86EFAC');   // Bright mint highlight
-          bgGrad.addColorStop(0.25, '#22C55E'); // GT Primary Emerald
-          bgGrad.addColorStop(0.65, '#15803D'); // Deep rich emerald
-          bgGrad.addColorStop(0.92, '#0A341B'); // Dark rim shadow
-          bgGrad.addColorStop(1, '#052E16');    // Edge border
+          // Rich Emerald Metallic Coin Field
+          const bgGrad = ctx.createRadialGradient(cx - 40, cy - 50, 20, cx, cy, r);
+          bgGrad.addColorStop(0, '#4ADE80');   // Bright emerald mint
+          bgGrad.addColorStop(0.3, '#22C55E'); // GT Primary Green
+          bgGrad.addColorStop(0.7, '#15803D'); // Deep rich green
+          bgGrad.addColorStop(0.95, '#052E16'); // Dark perimeter bevel
+          bgGrad.addColorStop(1, '#02210F');
 
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -99,98 +97,165 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           ctx.fill();
 
           // Outer Polished Metallic Gold/Green Rim
-          const rimGrad = ctx.createLinearGradient(60, 40, 450, 470);
-          rimGrad.addColorStop(0, '#FEF08A');   // Gold shimmer
-          rimGrad.addColorStop(0.35, '#86EFAC'); // Light green
-          rimGrad.addColorStop(0.7, '#22C55E');  // Emerald
+          const rimGrad = ctx.createLinearGradient(40, 40, 470, 470);
+          rimGrad.addColorStop(0, '#FEF08A');   // Bright warm gold accent
+          rimGrad.addColorStop(0.25, '#86EFAC'); // Mint highlight
+          rimGrad.addColorStop(0.65, '#22C55E'); // Emerald
           rimGrad.addColorStop(1, '#0F5327');   // Dark green
 
           ctx.lineWidth = 18;
           ctx.strokeStyle = rimGrad;
           ctx.stroke();
 
-          // Fine Bevel Highlight
+          // Inner Specular Bevel Line
           ctx.beginPath();
-          ctx.arc(cx, cy, r - 15, 0, Math.PI * 2);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+          ctx.arc(cx, cy, r - 14, 0, Math.PI * 2);
+          ctx.lineWidth = 3.5;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
           ctx.stroke();
 
-          // Deep Groove
+          // Deep Recessed Groove
           ctx.beginPath();
-          ctx.arc(cx, cy, r - 24, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r - 22, 0, Math.PI * 2);
           ctx.lineWidth = 4;
-          ctx.strokeStyle = 'rgba(5, 46, 22, 0.85)';
+          ctx.strokeStyle = 'rgba(2, 33, 15, 0.9)';
           ctx.stroke();
 
           // Minted Dashed Ring
           ctx.save();
           ctx.beginPath();
-          ctx.arc(cx, cy, r - 42, 0, Math.PI * 2);
+          ctx.arc(cx, cy, r - 38, 0, Math.PI * 2);
           ctx.lineWidth = 4.5;
           ctx.setLineDash([12, 10]);
-          ctx.strokeStyle = 'rgba(220, 252, 231, 0.85)';
+          ctx.strokeStyle = 'rgba(220, 252, 231, 0.9)';
           ctx.stroke();
           ctx.restore();
 
-          // Center Inner Recess Glow
-          const recessGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 170);
-          recessGrad.addColorStop(0, 'rgba(134, 239, 172, 0.35)');
-          recessGrad.addColorStop(0.7, 'rgba(34, 197, 94, 0.15)');
-          recessGrad.addColorStop(1, 'rgba(5, 46, 22, 0.3)');
+          // -----------------------------------------------------------
+          // HIGH-CONTRAST LUMINOUS CENTER MEDALLION FOR GT LOGO
+          // -----------------------------------------------------------
+          const coreRadius = 145;
 
+          // Luminous Radial Medallion Core (gives the logo crystal clarity!)
+          const coreGrad = ctx.createRadialGradient(cx - 20, cy - 30, 10, cx, cy, coreRadius);
+          coreGrad.addColorStop(0, '#FFFFFF');          // Bright center glow
+          coreGrad.addColorStop(0.4, '#DCFCE7');        // Soft pale emerald
+          coreGrad.addColorStop(0.8, '#86EFAC');        // Mint highlight
+          coreGrad.addColorStop(1, '#16A34A');          // Emerald edge
+
+          ctx.save();
           ctx.beginPath();
-          ctx.arc(cx, cy, 170, 0, Math.PI * 2);
-          ctx.fillStyle = recessGrad;
+          ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+          ctx.fillStyle = coreGrad;
+          ctx.shadowColor = 'rgba(2, 33, 15, 0.65)';
+          ctx.shadowBlur = 16;
+          ctx.shadowOffsetY = 6;
           ctx.fill();
 
-          // Draw GT Crystal Logo or Fallback Faceted Pyramid
+          // Medallion Gold Border
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = '#FEF08A';
+          ctx.stroke();
+          ctx.restore();
+
+          // Inner Decorative Bead Ring
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, coreRadius - 10, 0, Math.PI * 2);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(21, 128, 61, 0.6)';
+          ctx.stroke();
+          ctx.restore();
+
+          // -----------------------------------------------------------
+          // DRAW GT LOGO IN HIGH CLARITY (Vector + Image Composite)
+          // -----------------------------------------------------------
+          // 1. Faceted Emerald Crystal Pyramid (Always renders instantly!)
+          ctx.save();
+          ctx.translate(cx, cy - 8);
+
+          // Left Crystal Facet
+          ctx.beginPath();
+          ctx.moveTo(0, -80);
+          ctx.lineTo(-70, 42);
+          ctx.lineTo(0, 68);
+          ctx.closePath();
+          const leftFacetGrad = ctx.createLinearGradient(-70, -80, 0, 68);
+          leftFacetGrad.addColorStop(0, '#86EFAC');
+          leftFacetGrad.addColorStop(0.6, '#22C55E');
+          leftFacetGrad.addColorStop(1, '#15803D');
+          ctx.fillStyle = leftFacetGrad;
+          ctx.fill();
+
+          // Right Crystal Facet
+          ctx.beginPath();
+          ctx.moveTo(0, -80);
+          ctx.lineTo(70, 42);
+          ctx.lineTo(0, 68);
+          ctx.closePath();
+          const rightFacetGrad = ctx.createLinearGradient(0, -80, 70, 68);
+          rightFacetGrad.addColorStop(0, '#DCFCE7');
+          rightFacetGrad.addColorStop(0.5, '#16A34A');
+          rightFacetGrad.addColorStop(1, '#0A341B');
+          ctx.fillStyle = rightFacetGrad;
+          ctx.fill();
+
+          // Center Triangular Cutout / Inner Reflection
+          ctx.beginPath();
+          ctx.moveTo(0, -22);
+          ctx.lineTo(-40, 42);
+          ctx.lineTo(0, 68);
+          ctx.lineTo(40, 42);
+          ctx.closePath();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+
+          // Facet Bevel Highlights
+          ctx.beginPath();
+          ctx.moveTo(0, -80);
+          ctx.lineTo(0, 68);
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.stroke();
+
+          ctx.restore();
+
+          // 2. Overlay gt-header-logo.png with Drop Shadow if loaded
           if (logoImg.complete && logoImg.naturalWidth > 0) {
-            const logoSize = 200;
+            const logoSize = 180;
             ctx.save();
-            ctx.shadowColor = 'rgba(5, 46, 22, 0.8)';
-            ctx.shadowBlur = 18;
-            ctx.shadowOffsetY = 10;
-            ctx.drawImage(logoImg, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
-            ctx.restore();
-          } else {
-            // Crisp fallback faceted GT emblem
-            ctx.save();
-            ctx.translate(cx, cy);
-
-            // Facet 1 (Left)
-            ctx.beginPath();
-            ctx.moveTo(0, -90);
-            ctx.lineTo(-75, 45);
-            ctx.lineTo(0, 75);
-            ctx.closePath();
-            ctx.fillStyle = '#86EFAC';
-            ctx.fill();
-
-            // Facet 2 (Right)
-            ctx.beginPath();
-            ctx.moveTo(0, -90);
-            ctx.lineTo(75, 45);
-            ctx.lineTo(0, 75);
-            ctx.closePath();
-            ctx.fillStyle = '#22C55E';
-            ctx.fill();
-
-            // Facet 3 (Center Bottom)
-            ctx.beginPath();
-            ctx.moveTo(0, -20);
-            ctx.lineTo(-45, 45);
-            ctx.lineTo(0, 75);
-            ctx.lineTo(45, 45);
-            ctx.closePath();
-            ctx.fillStyle = '#DCFCE7';
-            ctx.fill();
-
+            ctx.shadowColor = 'rgba(2, 33, 15, 0.45)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 4;
+            ctx.drawImage(logoImg, cx - logoSize / 2, cy - logoSize / 2 - 8, logoSize, logoSize);
             ctx.restore();
           }
 
-          // 4 Cardinal Pips
-          const pipRadius = r - 42;
+          // 3. Crisp Embossed "GT" Monogram directly below
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '900 36px "Arial Black", "Montserrat", system-ui, sans-serif';
+
+          // 3D text shadow
+          ctx.fillStyle = '#052E16';
+          ctx.fillText('GT', cx, cy + 92);
+
+          // Metallic text fill
+          const textGrad = ctx.createLinearGradient(cx, cy + 70, cx, cy + 105);
+          textGrad.addColorStop(0, '#FFFFFF');
+          textGrad.addColorStop(0.5, '#FEF08A');
+          textGrad.addColorStop(1, '#86EFAC');
+          ctx.fillStyle = textGrad;
+          ctx.fillText('GT', cx, cy + 90);
+
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#0A341B';
+          ctx.strokeText('GT', cx, cy + 90);
+          ctx.restore();
+
+          // 4 Cardinal Gold Accent Pips
+          const pipRadius = r - 38;
           const pips = [
             { x: cx, y: cy - pipRadius },
             { x: cx, y: cy + pipRadius },
@@ -199,11 +264,11 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           ];
           pips.forEach((p) => {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
             ctx.fillStyle = '#FEF08A';
             ctx.fill();
-            ctx.strokeStyle = '#052E16';
             ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#052E16';
             ctx.stroke();
           });
 
@@ -229,7 +294,6 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         canvas.height = 64;
         const ctx = canvas.getContext('2d')!;
 
-        // Vertical ridges (milled coin edge)
         const stripeWidth = 512 / 80;
         for (let i = 0; i < 80; i++) {
           const x = i * stripeWidth;
@@ -256,48 +320,46 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       rimTexture.wrapT = THREE.ClampToEdgeWrapping;
       rimTexture.repeat.set(4, 1);
 
-      // 6. Materials
+      // 6. Materials (low metalness for crystal-clear, bright colors at ALL angles!)
       const faceMaterial = new THREE.MeshStandardMaterial({
         map: faceTexture,
-        roughness: 0.22,
-        metalness: 0.88,
+        roughness: 0.32,
+        metalness: 0.18,
       });
 
       const backMaterial = new THREE.MeshStandardMaterial({
         map: backTexture,
-        roughness: 0.22,
-        metalness: 0.88,
+        roughness: 0.32,
+        metalness: 0.18,
       });
 
       const rimMaterial = new THREE.MeshStandardMaterial({
         map: rimTexture,
         roughness: 0.35,
-        metalness: 0.92,
+        metalness: 0.85,
         color: 0x86efac,
       });
 
       // 7. Coin Geometry (Cylinder with 3D thickness)
-      // Cylinder materials order: [sides, top (front), bottom (back)]
       const coinRadius = 1.45;
       const coinThickness = 0.22;
       const geometry = new THREE.CylinderGeometry(coinRadius, coinRadius, coinThickness, 64);
       const materials = [rimMaterial, faceMaterial, backMaterial];
       const coinMesh = new THREE.Mesh(geometry, materials);
 
-      // Realistic 3D angle matching the reference video (tilted forward & slight dynamic roll)
+      // Group gives the isometric tilt perspective of the video:
       const coinGroup = new THREE.Group();
       coinGroup.add(coinMesh);
       scene.add(coinGroup);
 
-      // In Three.js, Cylinder is upright on Y axis, so orient top face (+Y) to face camera (+Z)
+      // Orient top face (+Y) to face +Z
       coinMesh.rotation.x = Math.PI / 2;
 
-      // Group gives the isometric tilt perspective of the video:
-      // Tilted forward ~22 deg, slight roll ~-10 deg
+      // Realistic 3D angle matching the reference video (tilted forward ~22 deg, slight dynamic roll)
       coinGroup.rotation.x = 0.38;
       coinGroup.rotation.z = -0.16;
 
-      // 8. Animation Loop matching reference video
+      // 8. Animation Loop
       let startTime = performance.now();
 
       const animate = (time: number) => {
@@ -305,15 +367,11 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         const elapsed = (time - startTime) * 0.001;
 
-        // Smooth 360-degree rotation on Y-axis (approx 4.5s per turn)
+        // Smooth 360-degree rotation on Y-axis (both front and back faces clearly visible in sequence!)
         coinGroup.rotation.y = elapsed * 1.4;
 
         // Subtle floating bob up and down
         coinGroup.position.y = Math.sin(elapsed * 2.2) * 0.06;
-
-        // Dynamic sweep light simulating moving lens flare shimmer
-        sweepLight.position.x = Math.sin(elapsed * 1.8) * 2.5;
-        sweepLight.position.y = Math.cos(elapsed * 1.8) * 1.8;
 
         renderer?.render(scene, camera);
       };
@@ -348,4 +406,3 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
     </div>
   );
 };
-

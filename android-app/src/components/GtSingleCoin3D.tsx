@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Image, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, Image, Text, Animated, Easing, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface GtSingleCoin3DProps {
@@ -19,7 +19,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   const shineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // 1. Continuous 360-degree rotation (approx 4.5s per turn like video)
+    // 1. Continuous 360-degree rotation (approx 4.6s per turn like video)
     const rotateLoop = Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
@@ -102,6 +102,82 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
   const coinSize = 68;
 
+  // Reusable Face Component for BOTH sides
+  const renderCoinFace = (isBack: boolean = false) => (
+    <LinearGradient
+      colors={['#86EFAC', '#22C55E', '#15803D', '#0A341B']}
+      start={{ x: 0.15, y: 0.1 }}
+      end={{ x: 0.85, y: 0.95 }}
+      style={[
+        styles.coinFace,
+        {
+          width: coinSize,
+          height: coinSize,
+          borderRadius: coinSize / 2,
+          backfaceVisibility: 'hidden',
+          transform: isBack ? [{ rotateY: '180deg' }] : [],
+        },
+      ]}
+    >
+      {/* Polished Metallic Bevel Rim */}
+      <View
+        style={[
+          styles.outerRim,
+          { width: coinSize - 4, height: coinSize - 4, borderRadius: (coinSize - 4) / 2 },
+        ]}
+      >
+        {/* Minted Dashed Ring with High-Contrast Luminous Center Medallion */}
+        <View
+          style={[
+            styles.dashedRing,
+            { width: coinSize - 16, height: coinSize - 16, borderRadius: (coinSize - 16) / 2 },
+          ]}
+        >
+          {/* Luminous Center Medallion Core for High Logo Clarity */}
+          <LinearGradient
+            colors={['#FFFFFF', '#DCFCE7', '#86EFAC']}
+            start={{ x: 0.1, y: 0.1 }}
+            end={{ x: 0.9, y: 0.9 }}
+            style={styles.logoMedallionCore}
+          >
+            {/* GT Crystal Logo */}
+            <Image
+              source={require('../../assets/gt-logo.png')}
+              style={{ width: coinSize * 0.44, height: coinSize * 0.44 }}
+              resizeMode="contain"
+            />
+            {/* Embossed GT Text */}
+            <Text style={styles.coinGtText}>GT</Text>
+          </LinearGradient>
+        </View>
+      </View>
+
+      {/* Sweeping Specular Light Glint Overlay */}
+      <Animated.View
+        style={[
+          styles.specularShineContainer,
+          {
+            opacity: shineOpacity,
+            transform: [{ translateX: shineTranslateX }, { rotateZ: '35deg' }],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={[
+            'rgba(255, 255, 255, 0)',
+            'rgba(255, 255, 255, 0.45)',
+            'rgba(254, 240, 138, 0.75)',
+            'rgba(255, 255, 255, 0.45)',
+            'rgba(255, 255, 255, 0)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.specularShine}
+        />
+      </Animated.View>
+    </LinearGradient>
+  );
+
   return (
     <View style={[styles.container, { width, height }]} pointerEvents="none">
       {/* Soft Ambient Emerald Glow */}
@@ -140,60 +216,11 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           />
         ))}
 
-        {/* FRONT COIN FACE */}
-        <LinearGradient
-          colors={['#86EFAC', '#22C55E', '#15803D', '#0A341B']}
-          start={{ x: 0.15, y: 0.1 }}
-          end={{ x: 0.85, y: 0.95 }}
-          style={[styles.coinFace, { width: coinSize, height: coinSize, borderRadius: coinSize / 2 }]}
-        >
-          {/* Polished Metallic Bevel Rim */}
-          <View
-            style={[
-              styles.outerRim,
-              { width: coinSize - 4, height: coinSize - 4, borderRadius: (coinSize - 4) / 2 },
-            ]}
-          >
-            {/* Minted Dashed Ring with Dark Emerald Center */}
-            <View
-              style={[
-                styles.dashedRing,
-                { width: coinSize - 16, height: coinSize - 16, borderRadius: (coinSize - 16) / 2 },
-              ]}
-            >
-              {/* GT Crystal Logo */}
-              <Image
-                source={require('../../assets/gt-logo.png')}
-                style={{ width: coinSize * 0.58, height: coinSize * 0.58 }}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
+        {/* FRONT COIN FACE (Visible when angle 0 - 90 & 270 - 360) */}
+        {renderCoinFace(false)}
 
-          {/* Sweeping Specular Light Glint Overlay */}
-          <Animated.View
-            style={[
-              styles.specularShineContainer,
-              {
-                opacity: shineOpacity,
-                transform: [{ translateX: shineTranslateX }, { rotateZ: '35deg' }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={[
-                'rgba(255, 255, 255, 0)',
-                'rgba(255, 255, 255, 0.45)',
-                'rgba(254, 240, 138, 0.75)', // Warm gold glint like video
-                'rgba(255, 255, 255, 0.45)',
-                'rgba(255, 255, 255, 0)',
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.specularShine}
-            />
-          </Animated.View>
-        </LinearGradient>
+        {/* BACK COIN FACE (Visible when angle 90 - 270) */}
+        {renderCoinFace(true)}
       </Animated.View>
     </View>
   );
@@ -234,6 +261,7 @@ const styles = StyleSheet.create({
     borderColor: '#15803D',
   },
   coinFace: {
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -244,7 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(254, 240, 138, 0.75)', // Gold accent
+    borderColor: 'rgba(254, 240, 138, 0.85)', // Gold accent
     backgroundColor: 'transparent',
   },
   dashedRing: {
@@ -254,6 +282,27 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: 'rgba(220, 252, 231, 0.85)',
     backgroundColor: 'rgba(5, 46, 22, 0.35)',
+  },
+  logoMedallionCore: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FEF08A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  coinGtText: {
+    fontSize: 7.5,
+    fontWeight: '900',
+    color: '#052E16',
+    letterSpacing: 0.5,
+    marginTop: -2,
   },
   specularShineContainer: {
     position: 'absolute',
