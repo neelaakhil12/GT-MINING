@@ -87,6 +87,15 @@ app.get('/api/home-banners', (req, res) => {
   return res.json({ success: true, banners });
 });
 
+// Public Referral Page Sliders Endpoint
+app.get('/api/referral-banners', (req, res) => {
+  const db = readDB();
+  const banners = (db.referralBanners || [])
+    .filter(b => b.isActive !== false)
+    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  return res.json({ success: true, banners });
+});
+
 // Public Tasks Endpoint
 app.get('/api/tasks', (req, res) => {
   const db = readDB();

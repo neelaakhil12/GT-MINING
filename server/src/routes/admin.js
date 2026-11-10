@@ -673,9 +673,70 @@ router.delete('/home-banners/:id', (req, res) => {
   db.homeBanners = db.homeBanners.filter(b => b.id !== req.params.id);
   createAuditLog(db, req.user?.id || 'admin', 'DELETE_HOME_BANNER', 'HOME_BANNER', req.params.id, `Deleted home banner "${banner?.title || req.params.id}"`);
   writeDB(db);
-  return res.json({ success: true, message: 'Banner deleted.' });
-  writeDB(db);
   return res.json({ success: true, message: 'Home banner deleted.' });
+});
+
+// ==========================================
+// REFERRAL SLIDES / BANNERS ADMIN CRUD
+// ==========================================
+
+// GET /api/admin/referral-banners
+router.get('/referral-banners', (req, res) => {
+  const db = readDB();
+  const banners = (db.referralBanners || []).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  return res.json({ success: true, banners });
+});
+
+// POST /api/admin/referral-banners
+router.post('/referral-banners', (req, res) => {
+  const db = readDB();
+  if (!db.referralBanners) db.referralBanners = [];
+  const newBanner = {
+    id: generateId('rb'),
+    tag: req.body.tag || 'PROTOCOL DIVIDEND',
+    title: req.body.title || 'New Referral Slide',
+    description: req.body.description || '',
+    imageUrl: req.body.imageUrl || '',
+    ctaText: req.body.ctaText || 'Invite Miners',
+    targetRoute: req.body.targetRoute || '/referrals',
+    accentColor: req.body.accentColor || '#22C55E',
+    gradientStart: req.body.gradientStart || '#064E3B',
+    gradientEnd: req.body.gradientEnd || '#022C17',
+    order: Number(req.body.order) || (db.referralBanners.length + 1),
+    isActive: req.body.isActive !== false,
+    createdAt: new Date().toISOString()
+  };
+  db.referralBanners.push(newBanner);
+  createAuditLog(db, req.user?.id || 'admin', 'CREATE_REFERRAL_BANNER', 'REFERRAL_BANNER', newBanner.id, `Created referral banner "${newBanner.title}"`);
+  writeDB(db);
+  return res.status(201).json({ success: true, banner: newBanner, message: 'Referral slide created successfully.' });
+});
+
+// PATCH /api/admin/referral-banners/:id
+router.patch('/referral-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.referralBanners) db.referralBanners = [];
+  const idx = db.referralBanners.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Referral slide not found' });
+  db.referralBanners[idx] = {
+    ...db.referralBanners[idx],
+    ...req.body,
+    updatedAt: new Date().toISOString()
+  };
+  createAuditLog(db, req.user?.id || 'admin', 'UPDATE_REFERRAL_BANNER', 'REFERRAL_BANNER', req.params.id, `Updated referral banner "${db.referralBanners[idx].title || 'Banner'}"`);
+  writeDB(db);
+  return res.json({ success: true, banner: db.referralBanners[idx], message: 'Referral slide updated.' });
+});
+
+// DELETE /api/admin/referral-banners/:id
+router.delete('/referral-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.referralBanners) db.referralBanners = [];
+  const banner = db.referralBanners.find(b => b.id === req.params.id);
+  db.referralBanners = db.referralBanners.filter(b => b.id !== req.params.id);
+  createAuditLog(db, req.user?.id || 'admin', 'DELETE_REFERRAL_BANNER', 'REFERRAL_BANNER', req.params.id, `Deleted referral banner "${banner?.title || req.params.id}"`);
+  writeDB(db);
+  return res.json({ success: true, message: 'Referral slide deleted successfully.' });
 });
 
 // Helper: Save base64 direct video upload to disk to keep database.json lightweight

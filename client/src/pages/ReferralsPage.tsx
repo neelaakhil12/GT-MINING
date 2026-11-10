@@ -28,21 +28,24 @@ interface ReferralFriendRecord {
   isActive: boolean;
 }
 
-const dividendSlides = [
+const defaultDividendSlides = [
   {
     tag: 'PROTOCOL DIVIDEND',
     title: 'Autonomous 10% Yield Accrual',
-    desc: 'Instant smart ledger execution with zero platform transaction...',
+    desc: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
+    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
   },
   {
     tag: 'TIER MULTIPLIER',
     title: 'Secondary Node Expansion',
-    desc: 'Deep multi-tier connectivity distributing block rewards continuously.',
+    desc: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
   },
   {
     tag: 'CONSENSUS BENEFIT',
     title: 'Zero Latency Distribution',
     desc: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
+    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
   },
 ];
 
@@ -50,6 +53,7 @@ export const ReferralsPage: React.FC = () => {
   const { user, updateWalletBalance } = useAuth();
   const { showToast } = useToast();
 
+  const [slides, setSlides] = useState<any[]>(defaultDividendSlides);
   const [activeSlide, setActiveSlide] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -99,15 +103,27 @@ export const ReferralsPage: React.FC = () => {
 
   useEffect(() => {
     fetchReferralData();
+    const fetchSlides = async () => {
+      try {
+        const res = await api.getPublicReferralBanners();
+        if (res && res.success && Array.isArray(res.banners) && res.banners.length > 0) {
+          setSlides(res.banners);
+        }
+      } catch (err) {
+        // Fallback to default slides
+      }
+    };
+    fetchSlides();
   }, []);
 
-  // Auto-cycle top dividend slides every 5s
+  // Auto-cycle top dividend slides every 4.5s
   useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % dividendSlides.length);
-    }, 5000);
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const referralCode = user?.referralCode || 'GT-VIP-779';
   const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
@@ -201,27 +217,49 @@ export const ReferralsPage: React.FC = () => {
     }
   };
 
+  const currentSlide = slides[activeSlide] || slides[0] || defaultDividendSlides[0];
+
   return (
     <div className="space-y-6 max-w-xl mx-auto px-1 sm:px-0">
 
-      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER */}
-      <div className="relative overflow-hidden rounded-[26px] p-5 sm:p-6 bg-gradient-to-br from-[#E8F8EE] via-[#F4FBF6] to-white border border-white/90 shadow-[0_8px_25px_rgba(34,197,94,0.08)]">
-        <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-            <span>{dividendSlides[activeSlide].tag}</span>
+      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER WITH IMAGE SLIDES */}
+      <div 
+        className="relative overflow-hidden rounded-[26px] p-5 sm:p-6 transition-all duration-500 border border-white/90 shadow-[0_8px_25px_rgba(34,197,94,0.08)] group"
+        style={{
+          background: currentSlide.imageUrl
+            ? `linear-gradient(135deg, rgba(6,78,59,0.85), rgba(2,44,23,0.92)), url(${currentSlide.imageUrl}) center/cover no-repeat`
+            : `linear-gradient(135deg, ${currentSlide.gradientStart || '#E8F8EE'}, ${currentSlide.gradientEnd || '#F4FBF6'})`,
+        }}
+      >
+        {/* If image present, render backdrop overlay */}
+        {currentSlide.imageUrl && (
+          <img
+            src={currentSlide.imageUrl}
+            alt={currentSlide.title}
+            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50 pointer-events-none transition-transform duration-700 group-hover:scale-105"
+          />
+        )}
+
+        <div className="relative z-10 flex items-center justify-between">
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase backdrop-blur-md ${
+            currentSlide.imageUrl
+              ? 'bg-white/20 text-white border border-white/30'
+              : 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20'
+          }`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+            <span>{currentSlide.tag || 'PROTOCOL DIVIDEND'}</span>
           </div>
 
           {/* Dots Indicator */}
           <div className="flex items-center gap-1.5">
-            {dividendSlides.map((_, idx) => (
+            {slides.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setActiveSlide(idx)}
                 className={`transition-all duration-300 rounded-full ${
                   activeSlide === idx
-                    ? 'w-5 h-1.5 bg-[#15803D]'
-                    : 'w-1.5 h-1.5 bg-black/20 hover:bg-black/40'
+                    ? currentSlide.imageUrl ? 'w-5 h-1.5 bg-[#4ADE80]' : 'w-5 h-1.5 bg-[#15803D]'
+                    : currentSlide.imageUrl ? 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70' : 'w-1.5 h-1.5 bg-black/20 hover:bg-black/40'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />
@@ -229,12 +267,16 @@ export const ReferralsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-3.5 space-y-1">
-          <h2 className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
-            {dividendSlides[activeSlide].title}
+        <div className="relative z-10 mt-3.5 space-y-1">
+          <h2 className={`text-xl sm:text-2xl font-black tracking-tight ${
+            currentSlide.imageUrl ? 'text-white drop-shadow-md' : 'text-[#0A341B]'
+          }`}>
+            {currentSlide.title}
           </h2>
-          <p className="text-xs sm:text-sm text-[#1E5E36] font-medium leading-relaxed">
-            {dividendSlides[activeSlide].desc}
+          <p className={`text-xs sm:text-sm font-medium leading-relaxed ${
+            currentSlide.imageUrl ? 'text-white/90 drop-shadow' : 'text-[#1E5E36]'
+          }`}>
+            {currentSlide.description || currentSlide.desc}
           </p>
         </div>
       </div>

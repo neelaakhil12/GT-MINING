@@ -142,7 +142,54 @@ const getInitialData = () => {
       }
     ],
     notifications: [],
-    adminAuditLogs: []
+    adminAuditLogs: [],
+    referralBanners: [
+      {
+        id: 'ref_banner_001',
+        tag: 'PROTOCOL DIVIDEND',
+        title: 'Autonomous 10% Yield Accrual',
+        description: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
+        imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
+        targetRoute: '/referrals',
+        ctaText: 'Invite Miners',
+        accentColor: '#22C55E',
+        gradientStart: '#064E3B',
+        gradientEnd: '#022C17',
+        order: 1,
+        isActive: true,
+        createdAt: now
+      },
+      {
+        id: 'ref_banner_002',
+        tag: 'TIER MULTIPLIER',
+        title: 'Secondary Node Expansion',
+        description: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
+        imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
+        targetRoute: '/referrals',
+        ctaText: 'Expand Circle',
+        accentColor: '#10B981',
+        gradientStart: '#0F5327',
+        gradientEnd: '#052E16',
+        order: 2,
+        isActive: true,
+        createdAt: now
+      },
+      {
+        id: 'ref_banner_003',
+        tag: 'CONSENSUS BENEFIT',
+        title: 'Zero Latency Distribution',
+        description: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
+        imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
+        targetRoute: '/referrals',
+        ctaText: 'View Dividends',
+        accentColor: '#34D399',
+        gradientStart: '#0B3B1E',
+        gradientEnd: '#01190C',
+        order: 3,
+        isActive: true,
+        createdAt: now
+      }
+    ]
   };
 };
 
@@ -155,7 +202,59 @@ export const readDB = () => {
       return initial;
     }
     const raw = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.referralBanners || parsed.referralBanners.length === 0) {
+      const now = new Date().toISOString();
+      parsed.referralBanners = [
+        {
+          id: 'ref_banner_001',
+          tag: 'PROTOCOL DIVIDEND',
+          title: 'Autonomous 10% Yield Accrual',
+          description: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
+          imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
+          targetRoute: '/referrals',
+          ctaText: 'Invite Miners',
+          accentColor: '#22C55E',
+          gradientStart: '#064E3B',
+          gradientEnd: '#022C17',
+          order: 1,
+          isActive: true,
+          createdAt: now
+        },
+        {
+          id: 'ref_banner_002',
+          tag: 'TIER MULTIPLIER',
+          title: 'Secondary Node Expansion',
+          description: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
+          imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
+          targetRoute: '/referrals',
+          ctaText: 'Expand Circle',
+          accentColor: '#10B981',
+          gradientStart: '#0F5327',
+          gradientEnd: '#052E16',
+          order: 2,
+          isActive: true,
+          createdAt: now
+        },
+        {
+          id: 'ref_banner_003',
+          tag: 'CONSENSUS BENEFIT',
+          title: 'Zero Latency Distribution',
+          description: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
+          imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
+          targetRoute: '/referrals',
+          ctaText: 'View Dividends',
+          accentColor: '#34D399',
+          gradientStart: '#0B3B1E',
+          gradientEnd: '#01190C',
+          order: 3,
+          isActive: true,
+          createdAt: now
+        }
+      ];
+      writeDB(parsed);
+    }
+    return parsed;
   } catch (err) {
     console.error('Error reading database file:', err);
     return getInitialData();

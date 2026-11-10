@@ -11,6 +11,7 @@ import {
   Platform,
   Dimensions,
   Linking,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,21 +37,24 @@ import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
 
-const dividendSlides = [
+const defaultDividendSlides = [
   {
     tag: 'PROTOCOL DIVIDEND',
     title: 'Autonomous 10% Yield Accrual',
-    desc: 'Instant smart ledger execution with zero platform transaction...',
+    desc: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
+    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
   },
   {
     tag: 'TIER MULTIPLIER',
     title: 'Secondary Node Expansion',
-    desc: 'Deep multi-tier connectivity distributing block rewards continuously.',
+    desc: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
   },
   {
     tag: 'CONSENSUS BENEFIT',
     title: 'Zero Latency Distribution',
     desc: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
+    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
   },
 ];
 
@@ -63,6 +67,7 @@ export const ReferralsScreen: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
   const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
+  const [slides, setSlides] = useState<any[]>(defaultDividendSlides);
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Dynamic Referral Statistics loaded from backend DB
@@ -130,14 +135,34 @@ export const ReferralsScreen: React.FC = () => {
 
   useEffect(() => {
     loadReferrals();
+    const fetchReferralBanners = async () => {
+      try {
+        const endpoints = [
+          API_BASE_URL,
+          'http://localhost:5050/api',
+        ];
+        for (const base of endpoints) {
+          try {
+            const res = await fetch(`${base}/referral-banners`);
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+              setSlides(data.banners);
+              break;
+            }
+          } catch {}
+        }
+      } catch {}
+    };
+    fetchReferralBanners();
   }, [user]);
 
   useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % dividendSlides.length);
+      setActiveSlide((prev) => (prev + 1) % slides.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const handleCopyCode = () => {
     Clipboard.setString(referralCode);
@@ -294,7 +319,8 @@ export const ReferralsScreen: React.FC = () => {
     } catch (e) {}
   };
 
-  const currentSlideData = dividendSlides[activeSlide];
+  const currentSlideData = slides[activeSlide] || slides[0] || defaultDividendSlides[0];
+  const hasSlideImage = !!currentSlideData.imageUrl;
 
   return (
     <View style={styles.container}>
@@ -308,29 +334,55 @@ export const ReferralsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
-          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL matching real_web_referrals.png */}
-          <View style={styles.carouselBannerCard}>
+          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL WITH IMAGE SLIDES */}
+          <View style={[styles.carouselBannerCard, hasSlideImage && styles.carouselBannerCardImage]}>
+            {hasSlideImage && (
+              <>
+                <Image
+                  source={{ uri: currentSlideData.imageUrl }}
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
+                  resizeMode="cover"
+                />
+                <LinearGradient
+                  colors={['rgba(6, 78, 59, 0.82)', 'rgba(2, 44, 23, 0.92)']}
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
+                />
+              </>
+            )}
+
             <View style={styles.carouselHeaderRow}>
-              <View style={styles.dividendTagPill}>
+              <View style={[styles.dividendTagPill, hasSlideImage && styles.dividendTagPillImage]}>
                 <View style={styles.pulsingGreenDot} />
-                <Text style={styles.dividendTagText}>{currentSlideData.tag}</Text>
+                <Text style={[styles.dividendTagText, hasSlideImage && { color: '#FFFFFF' }]}>
+                  {currentSlideData.tag || 'PROTOCOL DIVIDEND'}
+                </Text>
               </View>
 
               <View style={styles.dotsRow}>
-                {dividendSlides.map((_, idx) => (
+                {slides.map((_, idx) => (
                   <View
                     key={idx}
                     style={[
                       styles.dot,
-                      activeSlide === idx ? styles.dotActive : styles.dotInactive,
+                      activeSlide === idx
+                        ? hasSlideImage
+                          ? { width: 16, backgroundColor: '#4ADE80' }
+                          : styles.dotActive
+                        : hasSlideImage
+                        ? { width: 4, backgroundColor: 'rgba(255, 255, 255, 0.4)' }
+                        : styles.dotInactive,
                     ]}
                   />
                 ))}
               </View>
             </View>
 
-            <Text style={styles.carouselTitle}>{currentSlideData.title}</Text>
-            <Text style={styles.carouselDesc}>{currentSlideData.desc}</Text>
+            <Text style={[styles.carouselTitle, hasSlideImage && { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }]}>
+              {currentSlideData.title}
+            </Text>
+            <Text style={[styles.carouselDesc, hasSlideImage && { color: 'rgba(255, 255, 255, 0.9)', textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>
+              {currentSlideData.description || currentSlideData.desc}
+            </Text>
           </View>
 
           {/* 2. GROW YOUR NETWORK & 2x2 STATS GRID matching website */}
@@ -721,6 +773,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  carouselBannerCardImage: {
+    backgroundColor: '#064E3B',
+    borderColor: 'rgba(134, 239, 172, 0.3)',
   },
   carouselHeaderRow: {
     flexDirection: 'row',
@@ -737,6 +794,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(21, 128, 61, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(21, 128, 61, 0.2)',
+  },
+  dividendTagPillImage: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   pulsingGreenDot: {
     width: 6,

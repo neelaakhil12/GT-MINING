@@ -185,6 +185,13 @@ export const api = {
   deleteAdminHomeBanner: (id: string) => request<any>(`/admin/home-banners/${id}`, { method: 'DELETE' }),
   getPublicHomeBanners: () => request<any>('/home-banners'),
 
+  // Referral Page Carousel Banners
+  getAdminReferralBanners: () => request<any>('/admin/referral-banners'),
+  createAdminReferralBanner: (body: any) => request<any>('/admin/referral-banners', { method: 'POST', body: JSON.stringify(body) }),
+  updateAdminReferralBanner: (id: string, body: any) => request<any>(`/admin/referral-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminReferralBanner: (id: string) => request<any>(`/admin/referral-banners/${id}`, { method: 'DELETE' }),
+  getPublicReferralBanners: () => request<any>('/referral-banners'),
+
   // Tasks & Video Quests
   getAdminTasks: () => request<any>('/admin/tasks'),
   createAdminTask: (body: any) => request<any>('/admin/tasks', { method: 'POST', body: JSON.stringify(body) }),

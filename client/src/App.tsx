@@ -34,6 +34,7 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 import { AdminOnboardingBannersPage } from './pages/admin/AdminOnboardingBannersPage';
 import { AdminHomeBannersPage } from './pages/admin/AdminHomeBannersPage';
+import { AdminReferralBannersPage } from './pages/admin/AdminReferralBannersPage';
 import { AdminTasksPage } from './pages/admin/AdminTasksPage';
 import { AdminTaskSubmissionsPage } from './pages/admin/AdminTaskSubmissionsPage';
 import { AdminEmailRequestsPage } from './pages/admin/AdminEmailRequestsPage';
@@ -261,6 +262,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminHomeBannersPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/referral-banners"
+                element={
+                  <AdminRoute>
+                    <AdminReferralBannersPage />
                   </AdminRoute>
                 }
               />
