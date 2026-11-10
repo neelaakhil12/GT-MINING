@@ -17,13 +17,15 @@ router.get('/posts', (req, res) => {
     posts = posts.map(p => {
       const postComments = allComments.filter(c => c.postId === p.id);
       const likedBy = Array.isArray(p.likedBy) ? p.likedBy : [];
-      const likesCount = likedBy.length > 0 ? likedBy.length : Number(p.likesCount || 0);
+      const likesCount = Math.max(likedBy.length, Number(p.likesCount !== undefined ? p.likesCount : 0));
       const commentsCount = postComments.length > 0 ? postComments.length : Number(p.commentsCount || 0);
+      const viewsCount = Math.max(0, Number(p.viewsCount || 0));
       return {
         ...p,
         likedBy,
         likesCount,
-        commentsCount
+        commentsCount,
+        viewsCount
       };
     });
 
@@ -79,9 +81,16 @@ router.get('/posts/:id', (req, res) => {
       return res.status(404).json({ success: false, message: 'Post not found.' });
     }
 
+    const likesCount = Math.max(post.likedBy?.length || 0, Number(post.likesCount !== undefined ? post.likesCount : 0));
+    const viewsCount = Math.max(0, Number(post.viewsCount || 0));
+
     return res.json({
       success: true,
-      post
+      post: {
+        ...post,
+        likesCount,
+        viewsCount
+      }
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to retrieve post.' });
@@ -108,16 +117,17 @@ router.post('/posts/:id/like', (req, res) => {
     const userId = req.body.userId || req.headers['x-user-id'] || 'miner_guest';
     const alreadyLikedIndex = post.likedBy.indexOf(userId);
     let isLiked = false;
+    const baseLikes = Math.max(0, Number(post.likesCount !== undefined ? post.likesCount : post.likedBy.length));
 
     if (alreadyLikedIndex !== -1) {
       // Unlike
       post.likedBy.splice(alreadyLikedIndex, 1);
-      post.likesCount = post.likedBy.length;
+      post.likesCount = Math.max(0, baseLikes - 1);
       isLiked = false;
     } else {
       // Like
       post.likedBy.push(userId);
-      post.likesCount = post.likedBy.length;
+      post.likesCount = baseLikes + 1;
       isLiked = true;
     }
 
@@ -132,6 +142,28 @@ router.post('/posts/:id/like', (req, res) => {
   } catch (err) {
     console.error('Like error:', err);
     return res.status(500).json({ success: false, message: 'Failed to update like status.' });
+  }
+});
+
+// POST /api/community/posts/:id/view - Register or increment post view count
+router.post('/posts/:id/view', (req, res) => {
+  try {
+    const db = readDB();
+    if (!Array.isArray(db.communityPosts)) {
+      db.communityPosts = [];
+    }
+    const post = db.communityPosts.find(p => p.id === req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found.' });
+    }
+    post.viewsCount = Math.max(0, Number(post.viewsCount || 0)) + 1;
+    writeDB(db);
+    return res.json({
+      success: true,
+      viewsCount: post.viewsCount
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to record view.' });
   }
 });
 

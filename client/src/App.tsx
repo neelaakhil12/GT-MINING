@@ -25,6 +25,7 @@ import { PrivateNetworkPage } from './pages/PrivateNetworkPage';
 // Admin pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminReportsPage } from './pages/admin/AdminReportsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminMiningPage } from './pages/admin/AdminMiningPage';
 import { AdminReferralsPage } from './pages/admin/AdminReferralsPage';
@@ -247,6 +248,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminDashboardPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminRoute>
+                    <AdminReportsPage />
                   </AdminRoute>
                 }
               />

@@ -1,30 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import {
-  Pickaxe,
-  ArrowRight,
-  ChevronRight,
-  Mail,
-  Lock,
-  User,
-  Phone,
-  Gift,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
-  RefreshCw,
-  ArrowLeft,
-  Zap,
-  Globe,
-  Coins,
-  Repeat,
-} from 'lucide-react';
-import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 
 interface OnboardingSlide {
@@ -107,14 +83,13 @@ const getInitialSlides = (): OnboardingSlide[] => {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch {}
+    } catch { }
   }
   return onboardingSlides;
 };
 
 export const LandingPage: React.FC = () => {
-  const { user, isAuthenticated, login, signup, completeSignup, googleLogin } = useAuth();
-  const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -124,11 +99,21 @@ export const LandingPage: React.FC = () => {
     location.pathname === '/onboarding' ||
     location.pathname === '/tour';
 
-  // If tour is requested, open directly in onboarding
-  // Otherwise, start at splash screen
-  const [stage, setStage] = useState<'splash' | 'onboarding' | 'auth'>(
+  const [stage, setStage] = useState<'splash' | 'onboarding'>(
     isTourRequested ? 'onboarding' : 'splash'
   );
+
+  const [slides, setSlides] = useState<OnboardingSlide[]>(getInitialSlides);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [splashProgress, setSplashProgress] = useState(0);
+
+  // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
+  const [slideProgress, setSlideProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+
+  const handleProceedToLogin = () => {
+    navigate('/login', { replace: true });
+  };
 
   const handleProceedFromSplash = () => {
     if (isAuthenticated && !isTourRequested) {
@@ -137,9 +122,6 @@ export const LandingPage: React.FC = () => {
       setStage('onboarding');
     }
   };
-  const [slides, setSlides] = useState<OnboardingSlide[]>(getInitialSlides);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [splashProgress, setSplashProgress] = useState(0);
 
   const loadOnboardingBanners = async () => {
     try {
@@ -159,8 +141,7 @@ export const LandingPage: React.FC = () => {
           setSlides(mapped);
           try {
             localStorage.setItem('gt_cached_onboarding_banners', JSON.stringify(mapped));
-          } catch {}
-          // Preload updated images
+          } catch { }
           mapped.forEach((m: any) => {
             if (m.image) {
               const img = new Image();
@@ -169,10 +150,9 @@ export const LandingPage: React.FC = () => {
           });
         }
       }
-    } catch {}
+    } catch { }
   };
 
-  // Instant Image Preloading to eliminate black screen delays
   useEffect(() => {
     slides.forEach((s) => {
       if (s.image) {
@@ -186,94 +166,8 @@ export const LandingPage: React.FC = () => {
     loadOnboardingBanners();
     const handleUpdate = () => loadOnboardingBanners();
     window.addEventListener('gt_db_updated', handleUpdate);
-
-    // Handle return from Google OAuth redirect flow
-    const checkRedirect = async () => {
-      try {
-        const result = await checkGoogleRedirectResponse();
-        if (result && result.profile) {
-          setLoading(true);
-          await googleLogin({
-            email: result.profile.email,
-            name: result.profile.name,
-            googleId: result.profile.sub,
-            isSignup: result.isSignup,
-          });
-          showToast('Signed in with Google successfully!', 'success');
-          navigate('/dashboard', { replace: true });
-        }
-      } catch (err: any) {
-        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkRedirect();
-
     return () => window.removeEventListener('gt_db_updated', handleUpdate);
   }, []);
-
-  // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
-  const [slideProgress, setSlideProgress] = useState(0);
-  const [isHolding, setIsHolding] = useState(false);
-
-  // Auth form states
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [signupStep, setSignupStep] = useState<'DETAILS' | 'OTP' | 'PASSWORD'>('DETAILS');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [signupCountdown, setSignupCountdown] = useState(60);
-  const [canResendSignupOtp, setCanResendSignupOtp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Prevent browser autofill injection on page load
-  const [unlocked, setUnlocked] = useState(false);
-
-  // Signup OTP countdown timer
-  useEffect(() => {
-    let interval: any = null;
-    if (authMode === 'signup' && signupStep === 'OTP' && signupCountdown > 0) {
-      interval = setInterval(() => {
-        setSignupCountdown((prev) => {
-          if (prev <= 1) {
-            setCanResendSignupOtp(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [authMode, signupStep, signupCountdown]);
-
-  useEffect(() => {
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
-    setPhone('');
-    setOtpCode('');
-    setSignupStep('DETAILS');
-    setError(null);
-    const timer = setTimeout(() => setUnlocked(true), 350);
-    const handleTouch = () => setUnlocked(true);
-    window.addEventListener('click', handleTouch, { once: true });
-    window.addEventListener('keydown', handleTouch, { once: true });
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('click', handleTouch);
-      window.removeEventListener('keydown', handleTouch);
-    };
-  }, [authMode]);
 
   // Splash Screen Timer & Fast Progress Animation (instant ~200ms node sync)
   useEffect(() => {
@@ -298,10 +192,31 @@ export const LandingPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [stage, isAuthenticated, isTourRequested, navigate]);
 
-  // WhatsApp / Instagram Status auto-advance timer (~5.5s per slide)
+  // Handle slide transitions & auto-advance timer
+  const handleNextSlide = () => {
+    if (currentSlide < slides.length - 1) {
+      setCurrentSlide((prev) => prev + 1);
+      setSlideProgress(0);
+    } else {
+      // Completed all onboarding slides -> Go to /login!
+      handleProceedToLogin();
+    }
+  };
+
+  const handlePrevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide((prev) => prev - 1);
+      setSlideProgress(0);
+    }
+  };
+
+  // WhatsApp/Instagram-style story auto-progress timer (5 seconds per slide)
   useEffect(() => {
-    if (stage !== 'onboarding') return;
-    if (isHolding) return;
+    if (stage !== 'onboarding' || isHolding) return;
+
+    const DURATION_MS = 5000;
+    const TICK_MS = 50;
+    const INCREMENT = (TICK_MS / DURATION_MS) * 100;
 
     const interval = setInterval(() => {
       setSlideProgress((prev) => {
@@ -311,252 +226,16 @@ export const LandingPage: React.FC = () => {
             return 0;
           } else {
             clearInterval(interval);
-            setStage('auth');
+            handleProceedToLogin();
             return 100;
           }
         }
-        return prev + 1;
+        return prev + INCREMENT;
       });
-    }, 55);
+    }, TICK_MS);
 
     return () => clearInterval(interval);
-  }, [stage, currentSlide, isHolding]);
-
-  // Swipe gesture detection for mobile onboarding
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsHolding(true);
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    setIsHolding(false);
-    if (touchStartX === null || touchEndX === null) return;
-    const diff = touchStartX - touchEndX;
-    if (diff > 50) {
-      handleNextSlide();
-    } else if (diff < -50) {
-      handlePrevSlide();
-    }
-  };
-
-  const handleNextSlide = () => {
-    if (currentSlide < slides.length - 1) {
-      setCurrentSlide((prev) => prev + 1);
-      setSlideProgress(0);
-    } else {
-      setStage('auth');
-    }
-  };
-
-  const handlePrevSlide = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide((prev) => prev - 1);
-      setSlideProgress(0);
-    } else {
-      setSlideProgress(0);
-    }
-  };
-
-  const handleSkipToAuth = () => {
-    setStage('auth');
-  };
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      await login({ email, password });
-      showToast('Welcome back to GT Mining!', 'success');
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
-      showToast(err.message || 'Login failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 1: Send OTP to email
-  const handleSendSignupOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!fullName.trim()) {
-      setError('Please enter your full name.');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!phone.trim() || phone.trim().length < 8) {
-      setError('Please enter a valid phone number (at least 8 digits).');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.sendSignupOtp({
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        referralCode: referralCode.trim() || undefined,
-      });
-
-      if (res.success) {
-        showToast(`Verification code sent to ${email.trim()}!`, 'success');
-        setSignupStep('OTP');
-        setSignupCountdown(60);
-        setCanResendSignupOtp(false);
-        setOtpCode('');
-      } else {
-        setError(res.message || 'Failed to send verification code.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code.');
-      showToast(err.message || 'Error sending OTP', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Resend OTP
-  const handleResendSignupOtp = async () => {
-    if (!canResendSignupOtp || loading) return;
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await api.sendSignupOtp({
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        referralCode: referralCode.trim() || undefined,
-      });
-
-      if (res.success) {
-        showToast('New verification code sent! Check your inbox.', 'success');
-        setSignupCountdown(60);
-        setCanResendSignupOtp(false);
-        setOtpCode('');
-      } else {
-        setError(res.message || 'Could not resend code.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend verification code.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Verify OTP
-  const handleVerifySignupOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const cleanCode = otpCode.trim();
-    if (cleanCode.length !== 6) {
-      setError('Please enter the full 6-digit verification code.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.verifySignupOtp({
-        email: email.trim().toLowerCase(),
-        otpCode: cleanCode,
-      });
-
-      if (res.success) {
-        showToast('Email verified successfully! Now set your password.', 'success');
-        setSignupStep('PASSWORD');
-      } else {
-        setError(res.message || 'Invalid verification code.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Verification failed. Please check your code.');
-      showToast(err.message || 'Verification failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 3: Complete signup
-  const handleCompleteSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await completeSignup({
-        email: email.trim().toLowerCase(),
-        password,
-        confirmPassword,
-      });
-
-      showToast('Account created! Welcome to GT Mining!', 'success');
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Signup failed.');
-      showToast(err.message || 'Signup failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const isSignup = authMode === 'signup';
-      const profile = await triggerGoogleSignIn(isSignup);
-      if (profile && profile.email) {
-        await googleLogin({
-          email: profile.email,
-          name: profile.name,
-          googleId: profile.sub,
-          isSignup,
-        });
-        showToast('Signed in with Google successfully!', 'success');
-        navigate('/dashboard', { replace: true });
-      }
-    } catch (err: any) {
-      if (err.message && !err.message.includes('canceled') && !err.message.includes('closed')) {
-        showToast(err.message || 'No account registered with this Google email. Please sign up first.', 'error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fillDemoAccount = (role: 'user' | 'admin') => {
-    if (role === 'admin') {
-      setEmail('admin@gtmining.com');
-      setPassword('Admin@123456');
-    } else {
-      setEmail('demo@gtmining.com');
-      setPassword('User@123456');
-    }
-    setError(null);
-  };
+  }, [stage, currentSlide, slides.length, isHolding]);
 
   // ==========================================
   // 1. SPLASH SCREEN (STAGE === 'splash')
@@ -571,12 +250,12 @@ export const LandingPage: React.FC = () => {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#22C55E]/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#16A34A]/15 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Top brand row (Skip button on right, v2.6 protocol removed) */}
+        {/* Top brand row (Skip button on right) */}
         <div className="w-full flex justify-end items-center z-10 pt-4">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleProceedFromSplash();
+              handleProceedToLogin();
             }}
             className="text-xs font-bold text-neutral-400 hover:text-white px-3 py-1.5 rounded-full bg-white/5 border border-white/10 transition-colors"
           >
@@ -636,632 +315,122 @@ export const LandingPage: React.FC = () => {
   // ==========================================
   // 2. ONBOARDING SLIDES (STAGE === 'onboarding')
   // ==========================================
-  if (stage === 'onboarding') {
-    const slide = slides[currentSlide] || slides[0];
+  const slide = slides[currentSlide] || slides[0];
 
-    return (
-      <div
-        className="fixed inset-0 z-50 w-full h-[100dvh] flex items-center justify-center bg-black overflow-hidden select-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Onboarding Container: Full screen mobile view, Centered Phone Frame on Desktop */}
-        <div className="relative w-full h-full sm:max-w-[430px] sm:h-[880px] sm:max-h-[92vh] sm:rounded-[44px] sm:border-[6px] sm:border-neutral-800/80 sm:shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col justify-between bg-black">
-          
-          {/* Background Visual Layer - All slides kept loaded in DOM for instantaneous 0ms display */}
-          <div className="absolute inset-0 z-0">
-            {slides.map((s, idx) => (
-              <img
-                key={s.image || idx}
-                src={s.image}
-                alt={s.title}
-                loading="eager"
-                decoding="sync"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${
-                  idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
-                }`}
-              />
-            ))}
-            {/* Ambient Gradient Overlay for text and button legibility */}
-            <div
-              className={`absolute inset-0 pointer-events-none transition-colors duration-500 z-[1] ${
-                slide.theme === 'light'
-                  ? 'bg-gradient-to-b from-white/95 via-white/10 to-white/90'
-                  : 'bg-gradient-to-b from-black/85 via-black/20 to-black/95'
-              }`}
-            />
-          </div>
-
-          {/* Interactive Invisible Tap Zones (Left 40% goes Back, Right 60% goes Forward) */}
-          <div className="absolute inset-0 z-10 flex">
-            <div
-              className="w-[40%] h-[78%] cursor-pointer"
-              onClick={handlePrevSlide}
-              onMouseDown={() => setIsHolding(true)}
-              onMouseUp={() => setIsHolding(false)}
-              aria-label="Previous slide"
-              title="Tap left to go back"
-            />
-            <div
-              className="w-[60%] h-[78%] cursor-pointer"
-              onClick={handleNextSlide}
-              onMouseDown={() => setIsHolding(true)}
-              onMouseUp={() => setIsHolding(false)}
-              aria-label="Next slide"
-              title="Tap right to go forward"
-            />
-          </div>
-
-          {/* Top Bar: WhatsApp/Instagram Story Segmented Progress Bars & Text */}
-          <div className="relative z-20 pt-3 sm:pt-4 px-4 sm:px-5 space-y-3 shrink-0">
-            {/* 5 Segmented Story Progress Bars */}
-            <div className="flex items-center gap-1.5 w-full">
-              {slides.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`flex-1 h-1 rounded-full overflow-hidden cursor-pointer ${
-                    slide.theme === 'light' ? 'bg-black/15' : 'bg-white/25'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentSlide(idx);
-                    setSlideProgress(0);
-                  }}
-                >
-                  <div
-                    className={`h-full rounded-full transition-all duration-75 ${
-                      slide.theme === 'light' ? 'bg-black' : 'bg-white'
-                    }`}
-                    style={{
-                      width:
-                        idx < currentSlide
-                          ? '100%'
-                          : idx === currentSlide
-                          ? `${slideProgress}%`
-                          : '0%',
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Headline and Description (Directly below progress bars, matching reference) */}
-            <div className="pt-3 px-1 space-y-1.5">
-              <h1
-                className={`text-2xl sm:text-[28px] font-bold tracking-tight leading-tight transition-colors duration-300 ${
-                  slide.theme === 'light' ? 'text-[#0A1A2F]' : 'text-white'
-                }`}
-              >
-                {slide.title}
-              </h1>
-              <p
-                className={`text-xs sm:text-sm font-normal leading-relaxed max-w-sm transition-colors duration-300 ${
-                  slide.theme === 'light' ? 'text-neutral-600' : 'text-neutral-300'
-                }`}
-              >
-                {slide.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Spacer in middle for visuals */}
-          <div className="flex-1 pointer-events-none" />
-
-          {/* Bottom Action Area: Continue & Skip (Matching reference image) */}
-          <div className="relative z-20 px-6 pb-8 pt-4 flex flex-col items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={handleNextSlide}
-              className="w-full py-4 rounded-full bg-[#0B1528] sm:bg-[#0F172A] hover:bg-black text-white text-base font-bold shadow-2xl active:scale-[0.98] transition-all cursor-pointer border border-white/10"
-            >
-              Continue
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSkipToAuth}
-              className={`text-sm font-semibold py-1 transition-colors cursor-pointer ${
-                slide.theme === 'light'
-                  ? 'text-neutral-600 hover:text-black'
-                  : 'text-neutral-300 hover:text-white'
-              }`}
-            >
-              Skip
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ==========================================
-  // 3. AUTHENTICATION (STAGE === 'auth')
-  // ==========================================
   return (
-    <div className="min-h-screen w-full flex items-center justify-center py-6 px-3 sm:px-6 relative">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_50px_rgba(22,101,52,0.15)] p-6 sm:p-8 space-y-6 relative">
-
-        {/* Back to Tour Button */}
-        <button
-          onClick={() => {
-            setStage('onboarding');
-            setCurrentSlide(0);
-          }}
-          className="text-xs font-bold text-[#15803D] hover:underline flex items-center gap-1"
-        >
-          <span>‹ Back to Intro Tour</span>
-        </button>
-
-        {/* Logo & Headline */}
-        <div className="text-center space-y-2">
-          <div className="inline-block">
+    <div className="fixed inset-0 z-50 w-full h-[100dvh] flex items-center justify-center bg-black overflow-hidden select-none">
+      {/* Centered Story Frame */}
+      <div className="relative w-full h-full max-w-md mx-auto flex flex-col justify-between overflow-hidden shadow-2xl bg-black">
+        {/* Background Pre-rendered Slide Images */}
+        <div className="absolute inset-0 z-0">
+          {slides.map((s, idx) => (
             <img
-              src="/gt-header-logo.png"
-              alt="GT Mining"
-              className="w-14 h-14 object-contain mx-auto filter drop-shadow-[0_8px_20px_rgba(34,197,94,0.3)]"
+              key={s.id || idx}
+              src={s.image}
+              alt={s.title}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${
+                idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+              }`}
             />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">
-            {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
-          </h2>
-          <p className="text-xs text-[#1E5E36] font-medium">
-            {authMode === 'login'
-              ? 'Access your GT coin wallet & 4-hour mining node'
-              : signupStep === 'DETAILS'
-              ? 'Step 1 of 3: Enter profile details'
-              : signupStep === 'OTP'
-              ? 'Step 2 of 3: Verify email with 6-digit OTP'
-              : 'Step 3 of 3: Create account password'}
-          </p>
+          ))}
+
+          {/* Vignette Overlay for Crisp Contrast */}
+          <div
+            className={`absolute inset-0 pointer-events-none transition-colors duration-300 ${
+              slide.theme === 'light'
+                ? 'bg-gradient-to-t from-black/80 via-black/25 to-black/70'
+                : 'bg-gradient-to-t from-black/95 via-black/40 to-black/80'
+            }`}
+          />
         </div>
 
-        {/* Toggle Login / Sign Up Tabs */}
-        <div className="grid grid-cols-2 p-1 rounded-2xl bg-neutral-100/80 border border-neutral-200/80 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode('login');
-              setError(null);
-            }}
-            className={`py-2 rounded-xl transition-all ${
-              authMode === 'login'
-                ? 'bg-white text-[#0A341B] shadow-sm font-black'
-                : 'text-neutral-500 hover:text-[#0A341B]'
-            }`}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode('signup');
-              setError(null);
-            }}
-            className={`py-2 rounded-xl transition-all ${
-              authMode === 'signup'
-                ? 'bg-white text-[#0A341B] shadow-sm font-black'
-                : 'text-neutral-500 hover:text-[#0A341B]'
-            }`}
-          >
-            Sign Up
-          </button>
+        {/* Tap Interaction Zones (Left: Previous, Right: Next, Hold: Pause) */}
+        <div className="absolute inset-0 z-10 flex">
+          <div
+            className="w-[35%] h-[78%] cursor-pointer"
+            onClick={handlePrevSlide}
+            onMouseDown={() => setIsHolding(true)}
+            onMouseUp={() => setIsHolding(false)}
+            onTouchStart={() => setIsHolding(true)}
+            onTouchEnd={() => setIsHolding(false)}
+            aria-label="Previous slide"
+          />
+          <div
+            className="w-[65%] h-[78%] cursor-pointer"
+            onClick={handleNextSlide}
+            onMouseDown={() => setIsHolding(true)}
+            onMouseUp={() => setIsHolding(false)}
+            onTouchStart={() => setIsHolding(true)}
+            onTouchEnd={() => setIsHolding(false)}
+            aria-label="Next slide"
+          />
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-2 text-xs text-red-600">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* LOGIN FORM */}
-        {authMode === 'login' ? (
-          <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
-            {/* Decoy inputs to trap browser autofill */}
-            <input type="text" name="fake_landing_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-            <input type="password" name="fake_landing_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
-                  type="email"
-                  name="gt_landing_usr"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  readOnly={!unlocked}
-                  onFocus={() => setUnlocked(true)}
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="miner@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="gt_landing_pwd"
-                  autoComplete="new-password"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  readOnly={!unlocked}
-                  onFocus={() => setUnlocked(true)}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
-                  aria-label="Toggle password visibility"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50"
+        {/* Top Segmented Story Progress Bars */}
+        <div className="relative z-20 pt-3 px-4 flex items-center gap-1.5 shrink-0">
+          {slides.map((_, idx) => (
+            <div
+              key={idx}
+              className="flex-1 h-1 bg-white/25 rounded-full overflow-hidden cursor-pointer"
+              onClick={() => {
+                setCurrentSlide(idx);
+                setSlideProgress(0);
+              }}
             >
-              {loading ? 'Authenticating...' : 'Sign In to Account'}
-            </button>
-          </form>
-        ) : (
-          /* MULTI-STEP SIGNUP FORM */
-          <div className="space-y-3.5">
-            {/* Step Progress Indicators */}
-            <div className="flex items-center justify-between gap-1.5 px-1 pb-1">
-              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'DETAILS' || signupStep === 'OTP' || signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
-              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'OTP' || signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
-              <div className={`flex-1 h-1.5 rounded-full transition-all ${signupStep === 'PASSWORD' ? 'bg-[#22C55E]' : 'bg-neutral-200'}`} />
+              <div
+                className="h-full bg-white transition-all duration-75 rounded-full"
+                style={{
+                  width:
+                    idx < currentSlide
+                      ? '100%'
+                      : idx === currentSlide
+                      ? `${slideProgress}%`
+                      : '0%',
+                }}
+              />
             </div>
-
-            {/* ======================================================== */}
-            {/* STEP 1: DETAILS (Name, Email, Phone, Referral) */}
-            {/* ======================================================== */}
-            {signupStep === 'DETAILS' && (
-              <form onSubmit={handleSendSignupOtp} autoComplete="off" className="space-y-3">
-                {/* Decoy inputs */}
-                <input type="text" name="fake_landing_signup_email" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-                <input type="password" name="fake_landing_signup_pwd" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
-
-                {/* Full Name */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                    <input
-                      type="text"
-                      name="gt_landing_signup_name"
-                      autoComplete="off"
-                      readOnly={!unlocked}
-                      onFocus={() => setUnlocked(true)}
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Enter miner name"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                  </div>
-                </div>
-
-                {/* Email Address */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                    <input
-                      type="email"
-                      name="gt_landing_signup_email"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      readOnly={!unlocked}
-                      onFocus={() => setUnlocked(true)}
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="miner@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                  </div>
-                </div>
-
-                {/* Phone Number */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                    <input
-                      type="tel"
-                      name="gt_landing_signup_phone"
-                      autoComplete="off"
-                      readOnly={!unlocked}
-                      onFocus={() => setUnlocked(true)}
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Enter mobile number"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                  </div>
-                </div>
-
-                {/* Referral Code */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Referral Code (Optional)
-                  </label>
-                  <div className="relative">
-                    <Gift className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3 pointer-events-none" />
-                    <input
-                      type="text"
-                      name="gt_landing_signup_ref"
-                      autoComplete="off"
-                      readOnly={!unlocked}
-                      onFocus={() => setUnlocked(true)}
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                      placeholder="GT-VIP-779"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-neutral-200 font-mono text-xs text-[#0A341B] uppercase focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 mt-1 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>{loading ? 'Sending Code...' : 'Send Verification Code'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            )}
-
-            {/* ======================================================== */}
-            {/* STEP 2: OTP VERIFICATION */}
-            {/* ======================================================== */}
-            {signupStep === 'OTP' && (
-              <form onSubmit={handleVerifySignupOtp} className="space-y-4">
-                <div className="p-3 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 text-center space-y-1">
-                  <div className="text-xs font-bold text-[#0A341B]">Code sent to {email}</div>
-                  <div className="text-[11px] text-[#1E5E36]">Please enter the 6-digit verification code below</div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D] text-center block">
-                    6-Digit Email Code
-                  </label>
-                  <div className="relative">
-                    <ShieldCheck className="w-5 h-5 text-[#16A34A] absolute left-3.5 top-3 pointer-events-none" />
-                    <input
-                      type="text"
-                      maxLength={6}
-                      autoFocus
-                      required
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="••••••"
-                      className="w-full py-2.5 px-10 rounded-2xl bg-white border-2 border-[#22C55E]/50 text-center text-xl font-mono font-black tracking-[8px] text-[#0A341B] focus:outline-none focus:border-[#22C55E]"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError(null);
-                      setSignupStep('DETAILS');
-                    }}
-                    className="flex items-center gap-1 font-bold text-[#1E5E36] hover:text-[#0A341B] cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Edit Details</span>
-                  </button>
-
-                  {canResendSignupOtp ? (
-                    <button
-                      type="button"
-                      onClick={handleResendSignupOtp}
-                      disabled={loading}
-                      className="flex items-center gap-1 font-black text-[#16A34A] hover:underline cursor-pointer disabled:opacity-50"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Resend Code</span>
-                    </button>
-                  ) : (
-                    <span className="text-neutral-500 font-semibold text-[11px]">
-                      Resend in <strong className="text-[#0A341B] font-mono">{signupCountdown}s</strong>
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || otpCode.length !== 6}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{loading ? 'Verifying...' : 'Verify Code & Continue'}</span>
-                </button>
-              </form>
-            )}
-
-            {/* ======================================================== */}
-            {/* STEP 3: CREATE PASSWORD */}
-            {/* ======================================================== */}
-            {signupStep === 'PASSWORD' && (
-              <form onSubmit={handleCompleteSignup} autoComplete="off" className="space-y-3.5">
-                <div className="p-2.5 rounded-2xl bg-[#EAF8EE] border border-[#22C55E]/30 text-center text-xs font-bold text-[#16A34A]">
-                  Email Verified ✓! Set your secure password:
-                </div>
-
-                {/* Password */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Password (min 6 characters)
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15803D]">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-neutral-200 text-xs sm:text-sm text-[#0A341B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Submit Complete Button */}
-                <button
-                  type="submit"
-                  disabled={loading || password.length < 6 || password !== confirmPassword}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#15803D] hover:shadow-lg text-white font-black text-xs sm:text-sm shadow-[0_8px_20px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 mt-1 cursor-pointer"
-                >
-                  {loading ? 'Creating Account...' : 'Complete Registration & Start Mining'}
-                </button>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* Divider */}
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-neutral-200 w-full" />
-          <span className="bg-white px-3 text-[10px] font-bold text-neutral-400 uppercase tracking-widest absolute">
-            OR
-          </span>
+          ))}
         </div>
 
-        {/* Sign in with Google */}
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={loading}
-          className="w-full py-3 px-4 rounded-2xl bg-white border border-neutral-200/90 hover:bg-neutral-50 active:scale-95 transition-all text-xs font-bold text-neutral-700 flex items-center justify-center gap-3 shadow-xs"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          <span>Sign in with Google</span>
-        </button>
+        {/* Slide Title & Subtitle Info */}
+        <div className="relative z-20 px-6 pt-5 flex flex-col justify-start shrink-0">
+          <div className="space-y-1.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#4ADE80] font-mono block">
+              {slide.subtitle}
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              {slide.title}
+            </h2>
+            <p className="text-xs sm:text-sm font-normal leading-relaxed text-neutral-200 pt-1">
+              {slide.description}
+            </p>
+          </div>
+        </div>
 
-        {/* Footer switch prompt */}
-        <div className="text-center text-xs text-neutral-500 pt-1">
-          {authMode === 'login' ? (
-            <span>
-              Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signup');
-                  setError(null);
-                }}
-                className="font-bold text-[#15803D] hover:underline"
-              >
-                Sign Up
-              </button>
-            </span>
-          ) : (
-            <span>
-              Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('login');
-                  setError(null);
-                }}
-                className="font-bold text-[#15803D] hover:underline"
-              >
-                Sign In
-              </button>
-            </span>
-          )}
+        {/* Spacer */}
+        <div className="flex-1 pointer-events-none" />
+
+        {/* Bottom Action Area: Continue / Get Started & Skip */}
+        <div className="relative z-20 px-6 pb-8 pt-4 flex flex-col items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleNextSlide}
+            className="w-full py-4 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:brightness-110 text-white text-base font-black shadow-[0_10px_25px_rgba(34,197,94,0.4)] active:scale-[0.98] transition-all cursor-pointer border border-[#86EFAC]/30"
+          >
+            {currentSlide === slides.length - 1 ? 'Get Started & Mine Now 🚀' : 'Continue'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleProceedToLogin}
+            className="text-sm font-semibold py-1 text-neutral-300 hover:text-white transition-colors cursor-pointer"
+          >
+            Skip to Sign In
+          </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default LandingPage;

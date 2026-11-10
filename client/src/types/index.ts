@@ -100,6 +100,7 @@ export interface CommunityPost {
   isPinned: boolean;
   authorName: string;
   likesCount?: number;
+  viewsCount?: number;
   commentsCount?: number;
   likedBy?: string[];
   createdAt: string;

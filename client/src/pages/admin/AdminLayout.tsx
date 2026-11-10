@@ -19,6 +19,7 @@ import {
   Mail,
   Bell,
   CheckSquare,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -73,6 +74,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
     { label: 'Node', path: '/admin/community', icon: Globe },
     { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
     { label: 'Tasks', path: '/admin/tasks', icon: Video },

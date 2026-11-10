@@ -23,6 +23,7 @@ import {
   Sparkles,
   Send,
   X,
+  Eye,
 } from 'lucide-react-native';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
@@ -46,6 +47,7 @@ interface PostItem {
   dateStr: string;
   createdAt?: string;
   likes: number;
+  views?: number;
   comments: number;
   likedBy?: string[];
 }
@@ -117,6 +119,7 @@ export const CommunityScreen: React.FC = () => {
               dateStr: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recent',
               createdAt: p.createdAt,
               likes: Number(p.likesCount ?? 0),
+              views: Number(p.viewsCount ?? 0),
               comments: Number(p.commentsCount ?? 0),
               likedBy: Array.isArray(p.likedBy) ? p.likedBy : [],
             }));
@@ -415,6 +418,13 @@ export const CommunityScreen: React.FC = () => {
 
                   {/* Action Bar */}
                   <View style={styles.postActionsBar}>
+                    <View style={styles.actionBtn}>
+                      <Eye size={15} color="#15803D" />
+                      <Text style={[styles.actionBtnText, { color: '#15803D', fontWeight: '700' }]}>
+                        {Number(post.views ?? 0).toLocaleString()}
+                      </Text>
+                    </View>
+
                     <TouchableOpacity
                       onPress={() => toggleLike(post.id)}
                       style={styles.actionBtn}

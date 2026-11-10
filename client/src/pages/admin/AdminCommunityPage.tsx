@@ -39,6 +39,8 @@ export const AdminCommunityPage: React.FC = () => {
   const [authorName, setAuthorName] = useState('GT Foundation');
   const [authorRole, setAuthorRole] = useState('Verified Publisher');
   const [isPinned, setIsPinned] = useState(false);
+  const [viewsCount, setViewsCount] = useState<number | string>(0);
+  const [likesCount, setLikesCount] = useState<number | string>(0);
   const [saving, setSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +98,8 @@ export const AdminCommunityPage: React.FC = () => {
     setAuthorName('GT Foundation');
     setAuthorRole('Verified Publisher');
     setIsPinned(false);
+    setViewsCount(0);
+    setLikesCount(0);
     setModalOpen(true);
   };
 
@@ -107,6 +111,8 @@ export const AdminCommunityPage: React.FC = () => {
     setAuthorName(post.authorName || 'GT Foundation');
     setAuthorRole(post.authorRole || 'Verified Publisher');
     setIsPinned(Boolean(post.isPinned));
+    setViewsCount(post.viewsCount !== undefined ? post.viewsCount : 0);
+    setLikesCount(post.likesCount !== undefined ? post.likesCount : 0);
     setModalOpen(true);
   };
 
@@ -118,6 +124,8 @@ export const AdminCommunityPage: React.FC = () => {
     }
 
     const cleanedContent = cleanListSpacing(content.trim());
+    const parsedViews = Math.max(0, parseInt(String(viewsCount), 10) || 0);
+    const parsedLikes = Math.max(0, parseInt(String(likesCount), 10) || 0);
 
     setSaving(true);
     try {
@@ -130,6 +138,8 @@ export const AdminCommunityPage: React.FC = () => {
           authorName,
           authorRole,
           isPinned,
+          viewsCount: parsedViews,
+          likesCount: parsedLikes,
         });
         if (res.success) {
           showToast('Node post updated successfully!', 'success');
@@ -144,6 +154,8 @@ export const AdminCommunityPage: React.FC = () => {
           authorRole,
           isPinned,
           status: 'PUBLISHED',
+          viewsCount: parsedViews,
+          likesCount: parsedLikes,
         });
         if (res.success) {
           showToast('New post published to Node community feed!', 'success');
@@ -369,14 +381,18 @@ export const AdminCommunityPage: React.FC = () => {
               </div>
 
               {/* Footer Social Stats preview */}
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-[#A7C9B1]">
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-[#A7C9B1] flex-wrap gap-2">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1">
-                    <Heart className="w-3.5 h-3.5 text-red-400" />
-                    <span>{Number(post.likesCount || 0)}</span>
+                  <span className="flex items-center gap-1 text-[#86EFAC]" title="Custom Views Count">
+                    <Eye className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>{Number(post.viewsCount || 0).toLocaleString()} views</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="w-3.5 h-3.5 text-[#86EFAC]" />
+                  <span className="flex items-center gap-1 text-red-400" title="Custom Likes Count">
+                    <Heart className="w-3.5 h-3.5 fill-red-400/20" />
+                    <span>{Number(post.likesCount || 0).toLocaleString()} likes</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-[#A7C9B1]" title="Comments Count">
+                    <MessageSquare className="w-3.5 h-3.5" />
                     <span>{Number(post.commentsCount || 0)} comments</span>
                   </span>
                 </div>
@@ -436,6 +452,74 @@ export const AdminCommunityPage: React.FC = () => {
                   placeholder="e.g. GT Foundation, Tech Lead"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/30 text-white text-xs focus:border-[#FBBF24] outline-none"
                 />
+              </div>
+
+              {/* Manual Views & Likes Counts Configuration */}
+              <div className="p-3.5 rounded-2xl bg-[#05160E] border border-[#86EFAC]/25 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#86EFAC] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#FBBF24]" />
+                    <span>Custom Engagement Counts (Views & Likes)</span>
+                  </span>
+                  <span className="text-[10px] text-[#A7C9B1]/70 font-mono">Reflects on Web & App</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-[#A7C9B1] flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-[#22C55E]" />
+                      <span>Custom Views Count</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={viewsCount}
+                      onChange={(e) => setViewsCount(e.target.value)}
+                      placeholder="e.g. 1500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#0B2516] border border-[#86EFAC]/30 text-white text-xs font-bold focus:border-[#FBBF24] outline-none"
+                    />
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-[#A7C9B1]/70">Add:</span>
+                      {[100, 500, 1000].map((inc) => (
+                        <button
+                          key={inc}
+                          type="button"
+                          onClick={() => setViewsCount((prev: any) => (parseInt(String(prev || 0), 10) + inc))}
+                          className="px-2 py-0.5 rounded-md bg-[#22C55E]/15 hover:bg-[#22C55E]/30 text-[#86EFAC] text-[10px] font-bold border border-[#22C55E]/30 cursor-pointer"
+                        >
+                          +{inc >= 1000 ? `${inc / 1000}k` : inc}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-[#A7C9B1] flex items-center gap-1.5">
+                      <Heart className="w-3.5 h-3.5 text-red-400" />
+                      <span>Custom Likes Count</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={likesCount}
+                      onChange={(e) => setLikesCount(e.target.value)}
+                      placeholder="e.g. 250"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#0B2516] border border-[#86EFAC]/30 text-white text-xs font-bold focus:border-[#FBBF24] outline-none"
+                    />
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-[#A7C9B1]/70">Add:</span>
+                      {[10, 50, 100].map((inc) => (
+                        <button
+                          key={inc}
+                          type="button"
+                          onClick={() => setLikesCount((prev: any) => (parseInt(String(prev || 0), 10) + inc))}
+                          className="px-2 py-0.5 rounded-md bg-red-500/15 hover:bg-red-500/30 text-red-300 text-[10px] font-bold border border-red-500/30 cursor-pointer"
+                        >
+                          +{inc}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Cover Image Upload & URL */}

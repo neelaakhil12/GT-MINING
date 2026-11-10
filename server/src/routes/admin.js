@@ -112,6 +112,191 @@ router.get('/dashboard', (req, res) => {
   }
 });
 
+// GET /api/admin/reports - Comprehensive Reports Analytics with Daily/Total Mining & Users Breakdown
+router.get('/reports', (req, res) => {
+  try {
+    const db = readDB();
+    const now = new Date();
+    const nowMs = now.getTime();
+    const oneDayMs = 24 * 3600 * 1000;
+    const settings = db.settings || {};
+    const thresholdDays = Number(settings.activeThresholdDays || 7);
+    const thresholdMs = thresholdDays * 86400000;
+
+    const fakeEmails = new Set([
+      'demo@gtmining.com',
+      'rahul.varma@gmail.com',
+      'priya.sharma@yahoo.com',
+      'arjun.reddy@outlook.com',
+      'elena.rostova@crypto.net',
+      'vikram.patel@hotmail.com',
+      'sneha.rao@gmail.com',
+      'marcus.vance@tech.co',
+      'ananya.das@gmail.com',
+      'david.miller@ledger.org',
+      'chloe.dubois@paris.fr'
+    ]);
+
+    const users = (db.users || []).filter(u =>
+      !u.isDeleted &&
+      !fakeEmails.has((u.email || '').toLowerCase()) &&
+      u.id !== 'usr_demo_002'
+    );
+    const userIds = new Set(users.map(u => u.id));
+
+    const miningClaims = (db.miningClaims || []).filter(c => userIds.has(c.userId));
+    const transactions = (db.walletTransactions || []).filter(tx => userIds.has(tx.userId));
+
+    // 1. Lifetime Totals
+    const totalUsers = users.length;
+    let totalMiningDone = 0;
+    miningClaims.forEach(c => {
+      totalMiningDone += Number(c.amount || 0);
+    });
+    totalMiningDone = Number(totalMiningDone.toFixed(4));
+
+    let totalCoinsIssued = 0;
+    let totalReferralRewards = 0;
+    transactions.forEach(tx => {
+      if (tx.status === 'COMPLETED') {
+        const amt = Number(tx.amount || 0);
+        if (tx.type === 'REFERRAL_REWARD' || tx.type === 'REFERRAL_COMMISSION' || tx.type === 'REFERRAL_BONUS') {
+          totalReferralRewards += amt;
+        }
+        if (amt > 0) {
+          totalCoinsIssued += amt;
+        }
+      }
+    });
+
+    // 2. Today / Daily Metrics (Last 24 Hours & Today)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+
+    let dailyMiningToday = 0;
+    let dailyMiningClaimsToday = 0;
+    miningClaims.forEach(c => {
+      const cTime = new Date(c.claimedAt).getTime();
+      if (cTime >= startOfTodayMs || (nowMs - cTime) <= oneDayMs) {
+        dailyMiningToday += Number(c.amount || 0);
+        dailyMiningClaimsToday++;
+      }
+    });
+    dailyMiningToday = Number(dailyMiningToday.toFixed(4));
+
+    const dailyNewUsersToday = users.filter(u => {
+      const uTime = new Date(u.createdAt).getTime();
+      return uTime >= startOfTodayMs || (nowMs - uTime) <= oneDayMs;
+    }).length;
+
+    const dailyActiveMinersToday = users.filter(u => {
+      if (!u.lastMiningAt) return false;
+      return (nowMs - new Date(u.lastMiningAt).getTime()) <= oneDayMs;
+    }).length;
+
+    let activeUsersCount = 0;
+    let inactiveUsersCount = 0;
+    users.forEach(u => {
+      if (u.lastMiningAt && (nowMs - new Date(u.lastMiningAt).getTime()) <= thresholdMs) {
+        activeUsersCount++;
+      } else {
+        inactiveUsersCount++;
+      }
+    });
+
+    // 3. Daily History for Last 14 Days (for Bar Charts & Trend Tables)
+    const daysCount = 14;
+    const dailyHistory = [];
+    let runningCumulativeMining = 0;
+
+    // Calculate baseline before 14 days
+    const fourteenDaysAgoMs = nowMs - (14 * oneDayMs);
+    miningClaims.forEach(c => {
+      if (new Date(c.claimedAt).getTime() < fourteenDaysAgoMs) {
+        runningCumulativeMining += Number(c.amount || 0);
+      }
+    });
+
+    for (let i = daysCount - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      const dayStart = new Date(d);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(d);
+      dayEnd.setHours(23, 59, 59, 999);
+      const startMs = dayStart.getTime();
+      const endMs = dayEnd.getTime();
+
+      let dayMining = 0;
+      let dayClaims = 0;
+      miningClaims.forEach(c => {
+        const cTime = new Date(c.claimedAt).getTime();
+        if (cTime >= startMs && cTime <= endMs) {
+          dayMining += Number(c.amount || 0);
+          dayClaims++;
+        }
+      });
+
+      let dayUsers = 0;
+      users.forEach(u => {
+        const uTime = new Date(u.createdAt).getTime();
+        if (uTime >= startMs && uTime <= endMs) {
+          dayUsers++;
+        }
+      });
+
+      runningCumulativeMining += dayMining;
+
+      dailyHistory.push({
+        date: dateStr,
+        label: dayLabel,
+        miningAmount: Number(dayMining.toFixed(4)),
+        claimsCount: dayClaims,
+        newUsers: dayUsers,
+        cumulativeMining: Number(runningCumulativeMining.toFixed(4))
+      });
+    }
+
+    // 4. Pie Chart Distributions
+    const tokenDistribution = [
+      { name: 'Mining Claims', value: Math.max(0.1, totalMiningDone), color: '#22C55E' },
+      { name: 'Referral Rewards', value: Math.max(0.1, Number(totalReferralRewards.toFixed(2))), color: '#FBBF24' },
+      { name: 'Network Pool / Bonus', value: Math.max(0.1, Number((totalMiningDone * 0.2).toFixed(2))), color: '#38BDF8' }
+    ];
+
+    const userActivityDistribution = [
+      { name: 'Active Miners', value: Math.max(activeUsersCount, 1), color: '#22C55E' },
+      { name: 'Inactive Miners', value: Math.max(inactiveUsersCount, 0), color: '#64748B' }
+    ];
+
+    return res.json({
+      success: true,
+      summary: {
+        totalMiningDone,
+        dailyMiningToday,
+        dailyMiningClaimsToday,
+        totalUsers,
+        dailyNewUsersToday,
+        dailyActiveMinersToday,
+        activeUsersCount,
+        inactiveUsersCount,
+        totalCoinsIssued: Number(totalCoinsIssued.toFixed(4)),
+        totalMiningClaimsCount: miningClaims.length
+      },
+      dailyHistory,
+      tokenDistribution,
+      userActivityDistribution
+    });
+  } catch (err) {
+    console.error('Reports endpoint error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve reports data.' });
+  }
+});
+
 // GET /api/admin/users
 router.get('/users', (req, res) => {
   try {
@@ -471,13 +656,16 @@ router.get('/community/posts', (req, res) => {
 });
 
 router.post('/community/posts', (req, res) => {
-  const { title, content, imageUrl, category, status, isPinned } = req.body;
+  const { title, content, imageUrl, category, status, isPinned, viewsCount, likesCount } = req.body;
   if (!title || !content) {
     return res.status(400).json({ success: false, message: 'Title and content are required.' });
   }
 
   const db = readDB();
   const now = new Date().toISOString();
+  const parsedViews = viewsCount !== undefined && !isNaN(Number(viewsCount)) ? Math.max(0, parseInt(viewsCount, 10)) : 0;
+  const parsedLikes = likesCount !== undefined && !isNaN(Number(likesCount)) ? Math.max(0, parseInt(likesCount, 10)) : 0;
+
   const newPost = {
     id: generateId('post'),
     title: title.trim(),
@@ -488,7 +676,9 @@ router.post('/community/posts', (req, res) => {
     isPinned: Boolean(isPinned),
     authorName: req.user.fullName || 'Admin',
     createdBy: req.user.id,
-    likesCount: 0,
+    viewsCount: parsedViews,
+    likesCount: parsedLikes,
+    likedBy: [],
     commentsCount: 0,
     createdAt: now,
     updatedAt: now
@@ -506,7 +696,7 @@ router.post('/community/posts', (req, res) => {
 });
 
 router.patch('/community/posts/:id', (req, res) => {
-  const { title, content, imageUrl, category, status, isPinned } = req.body;
+  const { title, content, imageUrl, category, status, isPinned, viewsCount, likesCount } = req.body;
   const db = readDB();
   const post = db.communityPosts.find(p => p.id === req.params.id);
 
@@ -520,6 +710,12 @@ router.patch('/community/posts/:id', (req, res) => {
   if (category !== undefined) post.category = category;
   if (status !== undefined) post.status = status;
   if (isPinned !== undefined) post.isPinned = Boolean(isPinned);
+  if (viewsCount !== undefined && !isNaN(Number(viewsCount))) {
+    post.viewsCount = Math.max(0, parseInt(viewsCount, 10));
+  }
+  if (likesCount !== undefined && !isNaN(Number(likesCount))) {
+    post.likesCount = Math.max(0, parseInt(likesCount, 10));
+  }
   post.updatedAt = new Date().toISOString();
 
   createAuditLog(db, req.user.id, 'UPDATE_COMMUNITY_POST', 'COMMUNITY_POST', post.id, `Updated post "${post.title}"`);

@@ -14,6 +14,7 @@ import {
   Share2,
   Send,
   MessageCircle,
+  Eye,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -372,45 +373,52 @@ export const CommunityPage: React.FC = () => {
                 })()}
 
                 {/* Interactive Twitter-style Engagement Bar */}
-                <div className="flex items-center justify-between border-t border-b border-black/5 py-2.5 text-xs text-[#1E5E36]">
-                  {/* Like Button */}
-                  <button
-                    onClick={() => handleToggleLike(post.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
-                      isLiked
-                        ? 'text-rose-600 bg-rose-50'
-                        : 'hover:text-rose-600 hover:bg-rose-50/50'
-                    }`}
-                  >
-                    <Heart
-                      className={`w-4 h-4 transition-transform active:scale-125 ${
-                        isLiked ? 'fill-rose-500 text-rose-500' : ''
+                <div className="flex items-center justify-between border-t border-b border-black/5 py-2.5 text-xs text-[#1E5E36] flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#22C55E]/10 text-[#15803D] font-bold text-xs" title="Views Count">
+                    <Eye className="w-4 h-4 text-[#16A34A]" />
+                    <span>{Number(post.viewsCount || 0).toLocaleString()} views</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {/* Like Button */}
+                    <button
+                      onClick={() => handleToggleLike(post.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+                        isLiked
+                          ? 'text-rose-600 bg-rose-50'
+                          : 'hover:text-rose-600 hover:bg-rose-50/50'
                       }`}
-                    />
-                    <span>{currentLikes}</span>
-                  </button>
+                    >
+                      <Heart
+                        className={`w-4 h-4 transition-transform active:scale-125 ${
+                          isLiked ? 'fill-rose-500 text-rose-500' : ''
+                        }`}
+                      />
+                      <span>{currentLikes}</span>
+                    </button>
 
-                  {/* Comment Button */}
-                  <button
-                    onClick={() => handleToggleComments(post.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
-                      isCommentsOpen
-                        ? 'text-[#16A34A] bg-[#22C55E]/15'
-                        : 'hover:text-[#16A34A] hover:bg-[#22C55E]/10'
-                    }`}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>{comments[post.id]?.length !== undefined ? comments[post.id].length : Number(post.commentsCount || 0)}</span>
-                  </button>
+                    {/* Comment Button */}
+                    <button
+                      onClick={() => handleToggleComments(post.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+                        isCommentsOpen
+                          ? 'text-[#16A34A] bg-[#22C55E]/15'
+                          : 'hover:text-[#16A34A] hover:bg-[#22C55E]/10'
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{comments[post.id]?.length !== undefined ? comments[post.id].length : Number(post.commentsCount || 0)}</span>
+                    </button>
 
-                  {/* Share Button */}
-                  <button
-                    onClick={() => handleShare(post)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold hover:text-[#16A34A] hover:bg-[#22C55E]/10 cursor-pointer"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Share</span>
-                  </button>
+                    {/* Share Button */}
+                    <button
+                      onClick={() => handleShare(post)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-bold hover:text-[#16A34A] hover:bg-[#22C55E]/10 cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Share</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Inline Comment Section Drawer */}

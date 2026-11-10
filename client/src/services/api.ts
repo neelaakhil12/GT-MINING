@@ -145,6 +145,7 @@ export const api = {
 
   // Admin
   getAdminDashboard: () => request<any>('/admin/dashboard'),
+  getAdminReports: () => request<any>('/admin/reports'),
   getAdminUsers: (search?: string, status?: string) => {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
