@@ -20,6 +20,8 @@ import {
   Bell,
   CheckSquare,
   BarChart3,
+  Trophy,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -74,9 +76,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
-    { label: 'Node', path: '/admin/community', icon: Globe },
-    { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
+    { label: 'Top Miners', path: '/admin/top-miners', icon: Trophy },
     { label: 'Tasks', path: '/admin/tasks', icon: Video },
     {
       label: 'Submissions',
@@ -84,16 +84,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: CheckSquare,
       badge: pendingTaskCount,
     },
-    { label: 'Users', path: '/admin/users', icon: Users },
+    { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
     {
       label: 'Notifications',
       path: '/admin/email-requests',
       icon: Bell,
       badge: pendingEmailCount,
     },
+    { label: 'Users', path: '/admin/users', icon: Users },
+    { label: 'Withdrawals', path: '/admin/withdrawals', icon: ArrowUpRight },
+    { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
     { label: 'Parameters', path: '/admin/mining-settings', icon: Pickaxe },
-    { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
-    { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
+    { label: 'Referral', path: '/admin/referrals', icon: Gift },
+    { label: 'Transactions', path: '/admin/transactions', icon: Coins },
+    { label: 'Node', path: '/admin/community', icon: Globe },
   ];
 
   const handleLogout = () => {
@@ -104,19 +108,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const getPageTitle = () => {
     const p = location.pathname;
     if (p.includes('/dashboard')) return 'Dashboard';
-    if (p.includes('/community')) return 'Node';
-    if (p.includes('/sliders') || p.includes('/onboarding-banners') || p.includes('/home-banners') || p.includes('/referral-banners')) return 'Sliders';
+    if (p.includes('/top-miners')) return 'Top Miners Leaderboard';
     if (p.includes('/task-submissions')) return 'Submissions';
     if (p.includes('/tasks')) return 'Tasks';
-    if (p.includes('/users')) return 'Users';
+    if (p.includes('/sliders') || p.includes('/onboarding-banners') || p.includes('/home-banners') || p.includes('/referral-banners')) return 'Sliders';
     if (p.includes('/email-requests')) {
       return pendingEmailCount > 0
         ? `Notifications (${pendingEmailCount} Pending)`
         : 'Notifications';
     }
+    if (p.includes('/users')) return 'Users';
+    if (p.includes('/withdrawals')) return 'Withdrawals';
+    if (p.includes('/reports')) return 'Reports & Analytics';
     if (p.includes('/mining-settings')) return 'Parameters';
-    if (p.includes('/referrals')) return 'Referral Commissions & Dividends';
-    if (p.includes('/transactions')) return 'Transactions & Balances';
+    if (p.includes('/referrals')) return 'Referral';
+    if (p.includes('/transactions')) return 'Transactions';
+    if (p.includes('/community')) return 'Node';
     return 'Admin Control Center';
   };
 

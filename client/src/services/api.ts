@@ -214,4 +214,5 @@ export const api = {
   getAdminSettings: () => request<any>('/admin/settings'),
   updateAdminSettings: (body: any) => request<any>('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getAdminAuditLogs: () => request<any>('/admin/audit-logs'),
+  getAdminTopMiners: () => request<any>('/admin/top-miners'),
 };

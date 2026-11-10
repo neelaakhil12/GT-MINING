@@ -40,6 +40,8 @@ import { AdminSlidersPage } from './pages/admin/AdminSlidersPage';
 import { AdminTasksPage } from './pages/admin/AdminTasksPage';
 import { AdminTaskSubmissionsPage } from './pages/admin/AdminTaskSubmissionsPage';
 import { AdminEmailRequestsPage } from './pages/admin/AdminEmailRequestsPage';
+import { AdminTopMinersPage } from './pages/admin/AdminTopMinersPage';
+import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -248,6 +250,22 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminDashboardPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/top-miners"
+                element={
+                  <AdminRoute>
+                    <AdminTopMinersPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/withdrawals"
+                element={
+                  <AdminRoute>
+                    <AdminWithdrawalsPage />
                   </AdminRoute>
                 }
               />

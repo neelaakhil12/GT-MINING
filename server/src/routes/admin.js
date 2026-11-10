@@ -364,6 +364,78 @@ router.get('/users', (req, res) => {
   }
 });
 
+// GET /api/admin/top-miners - All GT miners ranked sequentially by their wallet GT coin balance
+router.get('/top-miners', (req, res) => {
+  try {
+    const db = readDB();
+    const fakeEmails = new Set([
+      'harishneela71@gmail.com',
+      'harishneela3@gmail.com',
+      'harishneela14@gmail.com',
+      'demo@gtmining.com',
+      'user@gtmining.com',
+      'test@gtmining.com',
+      'testuser@gtmining.com'
+    ]);
+
+    let users = (db.users || []).filter(u =>
+      !fakeEmails.has((u.email || '').toLowerCase()) &&
+      u.id !== 'usr_demo_002' &&
+      u.role !== 'ADMIN'
+    );
+
+    const miners = users.map(u => {
+      const wallet = (db.wallets || []).find(w => w.userId === u.id) || { availableBalance: 0, lifetimeEarned: 0 };
+      const claims = (db.miningClaims || []).filter(c => c.userId === u.id);
+      const totalMined = claims.reduce((acc, c) => acc + Number(c.amount || 0), 0);
+      const referralCount = (db.referrals || []).filter(r => r.referrerUserId === u.id).length;
+      const referralEarnings = (db.walletTransactions || [])
+        .filter(tx => tx.userId === u.id && (tx.type === 'REFERRAL' || tx.type === 'DIVIDEND' || tx.type === 'COMMISSION'))
+        .reduce((acc, tx) => acc + Number(tx.amount || 0), 0);
+
+      const gtWalletCoins = Number((Number(wallet.availableBalance) || 0).toFixed(4));
+      const lifetimeEarned = Number((Number(wallet.lifetimeEarned) || 0).toFixed(4));
+
+      return {
+        id: u.id,
+        fullName: u.fullName || 'Anonymous Miner',
+        email: u.email,
+        phone: u.phone || 'N/A',
+        referralCode: u.referralCode || 'N/A',
+        accountStatus: u.accountStatus || 'ACTIVE',
+        gtWalletCoins,
+        totalMined: Number(totalMined.toFixed(4)),
+        lifetimeEarned,
+        referralEarnings: Number(referralEarnings.toFixed(4)),
+        completedCycles: claims.length,
+        referralCount,
+        lastMiningAt: u.lastMiningAt || null,
+        createdAt: u.createdAt
+      };
+    });
+
+    // Sequence order: strictly by GT wallet coins count in descending order!
+    miners.sort((a, b) => b.gtWalletCoins - a.gtWalletCoins || b.totalMined - a.totalMined);
+
+    // Assign Rank #1, #2, #3, #4...
+    const rankedMiners = miners.map((m, idx) => ({
+      ...m,
+      rank: idx + 1
+    }));
+
+    const totalCoinsInCirculation = Number(rankedMiners.reduce((acc, m) => acc + m.gtWalletCoins, 0).toFixed(4));
+
+    return res.json({
+      success: true,
+      totalMiners: rankedMiners.length,
+      totalCoinsInCirculation,
+      topMiners: rankedMiners
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch top miners.' });
+  }
+});
+
 // PATCH /api/admin/users/:id - Update status (SUSPEND / ACTIVATE)
 router.patch('/users/:id', async (req, res) => {
   const { accountStatus, reason } = req.body;
