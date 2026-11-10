@@ -59,6 +59,7 @@ router.get('/config', (req, res) => {
     const db = readDB();
     const cooldownSeconds = Number(db.settings?.cooldownSeconds || 14400);
     const miningReward = Number(db.settings?.miningReward || 1.0);
+    const userMiningTarget = Number(db.settings?.userMiningTarget || 1000.0);
     const miningEnabled = db.settings?.miningEnabled !== false;
     const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
 
@@ -67,6 +68,7 @@ router.get('/config', (req, res) => {
       cooldownSeconds,
       cycleHours,
       miningReward,
+      userMiningTarget,
       miningEnabled,
       cycleBadge: `${cycleHours}h Cycle`
     });
@@ -76,6 +78,7 @@ router.get('/config', (req, res) => {
       cooldownSeconds: 14400,
       cycleHours: 4,
       miningReward: 1.0,
+      userMiningTarget: 1000.0,
       miningEnabled: true,
       cycleBadge: '4h Cycle'
     });
@@ -89,10 +92,17 @@ router.get('/status', requireAuth, (req, res) => {
     const user = db.users.find(u => u.id === req.user.id);
     const wallet = db.wallets.find(w => w.userId === req.user.id) || { availableBalance: 0.0, lifetimeEarned: 0.0 };
     const miningState = calculateMiningState(user, db.settings);
+    const userMiningTarget = Number(db.settings?.userMiningTarget || 1000.0);
+    const userTotalMined = Number(wallet.lifetimeEarned || 0.0);
+    const isTargetReached = userTotalMined >= userMiningTarget;
 
     return res.json({
       success: true,
       ...miningState,
+      isEligible: isTargetReached ? false : miningState.isEligible,
+      userMiningTarget,
+      userTotalMined,
+      isTargetReached,
       availableBalance: wallet.availableBalance,
       lifetimeEarned: wallet.lifetimeEarned,
       serverTime: new Date().toISOString()
@@ -124,8 +134,25 @@ router.post('/claim', requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mining is currently paused by platform administrators.' });
     }
 
+    const userMiningTarget = Number(db.settings?.userMiningTarget || 1000.0);
+    let existingWallet = db.wallets.find(w => w.userId === userId);
+    const currentMined = existingWallet ? Number(existingWallet.lifetimeEarned || 0) : 0;
+
+    if (currentMined >= userMiningTarget) {
+      lockManager.release(lockKey);
+      return res.status(400).json({
+        success: false,
+        targetReached: true,
+        userMiningTarget,
+        message: `Your mining target is completed! You have reached the maximum limit of ${userMiningTarget} GT for this account. To continue mining, please register again with a new email and details.`
+      });
+    }
+
     const cooldownSeconds = Number(db.settings.cooldownSeconds || 14400); // 4 hours
-    const rewardAmount = Number(db.settings.miningReward || 1.0);
+    let rewardAmount = Number(db.settings?.miningReward || 1.0);
+    if (currentMined + rewardAmount > userMiningTarget) {
+      rewardAmount = Math.max(0.01, Number((userMiningTarget - currentMined).toFixed(4)));
+    }
     const now = new Date();
     const nowMs = now.getTime();
 
@@ -223,6 +250,9 @@ router.post('/claim', requireAuth, async (req, res) => {
       nextEligibleAt,
       cooldownSeconds,
       remainingSeconds: cooldownSeconds,
+      userMiningTarget,
+      userTotalMined: wallet.lifetimeEarned,
+      isTargetReached: (wallet.lifetimeEarned >= userMiningTarget),
       wallet: {
         availableBalance: wallet.availableBalance,
         lifetimeEarned: wallet.lifetimeEarned

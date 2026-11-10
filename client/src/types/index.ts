@@ -60,6 +60,9 @@ export interface MiningStatus {
   cycleHours?: number;
   availableBalance: number;
   lifetimeEarned: number;
+  userMiningTarget?: number;
+  userTotalMined?: number;
+  isTargetReached?: boolean;
   serverTime: string;
 }
 

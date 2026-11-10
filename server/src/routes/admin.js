@@ -227,6 +227,7 @@ router.get('/mining-settings', (req, res) => {
     settings: {
       miningReward: db.settings.miningReward,
       cooldownSeconds: db.settings.cooldownSeconds,
+      userMiningTarget: Number(db.settings.userMiningTarget || 1000.0),
       miningEnabled: db.settings.miningEnabled !== false
     }
   });
@@ -234,11 +235,12 @@ router.get('/mining-settings', (req, res) => {
 
 // PATCH /api/admin/mining-settings
 router.patch('/mining-settings', (req, res) => {
-  const { miningReward, cooldownSeconds, miningEnabled, reason } = req.body;
+  const { miningReward, cooldownSeconds, userMiningTarget, miningEnabled, reason } = req.body;
   const db = readDB();
 
   if (miningReward !== undefined) db.settings.miningReward = Math.max(0.1, Number(miningReward));
   if (cooldownSeconds !== undefined) db.settings.cooldownSeconds = Math.max(60, Number(cooldownSeconds));
+  if (userMiningTarget !== undefined) db.settings.userMiningTarget = Math.max(1, Number(userMiningTarget));
   if (miningEnabled !== undefined) db.settings.miningEnabled = Boolean(miningEnabled);
 
   createAuditLog(
@@ -247,8 +249,13 @@ router.patch('/mining-settings', (req, res) => {
     'UPDATE_MINING_SETTINGS',
     'SETTINGS',
     'mining',
-    reason || 'Updated mining reward configuration',
-    { miningReward: db.settings.miningReward, cooldownSeconds: db.settings.cooldownSeconds, miningEnabled: db.settings.miningEnabled }
+    reason || 'Updated mining reward and target configuration',
+    {
+      miningReward: db.settings.miningReward,
+      cooldownSeconds: db.settings.cooldownSeconds,
+      userMiningTarget: db.settings.userMiningTarget,
+      miningEnabled: db.settings.miningEnabled
+    }
   );
 
   writeDB(db);
@@ -259,6 +266,7 @@ router.patch('/mining-settings', (req, res) => {
     settings: {
       miningReward: db.settings.miningReward,
       cooldownSeconds: db.settings.cooldownSeconds,
+      userMiningTarget: Number(db.settings.userMiningTarget || 1000.0),
       miningEnabled: db.settings.miningEnabled
     }
   });

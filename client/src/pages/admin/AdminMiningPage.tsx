@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pickaxe, Clock, ShieldCheck, Save, ToggleLeft, ToggleRight, Sparkles } from 'lucide-react';
+import { Pickaxe, Clock, ShieldCheck, Save, ToggleLeft, ToggleRight, Sparkles, Target } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
@@ -10,6 +10,7 @@ export const AdminMiningPage: React.FC = () => {
 
   const [miningReward, setMiningReward] = useState<number>(1.0);
   const [cooldownHours, setCooldownHours] = useState<number>(4);
+  const [userMiningTarget, setUserMiningTarget] = useState<number>(1000);
   const [miningEnabled, setMiningEnabled] = useState<boolean>(true);
   const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -25,6 +26,7 @@ export const AdminMiningPage: React.FC = () => {
       if (res.success && res.settings) {
         setMiningReward(Number(res.settings.miningReward || 1.0));
         setCooldownHours(Math.round(Number(res.settings.cooldownSeconds || 14400) / 3600));
+        setUserMiningTarget(Number(res.settings.userMiningTarget || 1000));
         setMiningEnabled(res.settings.miningEnabled !== false);
       }
     } catch (err: any) {
@@ -42,8 +44,9 @@ export const AdminMiningPage: React.FC = () => {
       const res = await api.updateMiningSettings({
         miningReward: Number(miningReward),
         cooldownSeconds: Number(cooldownHours) * 3600,
+        userMiningTarget: Number(userMiningTarget),
         miningEnabled,
-        reason: reason.trim() || 'Updated mining reward and cooldown parameters',
+        reason: reason.trim() || 'Updated mining reward, cooldown, and target parameters',
       });
 
       if (res.success) {
@@ -140,6 +143,50 @@ export const AdminMiningPage: React.FC = () => {
                     {h}h
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* User Mining Target Limit */}
+            <div className="space-y-2 p-4 rounded-xl bg-[#071F14]/70 border border-[#86EFAC]/20 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-[#FBBF24]" />
+                  <span>User Maximum Mining Target / Limit (GT)</span>
+                </label>
+                <span className="text-[11px] font-mono font-bold text-[#FBBF24] bg-[#FBBF24]/10 px-2.5 py-0.5 rounded-full border border-[#FBBF24]/20">
+                  Account Cap: {userMiningTarget.toLocaleString()} GT
+                </span>
+              </div>
+              <p className="text-[11px] text-[#A7C9B1]">
+                Maximum total GT a single user account can mine. Once this target is reached, the mine button becomes locked with a completion popup on both App and Website. Users must register again with new details to continue mining.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center pt-1">
+                <input
+                  type="number"
+                  step="10"
+                  min="1"
+                  required
+                  value={userMiningTarget}
+                  onChange={(e) => setUserMiningTarget(parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 1000, 2000"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {[500, 1000, 2000, 3000, 5000].map((tgt) => (
+                    <button
+                      key={tgt}
+                      type="button"
+                      onClick={() => setUserMiningTarget(tgt)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        userMiningTarget === tgt
+                          ? 'bg-[#FBBF24] text-[#07130D] shadow-[0_0_12px_rgba(251,191,36,0.4)]'
+                          : 'bg-white/5 text-[#A7C9B1] hover:bg-white/10 border border-white/10'
+                      }`}
+                    >
+                      {tgt.toLocaleString()} GT
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

@@ -20,6 +20,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Sparkles,
+  Lock,
+  Target,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
@@ -41,6 +43,7 @@ export const MiningScreen: React.FC = () => {
   const [cycleHours, setCycleHours] = useState<number>(4);
   const [cooldownSec, setCooldownSec] = useState<number>(14400);
   const [rewardAmount, setRewardAmount] = useState<number>(1.0);
+  const [userMiningTarget, setUserMiningTarget] = useState<number>(1000);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/mining/config`)
@@ -50,6 +53,7 @@ export const MiningScreen: React.FC = () => {
           if (data.cycleHours) setCycleHours(Number(data.cycleHours));
           if (data.cooldownSeconds) setCooldownSec(Number(data.cooldownSeconds));
           if (data.miningReward) setRewardAmount(Number(data.miningReward));
+          if (data.userMiningTarget) setUserMiningTarget(Number(data.userMiningTarget));
         }
       })
       .catch(() => {});
@@ -97,9 +101,19 @@ export const MiningScreen: React.FC = () => {
     )}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const isEligible = !isMiningActive || miningStats.cycleRemainingSeconds <= 0;
+  const userTotalMined = Number(user?.totalMined ?? user?.balance ?? 0);
+  const isTargetCompleted = userTotalMined >= userMiningTarget;
+  const isEligible = !isTargetCompleted && (!isMiningActive || miningStats.cycleRemainingSeconds <= 0);
 
   const handleClaimOrMine = () => {
+    if (isTargetCompleted) {
+      Alert.alert(
+        'Mining Target Completed!',
+        `Your mining target is completed! You have reached your maximum lifetime limit of ${userMiningTarget.toLocaleString()} GT for this account.\n\nTo continue mining, please register again with a new email and details.`
+      );
+      return;
+    }
+
     if (!isEligible) {
       Alert.alert(
         'Mining Cooldown Active',
@@ -124,7 +138,7 @@ export const MiningScreen: React.FC = () => {
     } catch (e) {}
 
     startMiningSession();
-    Alert.alert('Mining Block Verified!', '+1.00 GT added to your balance.');
+    Alert.alert('Mining Block Verified!', `+${rewardAmount.toFixed(2)} GT added to your balance.`);
   };
 
   // Progress percentage (Dynamic cycle duration from backend)
@@ -217,6 +231,32 @@ export const MiningScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
+
+            {/* Account Mining Target Cap Progress */}
+            <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.06)' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Target size={13} color="#F59E0B" />
+                  <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#1E5E36', letterSpacing: 0.5 }}>ACCOUNT MINING TARGET</Text>
+                </View>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: isTargetCompleted ? '#D97706' : '#15803D' }}>
+                  {userTotalMined.toFixed(1)} / {userMiningTarget.toLocaleString()} GT
+                </Text>
+              </View>
+              <View style={{ width: '100%', height: 6, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                <LinearGradient
+                  colors={isTargetCompleted ? ['#F59E0B', '#FBBF24'] : ['#22C55E', '#16A34A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ width: `${Math.min(100, (userTotalMined / userMiningTarget) * 100)}%`, height: '100%', borderRadius: 3 }}
+                />
+              </View>
+              {isTargetCompleted && (
+                <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#D97706', textAlign: 'center', marginTop: 4 }}>
+                  Target completed ({userMiningTarget.toLocaleString()} GT limit). Mining locked for this account.
+                </Text>
+              )}
+            </View>
           </View>
 
           {/* 4. MINING SESSION Card matching website mobile view */}
@@ -267,16 +307,18 @@ export const MiningScreen: React.FC = () => {
           <View style={styles.actionBtnSection}>
             <TouchableOpacity
               onPress={handleClaimOrMine}
-              disabled={!isEligible}
-              activeOpacity={isEligible ? 0.88 : 1}
+              disabled={false}
+              activeOpacity={0.88}
               style={[
                 styles.mainMiningActionBtn,
-                !isEligible && { opacity: 0.75 }
+                !isEligible && !isTargetCompleted && { opacity: 0.75 }
               ]}
             >
               <LinearGradient
                 colors={
-                  isEligible
+                  isTargetCompleted
+                    ? ['#D97706', '#B45309']
+                    : isEligible
                     ? ['#22C55E', '#16A34A']
                     : ['#374151', '#1F2937']
                 }
@@ -284,7 +326,9 @@ export const MiningScreen: React.FC = () => {
                 end={{ x: 1, y: 0 }}
                 style={styles.mainMiningGradient}
               >
-                {isEligible ? (
+                {isTargetCompleted ? (
+                  <Lock size={18} color="#FEF3C7" />
+                ) : isEligible ? (
                   <Pickaxe size={18} color="#FFFFFF" />
                 ) : (
                   <Clock size={18} color="#9CA3AF" />
@@ -292,17 +336,22 @@ export const MiningScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.mainMiningBtnText,
-                    !isEligible && { color: '#E5E7EB' }
+                    isTargetCompleted && { color: '#FEF3C7' },
+                    !isEligible && !isTargetCompleted && { color: '#E5E7EB' }
                   ]}
                 >
-                  {isEligible
+                  {isTargetCompleted
+                    ? `Target Completed (${userTotalMined.toFixed(0)}/${userMiningTarget.toLocaleString()} GT)`
+                    : isEligible
                     ? `Activate ${cycleHours}-Hour Mining (+${rewardAmount.toFixed(1)} GT)`
                     : `Mining Active (${formatCountdown(miningStats.cycleRemainingSeconds)})`}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
             <Text style={styles.actionHintText}>
-              {isEligible
+              {isTargetCompleted
+                ? `Mining target reached (${userMiningTarget.toLocaleString()} GT limit). Tap above to view details.`
+                : isEligible
                 ? `Tap above to activate ${cycleHours}-hour mining session and test live block animation`
                 : `Mining session in progress. Next claim unlock in ${formatCountdown(miningStats.cycleRemainingSeconds)}`}
             </Text>

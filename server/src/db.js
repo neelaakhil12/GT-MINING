@@ -63,6 +63,7 @@ const getInitialData = () => {
       websiteUrl: 'http://localhost:5174',
       miningReward: 1.0,
       cooldownSeconds: 14400, // 4 hours
+      userMiningTarget: 1000.0, // Maximum total GT a single account can mine before being capped
       referralReward: 0.5,
       activeThresholdDays: 7,
       miningEnabled: true,
@@ -203,6 +204,10 @@ export const readDB = () => {
     }
     const raw = fs.readFileSync(DB_FILE, 'utf8');
     const parsed = JSON.parse(raw);
+    if (!parsed.settings) parsed.settings = {};
+    if (parsed.settings.userMiningTarget === undefined) {
+      parsed.settings.userMiningTarget = 1000.0;
+    }
     if (!parsed.referralBanners || parsed.referralBanners.length === 0) {
       const now = new Date().toISOString();
       parsed.referralBanners = [
