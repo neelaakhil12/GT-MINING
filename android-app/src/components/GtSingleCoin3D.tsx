@@ -193,9 +193,9 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
             transform: [
               { translateY },
               { perspective: 900 },
+              { rotateZ: '-25deg' }, // Cross-horizontal slant angle matching video
               { rotateY: '24deg' },  // Isometric 3D angle so edge thickness is visible
-              { rotateZ: '-10deg' }, // Dynamic tilt
-              { rotateX: spin },     // Continuous horizontal flip around horizontal X axis
+              { rotateX: spin },     // Continuous cross-horizontal flip
             ],
           },
         ]}

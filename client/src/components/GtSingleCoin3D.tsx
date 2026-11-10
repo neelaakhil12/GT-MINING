@@ -29,7 +29,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
       camera.position.set(0, 0, 5.2);
 
-      // Camera Headlight: provides gentle, clear forward illumination so BOTH sides are crisp
+      // Camera Headlight: attached to camera for clean, balanced forward light so BOTH sides are clear
       const cameraHeadlight = new THREE.DirectionalLight(0xffffff, 1.4);
       cameraHeadlight.position.set(0, 0, 1);
       camera.add(cameraHeadlight);
@@ -44,22 +44,22 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0; // Balanced exposure to prevent washing out colors!
+      renderer.toneMappingExposure = 1.0; // Prevents over-exposure and color washout!
       container.appendChild(renderer.domElement);
 
-      // 4. Soft Ambient & Directional Lights for rich emerald coin luster
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      // 4. Balanced Ambient & Directional Lights for rich crypto emerald luster
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
       scene.add(ambientLight);
 
-      const topKeyLight = new THREE.DirectionalLight(0xfffae0, 1.3);
+      const topKeyLight = new THREE.DirectionalLight(0xfffae0, 1.25);
       topKeyLight.position.set(-2, 4, 3);
       scene.add(topKeyLight);
 
-      const bottomRimLight = new THREE.DirectionalLight(0x86efac, 1.0);
+      const bottomRimLight = new THREE.DirectionalLight(0x86efac, 0.9);
       bottomRimLight.position.set(2.5, -3, -2);
       scene.add(bottomRimLight);
 
-      // 5. Canvas Face Texture with Vibrant Green Coin & Crystal-Clear GT Logo
+      // 5. Canvas Face Texture with Solid Green Coin & Crisp Bold GT Logo
       const faceCanvas = document.createElement('canvas');
       faceCanvas.width = 512;
       faceCanvas.height = 512;
@@ -78,10 +78,10 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         const r = 240;
 
         // Rich Vibrant Emerald Green Coin Field
-        const bgGrad = ctx.createRadialGradient(cx - 30, cy - 40, 30, cx, cy, r);
+        const bgGrad = ctx.createRadialGradient(cx - 30, cy - 40, 25, cx, cy, r);
         bgGrad.addColorStop(0, '#22C55E');    // Primary GT Green
-        bgGrad.addColorStop(0.4, '#16A34A');  // Rich emerald
-        bgGrad.addColorStop(0.8, '#15803D');  // Deep coin green
+        bgGrad.addColorStop(0.35, '#16A34A'); // Rich emerald
+        bgGrad.addColorStop(0.75, '#15803D'); // Deep coin green
         bgGrad.addColorStop(1, '#052E16');    // Dark perimeter rim bevel
 
         ctx.beginPath();
@@ -110,7 +110,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         // Minted Dashed Ring
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 32, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r - 30, 0, Math.PI * 2);
         ctx.lineWidth = 4;
         ctx.setLineDash([10, 8]);
         ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)';
@@ -120,10 +120,10 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         // -----------------------------------------------------------
         // DEEP CONTRASTING CENTER MEDALLION FOR MAXIMUM LOGO CLARITY
         // -----------------------------------------------------------
-        const coreRadius = 152;
+        const coreRadius = 155;
 
         // Deep rich emerald core creates maximum contrast against the bright logo!
-        const coreGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, coreRadius);
+        const coreGrad = ctx.createRadialGradient(cx, cy - 10, 20, cx, cy, coreRadius);
         coreGrad.addColorStop(0, '#064E3B');   // Deep forest emerald
         coreGrad.addColorStop(0.7, '#022C17'); // Dark crypto green
         coreGrad.addColorStop(1, '#01190C');   // Ultra-crisp border
@@ -148,17 +148,17 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         // -----------------------------------------------------------
         const logoCenterY = cy - 24;
 
-        // 1. Faceted Emerald Crystal Pyramid
+        // 1. Faceted Emerald Crystal Pyramid (prominent & bold)
         ctx.save();
         ctx.translate(cx, logoCenterY);
 
         // Left Crystal Facet (Bright Mint to Vibrant Emerald)
         ctx.beginPath();
-        ctx.moveTo(0, -68);
-        ctx.lineTo(-58, 36);
-        ctx.lineTo(0, 58);
+        ctx.moveTo(0, -70);
+        ctx.lineTo(-60, 36);
+        ctx.lineTo(0, 60);
         ctx.closePath();
-        const leftFacetGrad = ctx.createLinearGradient(-58, -68, 0, 58);
+        const leftFacetGrad = ctx.createLinearGradient(-60, -70, 0, 60);
         leftFacetGrad.addColorStop(0, '#A7F3D0');
         leftFacetGrad.addColorStop(0.5, '#34D399');
         leftFacetGrad.addColorStop(1, '#059669');
@@ -167,11 +167,11 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         // Right Crystal Facet (Luminous Mint to Rich Deep Emerald)
         ctx.beginPath();
-        ctx.moveTo(0, -68);
-        ctx.lineTo(58, 36);
-        ctx.lineTo(0, 58);
+        ctx.moveTo(0, -70);
+        ctx.lineTo(60, 36);
+        ctx.lineTo(0, 60);
         ctx.closePath();
-        const rightFacetGrad = ctx.createLinearGradient(0, -68, 58, 58);
+        const rightFacetGrad = ctx.createLinearGradient(0, -70, 60, 60);
         rightFacetGrad.addColorStop(0, '#ECFDF5');
         rightFacetGrad.addColorStop(0.5, '#10B981');
         rightFacetGrad.addColorStop(1, '#047857');
@@ -180,18 +180,18 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         // Center Triangular Highlight Cutout
         ctx.beginPath();
-        ctx.moveTo(0, -18);
-        ctx.lineTo(-32, 34);
-        ctx.lineTo(0, 58);
-        ctx.lineTo(32, 34);
+        ctx.moveTo(0, -20);
+        ctx.lineTo(-34, 34);
+        ctx.lineTo(0, 60);
+        ctx.lineTo(34, 34);
         ctx.closePath();
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
 
         // Facet Bevel Highlights
         ctx.beginPath();
-        ctx.moveTo(0, -68);
-        ctx.lineTo(0, 58);
+        ctx.moveTo(0, -70);
+        ctx.lineTo(0, 60);
         ctx.lineWidth = 2.5;
         ctx.strokeStyle = '#FFFFFF';
         ctx.stroke();
@@ -200,7 +200,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         // 2. Overlay gt-header-logo.png if loaded for photo-real fidelity
         if (logoImg.complete && logoImg.naturalWidth > 0) {
-          const logoSize = 145;
+          const logoSize = 148;
           ctx.save();
           ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
           ctx.shadowBlur = 8;
@@ -213,7 +213,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = '900 46px "Arial Black", "Montserrat", system-ui, sans-serif';
+        ctx.font = '900 48px "Arial Black", "Montserrat", system-ui, sans-serif';
 
         // Dark text outline for 100% legibility
         ctx.lineWidth = 6;
@@ -230,7 +230,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
         ctx.restore();
 
         // 4 Cardinal Gold Accent Pips
-        const pipRadius = r - 32;
+        const pipRadius = r - 30;
         const pips = [
           { x: cx, y: cy - pipRadius },
           { x: cx, y: cy + pipRadius },
@@ -303,9 +303,15 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
       coinGroup.add(coinMesh);
       scene.add(coinGroup);
 
-      // Isometric slant so the 3D rim thickness is clearly visible during the horizontal flip
-      coinGroup.rotation.y = 0.24;
-      coinGroup.rotation.z = -0.10;
+      // -----------------------------------------------------------
+      // EXACT CROSS-HORIZONTAL SLANT MATCHING REFERENCE VIDEO
+      // -----------------------------------------------------------
+      // Reference video pose:
+      // Tilted slightly backward (X ~ 0.18), isometric depth (Y ~ 0.32),
+      // and diagonal cross-slant (Z ~ -0.44 rad ≈ -25 deg)!
+      coinGroup.rotation.x = 0.18;
+      coinGroup.rotation.y = 0.32;
+      coinGroup.rotation.z = -0.44; // Cross-horizontal angle!
 
       // Initial coin orientation
       coinMesh.rotation.x = Math.PI / 2;
@@ -318,9 +324,10 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
 
         const elapsed = (time - startTime) * 0.001;
 
-        // HORIZONTAL COIN FLIP (pitch rotation around horizontal X axis):
-        // Flips end-over-end (Face 1 -> Rim -> Face 2 -> Rim) matching the reference video!
-        coinMesh.rotation.x = Math.PI / 2 + elapsed * 1.5;
+        // EXACT CROSS-HORIZONTAL COIN FLIP MATCHING REFERENCE VIDEO:
+        // Because coinGroup has a -0.44 rad (-25 deg) cross slant, rotating around local X
+        // causes the coin to flip end-over-end across the diagonal/cross horizontal axis!
+        coinMesh.rotation.x = Math.PI / 2 + elapsed * 1.6;
 
         // Gentle floating bob up and down
         coinGroup.position.y = Math.sin(elapsed * 2.2) * 0.05;
