@@ -77,7 +77,7 @@ export const AdminMiningPage: React.FC = () => {
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Pickaxe className="w-5 h-5 text-[#22C55E]" />
-              <span>Mining Protocol Configuration</span>
+              <span>Mining Parameters</span>
             </h2>
             <p className="text-xs text-[#A7C9B1]">
               Controls authoritative global mining reward allocation and cycle cooldowns

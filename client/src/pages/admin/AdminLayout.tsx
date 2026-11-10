@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Video,
   Mail,
+  Bell,
   CheckSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -81,14 +82,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: CheckSquare,
       badge: pendingTaskCount,
     },
-    { label: 'Users Directory', path: '/admin/users', icon: Users },
+    { label: 'Users', path: '/admin/users', icon: Users },
     {
-      label: 'Email Change Requests',
+      label: 'Notifications',
       path: '/admin/email-requests',
-      icon: Mail,
+      icon: Bell,
       badge: pendingEmailCount,
     },
-    { label: 'Mining Settings', path: '/admin/mining-settings', icon: Pickaxe },
+    { label: 'Parameters', path: '/admin/mining-settings', icon: Pickaxe },
     { label: 'Referrals & Dividends', path: '/admin/referrals', icon: Gift },
     { label: 'Transactions Ledger', path: '/admin/transactions', icon: Coins },
   ];
@@ -105,13 +106,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/sliders') || p.includes('/onboarding-banners') || p.includes('/home-banners') || p.includes('/referral-banners')) return 'Sliders';
     if (p.includes('/task-submissions')) return 'Submissions';
     if (p.includes('/tasks')) return 'Tasks';
-    if (p.includes('/users')) return 'Users Directory';
+    if (p.includes('/users')) return 'Users';
     if (p.includes('/email-requests')) {
       return pendingEmailCount > 0
-        ? `Email Change Requests (${pendingEmailCount} Pending)`
-        : 'Email Change Requests';
+        ? `Notifications (${pendingEmailCount} Pending)`
+        : 'Notifications';
     }
-    if (p.includes('/mining-settings')) return 'Mining Protocol Settings';
+    if (p.includes('/mining-settings')) return 'Parameters';
     if (p.includes('/referrals')) return 'Referral Commissions & Dividends';
     if (p.includes('/transactions')) return 'Transactions & Balances';
     return 'Admin Control Center';

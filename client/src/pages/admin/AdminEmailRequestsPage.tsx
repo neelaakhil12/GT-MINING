@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Bell,
   Mail,
   Search,
   CheckCircle2,
@@ -142,8 +143,8 @@ export const AdminEmailRequestsPage: React.FC = () => {
       <AdminCard className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#86EFAC]/15 pb-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Mail className="w-5 h-5 text-[#86EFAC]" />
-            <span>User Email Change Requests</span>
+            <Bell className="w-5 h-5 text-[#86EFAC]" />
+            <span>Notifications & Requests</span>
             {pendingCount > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FBBF24] text-[#07130D] animate-pulse">
                 {pendingCount} Action Required
