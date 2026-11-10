@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   googleLogin: (data?: any) => Promise<void>;
   signup: (userData: { fullName: string; email: string; password: string; confirmPassword?: string; referralCode?: string }) => Promise<void>;
+  completeSignup: (data: { email: string; password: string; confirmPassword?: string }) => Promise<any>;
   logout: () => void;
   refreshSession: () => Promise<void>;
   updateWalletBalance: (newBalance: number, newLifetime?: number) => void;
@@ -91,6 +92,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const completeSignup = async (data: { email: string; password: string; confirmPassword?: string }) => {
+    const res = await api.completeSignup(data);
+    if (res.success && res.token) {
+      setToken(res.token);
+      setUser(res.user);
+      await refreshSession();
+      return res;
+    } else {
+      throw new Error(res.message || 'Registration failed');
+    }
+  };
+
   const logout = () => {
     removeToken();
     setUser(null);
@@ -120,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         googleLogin,
         signup,
+        completeSignup,
         logout,
         refreshSession,
         updateWalletBalance

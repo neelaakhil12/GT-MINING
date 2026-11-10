@@ -76,6 +76,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth
+  sendSignupOtp: (body: { fullName: string; email: string; phone: string; referralCode?: string }) =>
+    request<any>('/auth/signup/send-otp', { method: 'POST', body: JSON.stringify(body) }),
+  verifySignupOtp: (body: { email: string; otpCode: string }) =>
+    request<any>('/auth/signup/verify-otp', { method: 'POST', body: JSON.stringify(body) }),
+  completeSignup: (body: { email: string; password: string; confirmPassword?: string }) =>
+    request<any>('/auth/signup/complete', { method: 'POST', body: JSON.stringify(body) }),
   signup: (body: any) => request<any>('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   login: (body: any) => request<any>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   googleLogin: (body: any) => request<any>('/auth/google', { method: 'POST', body: JSON.stringify(body) }),

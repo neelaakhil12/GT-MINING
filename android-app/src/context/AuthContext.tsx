@@ -14,6 +14,9 @@ interface AuthContextType {
   isMiningActive: boolean;
   login: (credentials: { email: string; password?: string }) => Promise<void>;
   signup: (data: { fullName: string; email: string; password?: string; referralCode?: string }) => Promise<void>;
+  sendSignupOtp: (data: { fullName: string; email: string; phone: string; referralCode?: string }) => Promise<{ success: boolean; message: string }>;
+  verifySignupOtp: (data: { email: string; otpCode: string }) => Promise<{ success: boolean; message: string }>;
+  completeSignup: (data: { email: string; password: string; confirmPassword?: string }) => Promise<void>;
   googleLogin: (params?: { email?: string; name?: string; isSignup?: boolean }) => Promise<void>;
   logout: () => void;
   startMiningSession: () => void;
@@ -197,6 +200,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendSignupOtp = async (data: { fullName: string; email: string; phone: string; referralCode?: string }) => {
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+    const result = await callAuthApi('/auth/signup/send-otp', {
+      fullName: data.fullName?.trim(),
+      email: cleanEmail,
+      phone: data.phone?.trim(),
+      referralCode: data.referralCode?.trim() || undefined,
+    });
+    if (!result || !result.success) {
+      throw new Error(result?.message || 'Failed to send OTP code.');
+    }
+    return result;
+  };
+
+  const verifySignupOtp = async (data: { email: string; otpCode: string }) => {
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+    const result = await callAuthApi('/auth/signup/verify-otp', {
+      email: cleanEmail,
+      otpCode: data.otpCode?.trim(),
+    });
+    if (!result || !result.success) {
+      throw new Error(result?.message || 'Failed to verify OTP code.');
+    }
+    return result;
+  };
+
+  const completeSignup = async (data: { email: string; password: string; confirmPassword?: string }) => {
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+    const result = await callAuthApi('/auth/signup/complete', {
+      email: cleanEmail,
+      password: data.password,
+      confirmPassword: data.confirmPassword,
+    });
+
+    if (!result || !result.success) {
+      throw new Error(result?.message || 'Registration failed. Please try again.');
+    }
+
+    const backendUser = result.user;
+    const newUser: User = {
+      id: backendUser.id || `usr_${Date.now()}`,
+      fullName: backendUser.fullName || 'GT Miner',
+      email: backendUser.email || cleanEmail,
+      referralCode: backendUser.referralCode || `GT-${Math.floor(1000 + Math.random() * 9000)}`,
+      balance: Number(result.wallet?.availableBalance ?? 0.0),
+      totalMined: Number(result.wallet?.lifetimeEarned ?? 0.0),
+      miningRate: 1.0,
+      isMining: false,
+      miningExpiresAt: 0,
+    };
+
+    setUser(newUser);
+    setIsAuthenticated(true);
+    await appStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(newUser));
+    if (result.token) {
+      await appStorage.setItem('gt_mobile_token', result.token);
+    }
+  };
+
   // Google sign in / registration with database check
   const googleLogin = async (params?: { email?: string; name?: string; isSignup?: boolean }) => {
     const email = (params?.email || 'google.miner@gmail.com').trim().toLowerCase();
@@ -350,6 +412,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMiningActive,
       login,
       signup,
+      sendSignupOtp,
+      verifySignupOtp,
+      completeSignup,
       googleLogin,
       logout,
       startMiningSession,

@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { readDB, writeDB, generateId, generateReferralCode, lockManager } from '../db.js';
 import { generateToken, requireAuth, ADMIN_EMAILS } from '../middleware/auth.js';
-import { sendPasswordResetEmail } from '../services/email.js';
+import { sendPasswordResetEmail, sendSignUpOtpEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -16,7 +16,312 @@ export const sanitizeUser = (user) => {
   };
 };
 
-// Sign Up
+// --------------------------------------------------------------------------
+// Multi-Step Signup with Email OTP Verification
+// --------------------------------------------------------------------------
+
+// Step 1: Validate details & send email OTP
+router.post('/signup/send-otp', async (req, res) => {
+  const { fullName, email, phone, referralCode } = req.body;
+
+  if (!fullName || !fullName.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter your full name.' });
+  }
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ success: false, message: 'Invalid email address format.' });
+  }
+
+  if (!phone || !phone.trim() || phone.trim().length < 8) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid phone number (at least 8 digits).' });
+  }
+
+  await lockManager.acquire('signup_lock');
+  try {
+    const db = readDB();
+
+    // Check if email already registered
+    const existing = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
+    if (existing) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'An account with this email address already exists. Please login instead.' });
+    }
+
+    // Check referral code validity if provided
+    let referrerUser = null;
+    if (referralCode && referralCode.trim()) {
+      const code = referralCode.trim().toUpperCase();
+      referrerUser = db.users.find(u => u.referralCode === code && !u.deletedAt);
+      if (!referrerUser) {
+        lockManager.release('signup_lock');
+        return res.status(400).json({ success: false, message: 'Invalid referral code provided.' });
+      }
+    }
+
+    if (!db.signupVerifications) {
+      db.signupVerifications = [];
+    }
+
+    // Generate secure 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+
+    // Remove any previous verification attempt for this email
+    db.signupVerifications = db.signupVerifications.filter(v => v.email !== cleanEmail);
+
+    const verificationRecord = {
+      id: generateId('vcode'),
+      email: cleanEmail,
+      fullName: fullName.trim(),
+      phone: phone.trim(),
+      referralCode: referralCode ? referralCode.trim().toUpperCase() : null,
+      otpCode,
+      verified: false,
+      expiresAt,
+      createdAt: new Date().toISOString()
+    };
+
+    db.signupVerifications.push(verificationRecord);
+    writeDB(db);
+    lockManager.release('signup_lock');
+
+    // Send email
+    try {
+      await sendSignUpOtpEmail({
+        toEmail: cleanEmail,
+        otpCode,
+        recipientName: fullName.trim()
+      });
+      console.log(`[Signup Flow] OTP ${otpCode} sent to ${cleanEmail}`);
+    } catch (emailErr) {
+      console.error('[Signup OTP Email Error]:', emailErr);
+      return res.status(500).json({
+        success: false,
+        message: 'Could not send verification email. Please check your email address and try again.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Verification code sent to ${cleanEmail}. Please check your inbox (and spam/junk folder).`
+    });
+  } catch (err) {
+    lockManager.release('signup_lock');
+    console.error('Signup send-otp error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to process verification request.' });
+  }
+});
+
+// Step 2: Verify the 6-digit email OTP
+router.post('/signup/verify-otp', async (req, res) => {
+  const { email, otpCode } = req.body;
+
+  if (!email || !otpCode) {
+    return res.status(400).json({ success: false, message: 'Email and verification code are required.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanOtp = otpCode.trim();
+
+  await lockManager.acquire('signup_lock');
+  try {
+    const db = readDB();
+    const record = (db.signupVerifications || []).find(v => v.email === cleanEmail);
+
+    if (!record) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'No verification request found for this email. Please request a new code.' });
+    }
+
+    if (new Date(record.expiresAt) < new Date()) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
+    }
+
+    if (record.otpCode !== cleanOtp) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'Incorrect verification code. Please check your email and try again.' });
+    }
+
+    record.verified = true;
+    record.verifiedAt = new Date().toISOString();
+    writeDB(db);
+    lockManager.release('signup_lock');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now create your password to complete registration.'
+    });
+  } catch (err) {
+    lockManager.release('signup_lock');
+    console.error('Signup verify-otp error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to verify OTP.' });
+  }
+});
+
+// Step 3: Create password & complete registration
+router.post('/signup/complete', async (req, res) => {
+  const { email, password, confirmPassword } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+  }
+
+  if (confirmPassword && password !== confirmPassword) {
+    return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  await lockManager.acquire('signup_lock');
+
+  try {
+    const db = readDB();
+    const record = (db.signupVerifications || []).find(v => v.email === cleanEmail && v.verified === true);
+
+    if (!record) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({
+        success: false,
+        message: 'Email verification required. Please complete email OTP verification first.'
+      });
+    }
+
+    // Check if session has exceeded 30 minutes from verification
+    const verifiedTime = record.verifiedAt ? new Date(record.verifiedAt).getTime() : new Date(record.createdAt).getTime();
+    if (Date.now() - verifiedTime > 30 * 60 * 1000) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({
+        success: false,
+        message: 'Verification session expired. Please start the registration process again.'
+      });
+    }
+
+    // Double check email uniqueness
+    const existing = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
+    if (existing) {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'An account with this email address already exists.' });
+    }
+
+    // Check referral user if recorded
+    let referrerUser = null;
+    if (record.referralCode) {
+      referrerUser = db.users.find(u => u.referralCode === record.referralCode && !u.deletedAt);
+    }
+
+    const userId = generateId('usr');
+    const userReferralCode = generateReferralCode(db.users);
+    const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date().toISOString();
+
+    const newUser = {
+      id: userId,
+      fullName: record.fullName,
+      email: cleanEmail,
+      phone: record.phone || '',
+      passwordHash,
+      referralCode: userReferralCode,
+      referredByUserId: referrerUser ? referrerUser.id : null,
+      role: 'USER',
+      accountStatus: 'ACTIVE',
+      emailVerifiedAt: now,
+      lastMiningAt: null,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null
+    };
+
+    db.users.push(newUser);
+
+    // Create wallet for new user
+    const walletId = generateId('wal');
+    db.wallets.push({
+      id: walletId,
+      userId: userId,
+      availableBalance: 0.0,
+      lifetimeEarned: 0.0,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    // Process referral attribution if referred
+    if (referrerUser && referrerUser.id !== userId) {
+      const referralId = generateId('ref');
+      const refReward = Number(db.settings.referralReward || 0);
+
+      const refRecord = {
+        id: referralId,
+        referrerUserId: referrerUser.id,
+        referredUserId: userId,
+        referralCodeUsed: referrerUser.referralCode,
+        status: 'ACTIVE',
+        rewardAmount: refReward,
+        rewardStatus: refReward > 0 ? 'PENDING_CLAIM' : 'PENDING',
+        createdAt: now,
+        rewardCreditedAt: null
+      };
+      db.referrals.push(refRecord);
+
+      if (refReward > 0) {
+        db.notifications.push({
+          id: generateId('notif'),
+          userId: referrerUser.id,
+          title: 'Referral Bonus Ready to Claim!',
+          message: `Your friend ${newUser.fullName} registered using your referral code. +${refReward} GT is available to claim in your Referrals tab!`,
+          type: 'REFERRAL',
+          readAt: null,
+          createdAt: now
+        });
+      }
+    }
+
+    // Welcome notification for new user
+    db.notifications.push({
+      id: generateId('notif'),
+      userId: userId,
+      title: 'Welcome to GT Mining!',
+      message: 'Your account is active. You are now ready to start your first mining session!',
+      type: 'SYSTEM',
+      readAt: null,
+      createdAt: now
+    });
+
+    // Clean up used verification record
+    db.signupVerifications = (db.signupVerifications || []).filter(v => v.email !== cleanEmail);
+
+    writeDB(db);
+    lockManager.release('signup_lock');
+
+    const token = generateToken(newUser);
+    const wallet = db.wallets.find(w => w.userId === newUser.id) || { availableBalance: 0.0, lifetimeEarned: 0.0 };
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully! Welcome to GT Mining.',
+      token,
+      user: sanitizeUser(newUser),
+      wallet: {
+        availableBalance: wallet.availableBalance,
+        lifetimeEarned: wallet.lifetimeEarned
+      }
+    });
+  } catch (err) {
+    lockManager.release('signup_lock');
+    console.error('Signup complete error:', err);
+    return res.status(500).json({ success: false, message: 'An unexpected server error occurred during account creation.' });
+  }
+});
+
+// Legacy direct Sign Up (backward compatibility)
 router.post('/signup', async (req, res) => {
   const { fullName, email, password, confirmPassword, referralCode } = req.body;
 
@@ -65,6 +370,7 @@ router.post('/signup', async (req, res) => {
       id: userId,
       fullName: fullName.trim(),
       email: cleanEmail,
+      phone: (req.body.phone || '').trim(),
       passwordHash,
       referralCode: userReferralCode,
       referredByUserId: referrerUser ? referrerUser.id : null,

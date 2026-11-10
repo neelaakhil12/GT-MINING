@@ -142,3 +142,91 @@ https://gtmining.org
   return { success: true, messageId: info.messageId };
 }
 
+/**
+ * Send Sign Up Verification OTP Email
+ * @param {Object} params
+ * @param {string} params.toEmail - Recipient email address
+ * @param {string} params.otpCode - 6-digit OTP code
+ * @param {string} [params.recipientName] - User's name
+ */
+export async function sendSignUpOtpEmail({ toEmail, otpCode, recipientName }) {
+  const fromAddress = process.env.SMTP_FROM || '"GT Mining Network" <gtmining2026@gmail.com>';
+  const userName = recipientName || 'GT Pioneer';
+  const subject = `[GT Network] ${otpCode} is your Account Verification Code`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>GT Mining Account Verification</title>
+      <style>
+        body { margin: 0; padding: 0; background-color: #F0FAF3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0A341B; }
+        .wrapper { width: 100%; max-width: 580px; margin: 30px auto; background: #FFFFFF; border-radius: 24px; overflow: hidden; border: 1px solid #D1FAE5; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08); }
+        .header { background: linear-gradient(135deg, #0A341B 0%, #15803D 100%); padding: 32px 24px; text-align: center; }
+        .logo-text { font-size: 22px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; margin: 0; }
+        .sub-tag { font-size: 11px; font-weight: 700; color: #86EFAC; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+        .content { padding: 36px 32px; }
+        .greeting { font-size: 18px; font-weight: 800; color: #0A341B; margin: 0 0 12px 0; }
+        .body-text { font-size: 14px; line-height: 22px; color: #1E5E36; margin: 0 0 24px 0; }
+        .otp-card { background: #EAF8EE; border: 2px dashed #22C55E; border-radius: 16px; padding: 22px; text-align: center; margin: 28px 0; }
+        .otp-label { font-size: 11px; font-weight: 800; color: #15803D; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+        .otp-number { font-size: 40px; font-weight: 900; letter-spacing: 12px; color: #0A341B; font-family: 'Courier New', Courier, monospace; margin: 4px 0; }
+        .otp-expiry { font-size: 11.5px; color: #16A34A; font-weight: 600; margin-top: 8px; }
+        .security-notice { background: #ECFDF5; border-left: 4px solid #10B981; padding: 14px 18px; border-radius: 10px; font-size: 12px; color: #065F46; line-height: 18px; margin: 28px 0 0 0; }
+        .footer { padding: 24px 32px; background: #F9FAFB; border-top: 1px solid #E5E7EB; text-align: center; font-size: 11.5px; color: #6B7280; line-height: 18px; }
+      </style>
+    </head>
+    <body>
+      <div style="padding: 20px 10px;">
+        <div class="wrapper">
+          <div class="header">
+            <h1 class="logo-text">💎 GT MINING NETWORK</h1>
+            <div class="sub-tag">Decentralized Autonomous Mining Protocol</div>
+          </div>
+          <div class="content">
+            <h2 class="greeting">Welcome, ${userName}!</h2>
+            <p class="body-text">
+              Thank you for registering on GT Mining Network. To verify your email address and activate your mining account, please enter the 6-digit verification code below:
+            </p>
+            <div class="otp-card">
+              <div class="otp-label">Account Verification Code</div>
+              <div class="otp-number">${otpCode}</div>
+              <div class="otp-expiry">⏱️ Valid for 10 minutes • Single Use Only</div>
+            </div>
+            <div class="security-notice">
+              <strong>🔒 Security Notice:</strong> Never share your verification code with anyone. GT Network staff will never ask for your code.
+            </div>
+          </div>
+          <div class="footer">
+            © ${new Date().getFullYear()} GT Mining Network. All rights reserved.
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Hello ${userName},
+
+Your GT Network verification code is: ${otpCode}
+
+This code is valid for 10 minutes. Please enter this code to complete your registration.
+
+GT Mining Network
+  `;
+
+  const info = await transporter.sendMail({
+    from: fromAddress,
+    to: toEmail,
+    subject,
+    text,
+    html,
+  });
+
+  console.log(`[Email Service] Sign up verification email sent to ${toEmail}. Message ID: ${info.messageId}`);
+  return { success: true, messageId: info.messageId };
+}
+
