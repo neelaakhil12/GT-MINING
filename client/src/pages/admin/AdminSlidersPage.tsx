@@ -262,6 +262,12 @@ export const AdminSlidersPage: React.FC = () => {
       if (res.success) {
         showToast(editingItem ? 'Slider updated successfully!' : 'Slider created successfully!', 'success');
         setModalOpen(false);
+        try {
+          localStorage.removeItem('gt_cached_onboarding_banners');
+          localStorage.removeItem('gt_cached_home_banners');
+          localStorage.removeItem('gt_cached_referral_banners');
+          window.dispatchEvent(new Event('gt_db_updated'));
+        } catch { }
         fetchAllSliders();
       } else {
         showToast(res.message || 'Operation failed', 'error');

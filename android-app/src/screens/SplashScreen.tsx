@@ -14,6 +14,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppSafeArea } from '../utils/safeArea';
+import { API_BASE_URL } from '../config/api';
+import { appStorage } from '../utils/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -52,6 +54,23 @@ export const SplashScreen: React.FC = () => {
         useNativeDriver: true,
       })
     ).start();
+
+    // Prefetch live onboarding banners in exact admin order
+    fetch(`${API_BASE_URL}/onboarding-banners`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+          const sorted = data.banners
+            .filter((b: any) => b.isActive !== false)
+            .sort((a: any, b: any) => {
+              const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+              const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+              return ordA - ordB;
+            });
+          appStorage.setItem('@gt_cached_onboarding_banners', JSON.stringify(sorted)).catch(() => {});
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const proceedNavigation = () => {

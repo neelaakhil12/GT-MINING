@@ -77,7 +77,13 @@ app.use('/api/market', marketRouter);
 // Public Banners Endpoints
 app.get('/api/onboarding-banners', (req, res) => {
   const db = readDB();
-  const banners = (db.onboardingBanners || []).filter(b => b.isActive !== false);
+  const banners = (db.onboardingBanners || [])
+    .filter(b => b.isActive !== false)
+    .sort((a, b) => {
+      const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+      const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+      return ordA - ordB;
+    });
   return res.json({ success: true, banners });
 });
 

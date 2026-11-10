@@ -81,7 +81,13 @@ const getInitialSlides = (): OnboardingSlide[] => {
       const cached = localStorage.getItem('gt_cached_onboarding_banners');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.slice().sort((a: any, b: any) => {
+            const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+            const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+            return ordA - ordB;
+          });
+        }
       }
     } catch { }
   }
@@ -104,6 +110,7 @@ export const LandingPage: React.FC = () => {
   );
 
   const [slides, setSlides] = useState<OnboardingSlide[]>(getInitialSlides);
+  const [bannersReady, setBannersReady] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [splashProgress, setSplashProgress] = useState(0);
 
@@ -127,16 +134,22 @@ export const LandingPage: React.FC = () => {
     try {
       const res = await api.getPublicOnboardingBanners();
       if (res.success && res.banners && res.banners.length > 0) {
-        const mapped = res.banners
+        const sorted = res.banners
           .filter((b: any) => b.isActive !== false)
-          .map((b: any, idx: number) => ({
-            id: idx + 1,
-            title: b.title,
-            subtitle: b.subtitle || '',
-            description: b.description,
-            image: b.imageUrl || '/onboarding/story_1.jpg',
-            theme: 'dark' as const,
-          }));
+          .sort((a: any, b: any) => {
+            const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+            const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+            return ordA - ordB;
+          });
+        const mapped = sorted.map((b: any, idx: number) => ({
+          id: b.id || idx + 1,
+          title: b.title,
+          subtitle: b.subtitle || '',
+          description: b.description,
+          image: b.imageUrl || '/onboarding/story_1.jpg',
+          theme: 'dark' as const,
+          order: Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || (idx + 1),
+        }));
         if (mapped.length > 0) {
           setSlides(mapped);
           try {
@@ -150,7 +163,9 @@ export const LandingPage: React.FC = () => {
           });
         }
       }
-    } catch { }
+    } catch { } finally {
+      setBannersReady(true);
+    }
   };
 
   useEffect(() => {
@@ -169,7 +184,7 @@ export const LandingPage: React.FC = () => {
     return () => window.removeEventListener('gt_db_updated', handleUpdate);
   }, []);
 
-  // Splash Screen Timer & Fast Progress Animation (instant ~200ms node sync)
+  // Splash Screen Timer & Fast Progress Animation: only transition when banners are ready
   useEffect(() => {
     if (stage !== 'splash') return;
 
@@ -181,16 +196,20 @@ export const LandingPage: React.FC = () => {
     const interval = setInterval(() => {
       setSplashProgress((prev) => {
         if (prev >= 100) {
-          clearInterval(interval);
-          handleProceedFromSplash();
-          return 100;
+          // If banners are ready or max progress reached, transition cleanly
+          if (bannersReady || prev >= 120) {
+            clearInterval(interval);
+            handleProceedFromSplash();
+            return 100;
+          }
+          return prev + 5; // hold smoothly at 100% until ready
         }
         return prev + 25;
       });
-    }, 40);
+    }, 45);
 
     return () => clearInterval(interval);
-  }, [stage, isAuthenticated, isTourRequested, navigate]);
+  }, [stage, isAuthenticated, isTourRequested, navigate, bannersReady]);
 
   // Handle slide transitions & auto-advance timer
   const handleNextSlide = () => {

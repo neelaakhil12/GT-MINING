@@ -795,7 +795,14 @@ router.get('/audit-logs', (req, res) => {
 // GET /api/admin/onboarding-banners
 router.get('/onboarding-banners', (req, res) => {
   const db = readDB();
-  return res.json({ success: true, banners: db.onboardingBanners || [] });
+  const banners = (db.onboardingBanners || [])
+    .slice()
+    .sort((a, b) => {
+      const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+      const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+      return ordA - ordB;
+    });
+  return res.json({ success: true, banners });
 });
 
 // POST /api/admin/onboarding-banners

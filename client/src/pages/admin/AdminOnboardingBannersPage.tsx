@@ -213,6 +213,8 @@ export const AdminOnboardingBannersPage: React.FC = () => {
       }
 
       setModalOpen(false);
+      localStorage.removeItem('gt_cached_onboarding_banners');
+      window.dispatchEvent(new Event('gt_db_updated'));
       await fetchBanners();
     } catch (err: any) {
       showToast(err.message || 'Operation failed', 'error');
@@ -229,6 +231,8 @@ export const AdminOnboardingBannersPage: React.FC = () => {
       if (res.success) {
         showToast('Slider banner deleted successfully', 'success');
         setBanners((prev) => prev.filter((b) => b.id !== id));
+        localStorage.removeItem('gt_cached_onboarding_banners');
+        window.dispatchEvent(new Event('gt_db_updated'));
       }
     } catch (err: any) {
       showToast('Delete failed', 'error');

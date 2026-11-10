@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { appStorage } from '../utils/storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -72,19 +73,55 @@ export const OnboardingScreen: React.FC = () => {
   const [isHolding, setIsHolding] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0);
 
-  // Dynamically fetch live pre-opening banners from server
+  // Dynamically fetch live pre-opening banners from server in strict order
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Immediately read cached banners in exact order from storage
+    appStorage.getItem('@gt_cached_onboarding_banners').then((cached) => {
+      if (!isMounted || !cached) return;
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const sorted = parsed.slice().sort((a: any, b: any) => {
+            const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+            const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+            return ordA - ordB;
+          });
+          setSlides(
+            sorted.map((b: any, i: number) => ({
+              id: b.id || b.stepNumber || i + 1,
+              title: b.title,
+              description: b.description,
+              image: b.imageUrl
+                ? (b.imageUrl.startsWith('data:') || b.imageUrl.startsWith('http')
+                    ? { uri: b.imageUrl }
+                    : { uri: `https://gtnetwork.in${b.imageUrl}` })
+                : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].image,
+            }))
+          );
+        }
+      } catch {}
+    });
+
+    // 2. Fetch fresh banners from server & keep strictly ordered
     const fetchBanners = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/onboarding-banners`);
         const data = await res.json();
         if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-          const active = data.banners.filter((b: any) => b.isActive !== false);
+          const active = data.banners
+            .filter((b: any) => b.isActive !== false)
+            .sort((a: any, b: any) => {
+              const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+              const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+              return ordA - ordB;
+            });
+
           if (active.length > 0 && isMounted) {
             setSlides(
               active.map((b: any, i: number) => ({
-                id: b.stepNumber || i + 1,
+                id: b.id || b.stepNumber || i + 1,
                 title: b.title,
                 description: b.description,
                 image: b.imageUrl
@@ -94,6 +131,7 @@ export const OnboardingScreen: React.FC = () => {
                   : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].image,
               }))
             );
+            appStorage.setItem('@gt_cached_onboarding_banners', JSON.stringify(active)).catch(() => {});
           }
         }
       } catch (err) {

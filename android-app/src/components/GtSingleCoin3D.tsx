@@ -135,6 +135,24 @@ const buildCoinHtml = () => `<!DOCTYPE html>
           ctx.shadowBlur = 15;
           ctx.drawImage(logoImg, cx - s / 2, cy - s / 2, s, s);
           ctx.restore();
+        } else {
+          ctx.save();
+          ctx.strokeStyle = '#22C55E';
+          ctx.lineWidth = 14;
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 80);
+          ctx.lineTo(cx + 70, cy + 50);
+          ctx.lineTo(cx - 70, cy + 50);
+          ctx.closePath();
+          ctx.stroke();
+
+          ctx.fillStyle = '#4ADE80';
+          ctx.font = '900 64px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('GT', cx, cy + 8);
+          ctx.restore();
         }
       }
 
