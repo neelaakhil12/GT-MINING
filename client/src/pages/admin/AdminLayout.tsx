@@ -80,10 +80,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       heading: 'CONTENT & BANNERS',
       items: [
-        { label: 'Node Posts & News', path: '/admin/community', icon: Globe },
-        { label: 'Pre-Open Sliders', path: '/admin/onboarding-banners', icon: Sliders },
-        { label: 'Home Page Banners', path: '/admin/home-banners', icon: ImagePlus },
-        { label: 'Referral Sliders', path: '/admin/referral-banners', icon: Gift },
+        { label: 'Node', path: '/admin/community', icon: Globe },
+        { label: 'Sliders', path: '/admin/sliders', icon: Sliders },
         { label: 'Tasks & Video Quests', path: '/admin/tasks', icon: Video },
         {
           label: 'Task Submissions',
@@ -118,10 +116,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const getPageTitle = () => {
     const p = location.pathname;
     if (p.includes('/dashboard')) return 'Dashboard';
-    if (p.includes('/community')) return 'Node & Social Media Content';
-    if (p.includes('/onboarding-banners')) return 'Pre-Opening Slider Banners';
-    if (p.includes('/home-banners')) return 'Home Page Carousel Banners';
-    if (p.includes('/referral-banners')) return 'Referral Page Sliders';
+    if (p.includes('/community')) return 'Node';
+    if (p.includes('/sliders') || p.includes('/onboarding-banners') || p.includes('/home-banners') || p.includes('/referral-banners')) return 'Sliders';
     if (p.includes('/tasks')) return 'Daily & Video Tasks Quests';
     if (p.includes('/users')) return 'Users Directory';
     if (p.includes('/email-requests')) {
