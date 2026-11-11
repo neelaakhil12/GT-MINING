@@ -1,419 +1,385 @@
-import React, { useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { THREE_MIN_JS } from './threeMinJs';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import Svg, { Defs, RadialGradient, Stop, Circle, Path } from 'react-native-svg';
+import { useIsFocused } from '@react-navigation/native';
 
 interface MiningGlobe3DProps {
   spinning?: boolean;
 }
 
-const buildGlobeHtml = (): string => `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: transparent !important;
-      touch-action: none;
-      -webkit-touch-callout: none;
-      user-select: none;
+interface TileSpec {
+  nx: number;
+  ny: number;
+  nz: number;
+  ux: number;
+  uy: number;
+  uz: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  hw: number;
+  hh: number;
+  baseRadius: number;
+  phase: number;
+  speed: number;
+  amplitude: number;
+}
+
+interface GlobeFrame {
+  backPaths: string[];
+  frontPaths: string[];
+  bobY: number;
+  sphereR: number;
+  highlightX: number;
+  highlightY: number;
+  highlightR: number;
+}
+
+// 6 emerald wafer shading buckets matching Three.js studio lighting (dark rim -> specular highlight)
+const TILE_COLORS = [
+  '#0C592C',
+  '#15803D',
+  '#16A34A',
+  '#22C55E',
+  '#4ADE80',
+  '#86EFAC',
+] as const;
+
+const TILE_STROKES = [
+  'rgba(5, 46, 22, 0.45)',
+  'rgba(20, 83, 45, 0.35)',
+  'rgba(134, 239, 172, 0.28)',
+  'rgba(187, 247, 208, 0.36)',
+  'rgba(220, 252, 231, 0.45)',
+  'rgba(255, 255, 255, 0.55)',
+] as const;
+
+const VIEW_W = 260;
+const VIEW_H = 236;
+const CX = VIEW_W / 2;
+const CY = VIEW_H / 2;
+const CAM_Z = 5.7;
+const CORE_R = 1.62;
+// Perspective focal length tuned so core sphere + outer tiles fit cleanly without edge clipping
+const FOCAL = 222;
+const BASE_SPHERE_SCREEN_R = (FOCAL * CORE_R) / Math.sqrt(CAM_Z * CAM_Z - CORE_R * CORE_R);
+
+const TILT_X = 0.18;
+const TILT_Z = -0.06;
+const COS_TX = Math.cos(TILT_X);
+const SIN_TX = Math.sin(TILT_X);
+const COS_TZ = Math.cos(TILT_Z);
+const SIN_TZ = Math.sin(TILT_Z);
+
+function createTileSpecs(): TileSpec[] {
+  const tileCount = 165;
+  const goldenRatio = (1 + Math.sqrt(5)) / 2;
+  const specs: TileSpec[] = [];
+
+  for (let i = 0; i < tileCount; i++) {
+    const theta = (2 * Math.PI * i) / goldenRatio;
+    const phi = Math.acos(1 - (2 * (i + 0.5)) / tileCount);
+    const sinPhi = Math.sin(phi);
+
+    const nx = sinPhi * Math.cos(theta);
+    const ny = sinPhi * Math.sin(theta);
+    const nz = Math.cos(phi);
+
+    // Orthonormal tangent basis (U, V) perpendicular to N
+    const refX = Math.abs(ny) > 0.98 ? 1 : 0;
+    const refY = Math.abs(ny) > 0.98 ? 0 : 1;
+    const refZ = 0;
+
+    // U = normalize(cross(ref, N))
+    let ux = refY * nz - refZ * ny;
+    let uy = refZ * nx - refX * nz;
+    let uz = refX * ny - refY * nx;
+    const uLen = Math.hypot(ux, uy, uz) || 1;
+    ux /= uLen;
+    uy /= uLen;
+    uz /= uLen;
+
+    // V = normalize(cross(N, U))
+    const vx = ny * uz - nz * uy;
+    const vy = nz * ux - nx * uz;
+    const vz = nx * uy - ny * ux;
+
+    let baseRadius = 1.66;
+    if (i % 5 === 0) {
+      baseRadius = 2.14 + (i % 3) * 0.11;
+    } else if (i % 2 === 0) {
+      baseRadius = 1.88 + (i % 4) * 0.08;
+    } else {
+      baseRadius = 1.66 + Math.sin(i * 3.1) * 0.04;
     }
-    #canvas-container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent !important;
+
+    const scaleX = 0.9 + Math.sin(i * 1.5) * 0.2;
+    const scaleY = 0.9 + Math.cos(i * 1.5) * 0.2;
+
+    specs.push({
+      nx,
+      ny,
+      nz,
+      ux,
+      uy,
+      uz,
+      vx,
+      vy,
+      vz,
+      hw: 0.125 * scaleX,
+      hh: 0.125 * scaleY,
+      baseRadius,
+      phase: ((i * 1.37) % (Math.PI * 2)),
+      speed: 0.0035 + ((i % 7) * 0.0005),
+      amplitude: baseRadius > 1.8 ? 0.15 + ((i % 4) * 0.025) : 0.05,
+    });
+  }
+
+  return specs;
+}
+
+function computeFrame(
+  tiles: TileSpec[],
+  angleY: number,
+  nowMs: number,
+  scalePulse: number
+): GlobeFrame {
+  const cosY = Math.cos(angleY);
+  const sinY = Math.sin(angleY);
+
+  // Combined rotation matrix M = Rz(TILT_Z) * Rx(TILT_X) * Ry(angleY)
+  const m00 = COS_TZ * cosY - SIN_TZ * SIN_TX * sinY;
+  const m01 = -SIN_TZ * COS_TX;
+  const m02 = COS_TZ * sinY + SIN_TZ * SIN_TX * cosY;
+
+  const m10 = SIN_TZ * cosY + COS_TZ * SIN_TX * sinY;
+  const m11 = COS_TZ * COS_TX;
+  const m12 = SIN_TZ * sinY - COS_TZ * SIN_TX * cosY;
+
+  const m20 = -COS_TX * sinY;
+  const m21 = SIN_TX;
+  const m22 = COS_TX * cosY;
+
+  const bobY = -Math.sin(nowMs * 0.0022) * 3.6;
+  const cyBob = CY + bobY;
+
+  const backBuckets = ['', '', '', '', '', ''];
+  const frontBuckets = ['', '', '', '', '', ''];
+
+  for (let i = 0; i < tiles.length; i++) {
+    const t = tiles[i];
+    const r = (t.baseRadius + Math.sin(nowMs * t.speed + t.phase) * t.amplitude) * scalePulse;
+
+    // Rotated unit normal
+    const rnx = m00 * t.nx + m01 * t.ny + m02 * t.nz;
+    const rny = m10 * t.nx + m11 * t.ny + m12 * t.nz;
+    const rnz = m20 * t.nx + m21 * t.ny + m22 * t.nz;
+
+    // 3D tile center
+    const cx3 = rnx * r;
+    const cy3 = rny * r;
+    const cz3 = rnz * r;
+
+    // Rotated half-axis tangent vectors
+    const hw = t.hw * scalePulse;
+    const hh = t.hh * scalePulse;
+    const dux = (m00 * t.ux + m01 * t.uy + m02 * t.uz) * hw;
+    const duy = (m10 * t.ux + m11 * t.uy + m12 * t.uz) * hw;
+    const duz = (m20 * t.ux + m21 * t.uy + m22 * t.uz) * hw;
+
+    const dvx = (m00 * t.vx + m01 * t.vy + m02 * t.vz) * hh;
+    const dvy = (m10 * t.vx + m11 * t.vy + m12 * t.vz) * hh;
+    const dvz = (m20 * t.vx + m21 * t.vy + m22 * t.vz) * hh;
+
+    // Project 4 corners to 2D SVG viewport
+    const p0z = CAM_Z - (cz3 - duz - dvz);
+    const p1z = CAM_Z - (cz3 + duz - dvz);
+    const p2z = CAM_Z - (cz3 + duz + dvz);
+    const p3z = CAM_Z - (cz3 - duz + dvz);
+
+    const x0 = CX + ((cx3 - dux - dvx) * FOCAL) / p0z;
+    const y0 = cyBob - ((cy3 - duy - dvy) * FOCAL) / p0z;
+    const x1 = CX + ((cx3 + dux - dvx) * FOCAL) / p1z;
+    const y1 = cyBob - ((cy3 + duy - dvy) * FOCAL) / p1z;
+    const x2 = CX + ((cx3 + dux + dvx) * FOCAL) / p2z;
+    const y2 = cyBob - ((cy3 + duy + dvy) * FOCAL) / p2z;
+    const x3 = CX + ((cx3 - dux + dvx) * FOCAL) / p3z;
+    const y3 = cyBob - ((cy3 - duy + dvy) * FOCAL) / p3z;
+
+    // Directional studio lighting intensity -> 6 emerald buckets
+    const facing = Math.abs(rnz);
+    const key = Math.max(0, rnx * 0.56 + rny * 0.68 + rnz * 0.48);
+    const fill = Math.max(0, rnx * -0.58 + rny * -0.38 + rnz * 0.42);
+    const shade = 0.18 + key * 0.62 + fill * 0.24 + facing * 0.14;
+    const bucket = Math.max(0, Math.min(5, Math.floor(shade * 5.3)));
+
+    const d = `M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}L${x3.toFixed(1)} ${y3.toFixed(1)}Z`;
+    if (cz3 < 0) {
+      backBuckets[bucket] += d;
+    } else {
+      frontBuckets[bucket] += d;
     }
-    canvas {
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
-      background: transparent !important;
-    }
-  </style>
-  <script>${THREE_MIN_JS}</script>
-</head>
-<body>
-  <div id="canvas-container"></div>
-  <script>
-    (function () {
-      var spinState = {
-        active: false,
-        startTime: 0,
-        duration: 2600,
-        totalRotations: 14 * Math.PI * 2
-      };
+  }
 
-      window.triggerSpin = function () {
-        spinState = {
-          active: true,
-          startTime: performance.now(),
-          duration: 2600,
-          totalRotations: 14 * Math.PI * 2
-        };
-      };
+  const sphereR = BASE_SPHERE_SCREEN_R * scalePulse;
 
-      function startCanvas2DFallback(container) {
-        container.innerHTML = '';
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        function resize() {
-          var w = container.clientWidth || window.innerWidth || 260;
-          var h = container.clientHeight || window.innerHeight || 230;
-          canvas.width = Math.max(1, Math.floor(w * dpr));
-          canvas.height = Math.max(1, Math.floor(h * dpr));
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        container.appendChild(canvas);
-        resize();
-        window.addEventListener('resize', resize);
-
-        var tileCount = 130;
-        var goldenRatio = (1 + Math.sqrt(5)) / 2;
-        var tiles = [];
-        for (var i = 0; i < tileCount; i++) {
-          var theta = (2 * Math.PI * i) / goldenRatio;
-          var phi = Math.acos(1 - (2 * (i + 0.5)) / tileCount);
-          var sinPhi = Math.sin(phi);
-          var nx = sinPhi * Math.cos(theta);
-          var ny = Math.cos(phi);
-          var nz = sinPhi * Math.sin(theta);
-          var baseR = i % 5 === 0 ? 1.32 : (i % 2 === 0 ? 1.16 : 1.03);
-          tiles.push({
-            nx: nx, ny: ny, nz: nz,
-            baseR: baseR,
-            phase: (i * 0.73) % (Math.PI * 2),
-            speed: 0.003 + (i % 5) * 0.0007,
-            amp: baseR > 1.1 ? 0.09 : 0.03
-          });
-        }
-
-        var angleY = 0;
-        var baseAngle = 0;
-        function drawFrame() {
-          requestAnimationFrame(drawFrame);
-          var now = performance.now();
-          var w = container.clientWidth || window.innerWidth || 260;
-          var h = container.clientHeight || window.innerHeight || 230;
-          if (w <= 0 || h <= 0) return;
-
-          ctx.clearRect(0, 0, w, h);
-
-          if (spinState.active) {
-            var elapsed = now - spinState.startTime;
-            var t = Math.min(1, elapsed / spinState.duration);
-            var ease = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-            angleY = baseAngle + ease * spinState.totalRotations;
-            if (t >= 1) {
-              spinState.active = false;
-              baseAngle = angleY;
-            }
-          } else {
-            angleY += 0.017;
-            baseAngle = angleY;
-          }
-
-          var bobY = Math.sin(now * 0.0022) * 3;
-          var cx = w / 2;
-          var cy = h / 2 + bobY;
-          var radius = Math.min(w, h) * 0.30;
-
-          // Back tiles
-          var cosY = Math.cos(angleY);
-          var sinY = Math.sin(angleY);
-          var tilt = 0.18;
-          var cosX = Math.cos(tilt);
-          var sinX = Math.sin(tilt);
-
-          var projected = [];
-          for (var i = 0; i < tiles.length; i++) {
-            var tile = tiles[i];
-            var r = tile.baseR + Math.sin(now * tile.speed + tile.phase) * tile.amp;
-            var x1 = tile.nx * cosY - tile.nz * sinY;
-            var z1 = tile.nx * sinY + tile.nz * cosY;
-            var y1 = tile.ny;
-            var y2 = y1 * cosX - z1 * sinX;
-            var z2 = y1 * sinX + z1 * cosX;
-            projected.push({ x: x1 * r, y: y2 * r, z: z2 * r });
-          }
-          projected.sort(function (a, b) { return a.z - b.z; });
-
-          function drawTile(p) {
-            var persp = 4.2 / (4.2 - p.z);
-            var sx = cx + p.x * radius * persp;
-            var sy = cy - p.y * radius * persp;
-            var sz = Math.max(5, 11 * persp);
-            var light = Math.max(0.25, Math.min(1, 0.55 + p.z * 0.35 + p.y * 0.15));
-            ctx.save();
-            ctx.translate(sx, sy);
-            ctx.rotate(p.x * 0.35);
-            ctx.fillStyle = light > 0.72 ? '#4ADE80' : (light > 0.45 ? '#22C55E' : '#15803D');
-            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.rect(-sz * 0.5, -sz * 0.5, sz, sz);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          for (var j = 0; j < projected.length; j++) {
-            if (projected[j].z < 0) drawTile(projected[j]);
-          }
-
-          // Core emerald glossy sphere
-          var grad = ctx.createRadialGradient(
-            cx + radius * 0.32, cy - radius * 0.32, radius * 0.1,
-            cx, cy, radius * 1.02
-          );
-          grad.addColorStop(0, '#86EFAC');
-          grad.addColorStop(0.28, '#22C55E');
-          grad.addColorStop(0.75, '#15803D');
-          grad.addColorStop(1, '#064E3B');
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-          ctx.fillStyle = grad;
-          ctx.fill();
-
-          for (var k = 0; k < projected.length; k++) {
-            if (projected[k].z >= 0) drawTile(projected[k]);
-          }
-        }
-        drawFrame();
-      }
-
-      function initWebGL(attempts) {
-        var container = document.getElementById('canvas-container');
-        if (!container) return;
-
-        var width = container.clientWidth || window.innerWidth;
-        var height = container.clientHeight || window.innerHeight;
-        if ((!width || !height) && attempts < 20) {
-          setTimeout(function () { initWebGL(attempts + 1); }, 40);
-          return;
-        }
-        width = width || 260;
-        height = height || 230;
-
-        if (typeof THREE === 'undefined') {
-          if (attempts < 10) {
-            setTimeout(function () { initWebGL(attempts + 1); }, 40);
-            return;
-          }
-          startCanvas2DFallback(container);
-          return;
-        }
-
-        try {
-          var scene = new THREE.Scene();
-          var camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 100);
-          camera.position.set(0, 0, 5.7);
-
-          var renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true,
-            powerPreference: 'default'
-          });
-          var gl = renderer.getContext && renderer.getContext();
-          if (!gl) {
-            startCanvas2DFallback(container);
-            return;
-          }
-
-          renderer.setClearColor(0x000000, 0);
-          renderer.setSize(width, height);
-          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-          renderer.toneMapping = THREE.ACESFilmicToneMapping;
-          renderer.toneMappingExposure = 1.15;
-          container.appendChild(renderer.domElement);
-
-          var ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
-          scene.add(ambientLight);
-
-          var dirLight1 = new THREE.DirectionalLight(0xffffff, 1.9);
-          dirLight1.position.set(4.5, 5.5, 4.0);
-          scene.add(dirLight1);
-
-          var dirLight2 = new THREE.DirectionalLight(0x4ade80, 2.0);
-          dirLight2.position.set(-4.5, -3.0, 3.0);
-          scene.add(dirLight2);
-
-          var dirLight3 = new THREE.DirectionalLight(0x16a34a, 1.5);
-          dirLight3.position.set(0, -4.0, -3.0);
-          scene.add(dirLight3);
-
-          var globeGroup = new THREE.Group();
-          scene.add(globeGroup);
-          globeGroup.rotation.x = 0.18;
-          globeGroup.rotation.z = -0.06;
-
-          // MeshStandardMaterial keeps shaders 100% compatible with mobile Android GPUs (same as Dashboard 3D Coin)
-          var innerGeo = new THREE.SphereGeometry(1.60, 36, 36);
-          var innerMat = new THREE.MeshStandardMaterial({
-            color: 0x15803d,
-            emissive: 0x054f2c,
-            emissiveIntensity: 0.22,
-            roughness: 0.25,
-            metalness: 0.12
-          });
-          var innerSphere = new THREE.Mesh(innerGeo, innerMat);
-          globeGroup.add(innerSphere);
-
-          var tileCount = 150;
-          var tileGeo = new THREE.BoxGeometry(0.27, 0.27, 0.05);
-          var tileMat = new THREE.MeshStandardMaterial({
-            color: 0x22c55e,
-            emissive: 0x059669,
-            emissiveIntensity: 0.22,
-            roughness: 0.22,
-            metalness: 0.15
-          });
-
-          var goldenRatio = (1 + Math.sqrt(5)) / 2;
-          var tiles = [];
-
-          for (var i = 0; i < tileCount; i++) {
-            var theta = (2 * Math.PI * i) / goldenRatio;
-            var phi = Math.acos(1 - (2 * (i + 0.5)) / tileCount);
-            var sinPhi = Math.sin(phi);
-            var normal = new THREE.Vector3(
-              sinPhi * Math.cos(theta),
-              sinPhi * Math.sin(theta),
-              Math.cos(phi)
-            ).normalize();
-
-            var baseRadius = 1.66;
-            if (i % 5 === 0) {
-              baseRadius = 2.12 + (i % 3) * 0.12;
-            } else if (i % 2 === 0) {
-              baseRadius = 1.86 + (i % 4) * 0.08;
-            } else {
-              baseRadius = 1.66 + Math.sin(i * 3.1) * 0.04;
-            }
-
-            var mesh = new THREE.Mesh(tileGeo, tileMat);
-            var sx = 0.92 + Math.sin(i * 1.5) * 0.18;
-            var sy = 0.92 + Math.cos(i * 1.5) * 0.18;
-            mesh.scale.set(sx, sy, 1.0);
-
-            var pos = normal.clone().multiplyScalar(baseRadius);
-            mesh.position.copy(pos);
-            mesh.lookAt(pos.clone().add(normal));
-            globeGroup.add(mesh);
-
-            tiles.push({
-              mesh: mesh,
-              normal: normal,
-              baseRadius: baseRadius,
-              phase: (i * 0.87) % (Math.PI * 2),
-              speed: 0.0032 + (i % 6) * 0.0005,
-              amplitude: baseRadius > 1.8 ? 0.15 : 0.05
-            });
-          }
-
-          var baseAngle = 0;
-          var tempPos = new THREE.Vector3();
-
-          function animate() {
-            requestAnimationFrame(animate);
-            var now = performance.now();
-
-            for (var i = 0; i < tiles.length; i++) {
-              var d = tiles[i];
-              var r = d.baseRadius + Math.sin(now * d.speed + d.phase) * d.amplitude;
-              tempPos.copy(d.normal).multiplyScalar(r);
-              d.mesh.position.copy(tempPos);
-            }
-
-            if (spinState.active) {
-              var elapsed = now - spinState.startTime;
-              var t = Math.min(1, elapsed / spinState.duration);
-              var ease = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-              globeGroup.rotation.y = baseAngle + ease * spinState.totalRotations;
-              var pulse = Math.sin(t * Math.PI) * 0.15;
-              globeGroup.scale.set(1 + pulse, 1 + pulse, 1 + pulse);
-              if (t >= 1) {
-                spinState.active = false;
-                baseAngle = globeGroup.rotation.y;
-                globeGroup.scale.set(1, 1, 1);
-              }
-            } else {
-              globeGroup.rotation.y += 0.017;
-              baseAngle = globeGroup.rotation.y;
-            }
-
-            globeGroup.position.y = Math.sin(now * 0.0022) * 0.08;
-            renderer.render(scene, camera);
-          }
-
-          animate();
-
-          window.addEventListener('resize', function () {
-            var newW = container.clientWidth || window.innerWidth || 260;
-            var newH = container.clientHeight || window.innerHeight || 230;
-            camera.aspect = newW / newH;
-            camera.updateProjectionMatrix();
-            renderer.setSize(newW, newH);
-          });
-        } catch (err) {
-          startCanvas2DFallback(container);
-        }
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () { initWebGL(0); });
-      } else {
-        initWebGL(0);
-      }
-    })();
-  </script>
-</body>
-</html>`;
+  return {
+    backPaths: backBuckets,
+    frontPaths: frontBuckets,
+    bobY,
+    sphereR,
+    highlightX: CX + sphereR * 0.32,
+    highlightY: cyBob - sphereR * 0.32,
+    highlightR: sphereR * 0.36,
+  };
+}
 
 export const MiningGlobe3D: React.FC<MiningGlobe3DProps> = ({ spinning = false }) => {
-  const webViewRef = useRef<WebView>(null);
   const { width: screenWidth } = useWindowDimensions();
+  const isFocused = useIsFocused();
   const globeWidth = Math.min(Math.max(Math.round(screenWidth - 64), 220), 300);
-  const globeHeight = 230;
-  const globeHtml = useMemo(() => buildGlobeHtml(), []);
+
+  const tiles = useMemo(() => createTileSpecs(), []);
+  const angleRef = useRef<number>(0);
+  const lastFrameTimeRef = useRef<number>(0);
+  const spinRef = useRef<{
+    active: boolean;
+    startTime: number;
+    baseAngle: number;
+    duration: number;
+    totalRotations: number;
+  }>({
+    active: false,
+    startTime: 0,
+    baseAngle: 0,
+    duration: 2600,
+    totalRotations: 14 * Math.PI * 2,
+  });
+
+  const [frame, setFrame] = useState<GlobeFrame>(() => computeFrame(tiles, 0, 0, 1));
 
   useEffect(() => {
     if (spinning) {
-      webViewRef.current?.injectJavaScript('window.triggerSpin && window.triggerSpin(); true;');
+      spinRef.current = {
+        active: true,
+        startTime: Date.now(),
+        baseAngle: angleRef.current,
+        duration: 2600,
+        totalRotations: 14 * Math.PI * 2,
+      };
     }
   }, [spinning]);
 
+  useEffect(() => {
+    if (!isFocused) return;
+
+    let rafId: number;
+    let lastDraw = 0;
+
+    const tick = () => {
+      rafId = requestAnimationFrame(tick);
+      const now = Date.now();
+      // ~35 FPS keeps Hermes & native Android canvas smooth without unnecessary bridge traffic
+      if (now - lastDraw < 28) return;
+
+      const dt = lastFrameTimeRef.current > 0 ? Math.min(64, now - lastFrameTimeRef.current) : 28;
+      lastFrameTimeRef.current = now;
+      lastDraw = now;
+
+      let scalePulse = 1;
+      const spin = spinRef.current;
+
+      if (spin.active) {
+        const elapsed = now - spin.startTime;
+        const t = Math.min(1, elapsed / spin.duration);
+        const ease = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+        angleRef.current = spin.baseAngle + ease * spin.totalRotations;
+        scalePulse = 1 + Math.sin(t * Math.PI) * 0.15;
+
+        if (t >= 1) {
+          spin.active = false;
+        }
+      } else {
+        angleRef.current += 0.017 * (dt / 16.67);
+      }
+
+      setFrame(computeFrame(tiles, angleRef.current, now, scalePulse));
+    };
+
+    lastFrameTimeRef.current = Date.now();
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [isFocused, tiles]);
+
   return (
-    <View
-      style={[styles.container, { width: globeWidth, height: globeHeight }]}
-      pointerEvents="none"
-    >
+    <View style={[styles.container, { width: globeWidth, height: VIEW_H }]} pointerEvents="none">
       <View style={styles.ambientAura} />
-      <WebView
-        ref={webViewRef}
-        source={{ html: globeHtml, baseUrl: 'https://gtnetwork.in' }}
-        style={styles.webView}
-        scrollEnabled={false}
-        originWhitelist={['*']}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        scalesPageToFit={false}
-        androidLayerType="hardware"
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-        overScrollMode="never"
-        bounces={false}
-      />
+      <Svg width={globeWidth} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
+        <Defs>
+          <RadialGradient
+            id="gtCoreSphere"
+            cx="64%"
+            cy="34%"
+            rx="62%"
+            ry="62%"
+            fx="68%"
+            fy="28%"
+          >
+            <Stop offset="0%" stopColor="#86EFAC" stopOpacity="1" />
+            <Stop offset="26%" stopColor="#22C55E" stopOpacity="1" />
+            <Stop offset="70%" stopColor="#15803D" stopOpacity="1" />
+            <Stop offset="100%" stopColor="#053B1C" stopOpacity="1" />
+          </RadialGradient>
+          <RadialGradient id="gtCoreHighlight" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.62" />
+            <Stop offset="55%" stopColor="#BBF7D0" stopOpacity="0.22" />
+            <Stop offset="100%" stopColor="#22C55E" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+
+        {/* Back hemisphere floating tiles behind core sphere */}
+        {frame.backPaths.map((d, idx) => (
+          <Path
+            key={`b${idx}`}
+            d={d || 'M0 0'}
+            fill={TILE_COLORS[idx]}
+            stroke={TILE_STROKES[idx]}
+            strokeWidth={0.75}
+            strokeLinejoin="round"
+          />
+        ))}
+
+        {/* Glossy emerald core sphere */}
+        <Circle
+          cx={CX}
+          cy={CY + frame.bobY}
+          r={frame.sphereR}
+          fill="url(#gtCoreSphere)"
+        />
+
+        {/* Crisp top-right specular gleam */}
+        <Circle
+          cx={frame.highlightX}
+          cy={frame.highlightY}
+          r={frame.highlightR}
+          fill="url(#gtCoreHighlight)"
+        />
+
+        {/* Front hemisphere floating & exploded tiles in front of sphere */}
+        {frame.frontPaths.map((d, idx) => (
+          <Path
+            key={`f${idx}`}
+            d={d || 'M0 0'}
+            fill={TILE_COLORS[idx]}
+            stroke={TILE_STROKES[idx]}
+            strokeWidth={0.85}
+            strokeLinejoin="round"
+          />
+        ))}
+      </Svg>
     </View>
   );
 };
@@ -423,21 +389,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    overflow: 'hidden',
     backgroundColor: 'transparent',
   },
   ambientAura: {
     position: 'absolute',
-    width: 195,
-    height: 195,
+    width: 196,
+    height: 196,
     borderRadius: 98,
-    backgroundColor: 'rgba(52, 211, 153, 0.20)',
-  },
-  webView: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'transparent',
-    // opacity: 0.99 fixes Chromium WebView rendering an opaque white backing on Android ScrollView layers
-    opacity: Platform.OS === 'android' ? 0.99 : 1,
+    backgroundColor: 'rgba(52, 211, 153, 0.22)',
   },
 });
