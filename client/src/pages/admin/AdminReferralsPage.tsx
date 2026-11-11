@@ -85,7 +85,7 @@ export const AdminReferralsPage: React.FC = () => {
               </p>
               <input
                 type="number"
-                step="0.1"
+                step="any"
                 min="0"
                 required
                 value={referralReward}

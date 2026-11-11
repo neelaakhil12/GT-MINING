@@ -495,9 +495,15 @@ router.patch('/mining-settings', (req, res) => {
   const { miningReward, cooldownSeconds, userMiningTarget, miningEnabled, reason } = req.body;
   const db = readDB();
 
-  if (miningReward !== undefined) db.settings.miningReward = Math.max(0.1, Number(miningReward));
-  if (cooldownSeconds !== undefined) db.settings.cooldownSeconds = Math.max(60, Number(cooldownSeconds));
-  if (userMiningTarget !== undefined) db.settings.userMiningTarget = Math.max(1, Number(userMiningTarget));
+  if (miningReward !== undefined && Number.isFinite(Number(miningReward))) {
+    db.settings.miningReward = Math.max(0.01, Number(miningReward));
+  }
+  if (cooldownSeconds !== undefined && Number.isFinite(Number(cooldownSeconds))) {
+    db.settings.cooldownSeconds = Math.max(60, Number(cooldownSeconds));
+  }
+  if (userMiningTarget !== undefined && Number.isFinite(Number(userMiningTarget))) {
+    db.settings.userMiningTarget = Math.max(0.01, Number(userMiningTarget));
+  }
   if (miningEnabled !== undefined) db.settings.miningEnabled = Boolean(miningEnabled);
 
   createAuditLog(

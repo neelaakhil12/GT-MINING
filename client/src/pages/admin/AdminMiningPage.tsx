@@ -8,9 +8,9 @@ import { AdminCard } from '../../components/AdminCard';
 export const AdminMiningPage: React.FC = () => {
   const { showToast } = useToast();
 
-  const [miningReward, setMiningReward] = useState<number>(1.0);
-  const [cooldownHours, setCooldownHours] = useState<number>(4);
-  const [userMiningTarget, setUserMiningTarget] = useState<number>(1000);
+  const [miningReward, setMiningReward] = useState<string>('1');
+  const [cooldownHours, setCooldownHours] = useState<string>('4');
+  const [userMiningTarget, setUserMiningTarget] = useState<string>('1000');
   const [miningEnabled, setMiningEnabled] = useState<boolean>(true);
   const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -24,9 +24,9 @@ export const AdminMiningPage: React.FC = () => {
     try {
       const res = await api.getMiningSettings();
       if (res.success && res.settings) {
-        setMiningReward(Number(res.settings.miningReward || 1.0));
-        setCooldownHours(Math.round(Number(res.settings.cooldownSeconds || 14400) / 3600));
-        setUserMiningTarget(Number(res.settings.userMiningTarget || 1000));
+        setMiningReward(String(Number(res.settings.miningReward || 1.0)));
+        setCooldownHours(String(Math.round((Number(res.settings.cooldownSeconds || 14400) / 3600) * 100) / 100));
+        setUserMiningTarget(String(Number(res.settings.userMiningTarget || 1000)));
         setMiningEnabled(res.settings.miningEnabled !== false);
       }
     } catch (err: any) {
@@ -38,13 +38,30 @@ export const AdminMiningPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedReward = Number(miningReward);
+    const parsedHours = Number(cooldownHours);
+    const parsedTarget = Number(userMiningTarget);
+
+    if (!Number.isFinite(parsedReward) || parsedReward <= 0) {
+      showToast('Enter a valid positive mining reward', 'error');
+      return;
+    }
+    if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
+      showToast('Enter a valid positive cooldown in hours', 'error');
+      return;
+    }
+    if (!Number.isFinite(parsedTarget) || parsedTarget <= 0) {
+      showToast('Enter a valid positive mining target limit', 'error');
+      return;
+    }
+
     setSaving(true);
 
     try {
       const res = await api.updateMiningSettings({
-        miningReward: Number(miningReward),
-        cooldownSeconds: Number(cooldownHours) * 3600,
-        userMiningTarget: Number(userMiningTarget),
+        miningReward: parsedReward,
+        cooldownSeconds: Math.round(parsedHours * 3600),
+        userMiningTarget: parsedTarget,
         miningEnabled,
         reason: reason.trim() || 'Updated mining reward, cooldown, and target parameters',
       });
@@ -52,7 +69,7 @@ export const AdminMiningPage: React.FC = () => {
       if (res.success) {
         showToast('Mining configuration updated successfully!', 'success');
         setReason('');
-        localStorage.setItem('gt_mining_cycle_hours', String(cooldownHours));
+        localStorage.setItem('gt_mining_cycle_hours', String(parsedHours));
         window.dispatchEvent(new Event('gt_mining_cycle_changed'));
       }
     } catch (err: any) {
@@ -101,11 +118,11 @@ export const AdminMiningPage: React.FC = () => {
               </p>
               <input
                 type="number"
-                step="0.1"
-                min="0.1"
+                step="any"
+                min="0.01"
                 required
                 value={miningReward}
-                onChange={(e) => setMiningReward(parseFloat(e.target.value))}
+                onChange={(e) => setMiningReward(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
             </div>
@@ -120,12 +137,11 @@ export const AdminMiningPage: React.FC = () => {
               </p>
               <input
                 type="number"
-                step="1"
-                min="1"
-                max="72"
+                step="any"
+                min="0.01"
                 required
                 value={cooldownHours}
-                onChange={(e) => setCooldownHours(parseInt(e.target.value, 10))}
+                onChange={(e) => setCooldownHours(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -133,9 +149,9 @@ export const AdminMiningPage: React.FC = () => {
                   <button
                     key={h}
                     type="button"
-                    onClick={() => setCooldownHours(h)}
+                    onClick={() => setCooldownHours(String(h))}
                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                      cooldownHours === h
+                      Number(cooldownHours) === h
                         ? 'bg-[#22C55E] text-[#07130D] shadow-[0_0_10px_rgba(34,197,94,0.4)]'
                         : 'bg-white/5 text-[#A7C9B1] hover:bg-white/10 border border-white/10'
                     }`}
@@ -154,7 +170,7 @@ export const AdminMiningPage: React.FC = () => {
                   <span>User Maximum Mining Target / Limit (GT)</span>
                 </label>
                 <span className="text-[11px] font-mono font-bold text-[#FBBF24] bg-[#FBBF24]/10 px-2.5 py-0.5 rounded-full border border-[#FBBF24]/20">
-                  Account Cap: {userMiningTarget.toLocaleString()} GT
+                  Account Cap: {(Number(userMiningTarget) || 0).toLocaleString()} GT
                 </span>
               </div>
               <p className="text-[11px] text-[#A7C9B1]">
@@ -163,11 +179,11 @@ export const AdminMiningPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center pt-1">
                 <input
                   type="number"
-                  step="10"
-                  min="1"
+                  step="any"
+                  min="0.01"
                   required
                   value={userMiningTarget}
-                  onChange={(e) => setUserMiningTarget(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setUserMiningTarget(e.target.value)}
                   placeholder="e.g. 1000, 2000"
                   className="flex-1 px-4 py-2.5 rounded-xl bg-[#05160E] border border-[#86EFAC]/25 text-white font-mono font-bold text-sm focus:border-[#FBBF24] outline-none"
                 />
@@ -176,9 +192,9 @@ export const AdminMiningPage: React.FC = () => {
                     <button
                       key={tgt}
                       type="button"
-                      onClick={() => setUserMiningTarget(tgt)}
+                      onClick={() => setUserMiningTarget(String(tgt))}
                       className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        userMiningTarget === tgt
+                        Number(userMiningTarget) === tgt
                           ? 'bg-[#FBBF24] text-[#07130D] shadow-[0_0_12px_rgba(251,191,36,0.4)]'
                           : 'bg-white/5 text-[#A7C9B1] hover:bg-white/10 border border-white/10'
                       }`}

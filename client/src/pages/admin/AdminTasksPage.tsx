@@ -812,9 +812,8 @@ export const AdminTasksPage: React.FC = () => {
                   <div className="relative">
                     <input
                       type="number"
-                      step="0.5"
-                      min="0.5"
-                      max="100"
+                      step="any"
+                      min="0.01"
                       required
                       value={reward}
                       onChange={(e) => setReward(e.target.value === '' ? '' : parseFloat(e.target.value))}
