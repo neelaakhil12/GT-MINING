@@ -75,6 +75,24 @@ app.use('/api/admin', adminRouter);
 app.use('/api/market', marketRouter);
 
 // Public Banners Endpoints
+app.get('/api/onboarding-banners/:id/image', (req, res) => {
+  const db = readDB();
+  const banner = (db.onboardingBanners || []).find(b => b.id === req.params.id);
+  if (!banner || !banner.imageUrl) {
+    return res.status(404).send('Not found');
+  }
+  if (banner.imageUrl.startsWith('data:')) {
+    const match = banner.imageUrl.match(/^data:([^;]+);base64,(.*)$/);
+    if (!match) return res.status(400).send('Invalid image data');
+    const mimeType = match[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(buffer);
+  }
+  return res.redirect(banner.imageUrl);
+});
+
 app.get('/api/onboarding-banners', (req, res) => {
   const db = readDB();
   const banners = (db.onboardingBanners || [])
@@ -83,6 +101,13 @@ app.get('/api/onboarding-banners', (req, res) => {
       const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
       const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
       return ordA - ordB;
+    })
+    .map(b => {
+      if (b.imageUrl && b.imageUrl.startsWith('data:')) {
+        const version = encodeURIComponent(b.updatedAt || b.createdAt || '1');
+        return { ...b, imageUrl: `/api/onboarding-banners/${b.id}/image?v=${version}` };
+      }
+      return b;
     });
   return res.json({ success: true, banners });
 });

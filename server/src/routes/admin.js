@@ -898,7 +898,7 @@ router.patch('/onboarding-banners/:id', (req, res) => {
   if (!db.onboardingBanners) db.onboardingBanners = [];
   const idx = db.onboardingBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
-  db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...req.body };
+  db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...req.body, updatedAt: new Date().toISOString() };
   createAuditLog(db, req.user?.id || 'admin', 'UPDATE_ONBOARDING_BANNER', 'ONBOARDING_BANNER', req.params.id, `Updated pre-opening banner "${db.onboardingBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.onboardingBanners[idx], message: 'Banner updated.' });

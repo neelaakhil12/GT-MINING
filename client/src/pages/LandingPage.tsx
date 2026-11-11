@@ -91,7 +91,7 @@ const getInitialSlides = (): OnboardingSlide[] => {
       }
     } catch { }
   }
-  return onboardingSlides;
+  return [];
 };
 
 export const LandingPage: React.FC = () => {
@@ -161,9 +161,14 @@ export const LandingPage: React.FC = () => {
               img.src = m.image;
             }
           });
+          setBannersReady(true);
+          return;
         }
       }
-    } catch { } finally {
+      setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
+    } catch {
+      setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
+    } finally {
       setBannersReady(true);
     }
   };
@@ -184,7 +189,7 @@ export const LandingPage: React.FC = () => {
     return () => window.removeEventListener('gt_db_updated', handleUpdate);
   }, []);
 
-  // Splash Screen Timer & Fast Progress Animation: only transition when banners are ready
+  // Splash Screen Timer & Fast Progress Animation: wait for bannersReady before advancing
   useEffect(() => {
     if (stage !== 'splash') return;
 
@@ -196,20 +201,29 @@ export const LandingPage: React.FC = () => {
     const interval = setInterval(() => {
       setSplashProgress((prev) => {
         if (prev >= 100) {
-          // If banners are ready or max progress reached, transition cleanly
-          if (bannersReady || prev >= 120) {
-            clearInterval(interval);
-            handleProceedFromSplash();
-            return 100;
-          }
-          return prev + 5; // hold smoothly at 100% until ready
+          clearInterval(interval);
+          return 100;
         }
-        return prev + 25;
+        return Math.min(100, prev + 25);
       });
     }, 45);
 
-    return () => clearInterval(interval);
-  }, [stage, isAuthenticated, isTourRequested, navigate, bannersReady]);
+    const maxWait = setTimeout(() => {
+      setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
+      setBannersReady(true);
+    }, 4000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(maxWait);
+    };
+  }, [stage, isAuthenticated, isTourRequested, navigate]);
+
+  useEffect(() => {
+    if (stage === 'splash' && splashProgress >= 100 && (bannersReady || slides.length > 0)) {
+      handleProceedFromSplash();
+    }
+  }, [stage, splashProgress, bannersReady, slides.length]);
 
   // Handle slide transitions & auto-advance timer
   const handleNextSlide = () => {
@@ -231,7 +245,7 @@ export const LandingPage: React.FC = () => {
 
   // WhatsApp/Instagram-style story auto-progress timer (5 seconds per slide)
   useEffect(() => {
-    if (stage !== 'onboarding' || isHolding) return;
+    if (stage !== 'onboarding' || isHolding || slides.length === 0) return;
 
     const DURATION_MS = 5000;
     const TICK_MS = 50;
@@ -334,6 +348,14 @@ export const LandingPage: React.FC = () => {
   // ==========================================
   // 2. ONBOARDING SLIDES (STAGE === 'onboarding')
   // ==========================================
+  if (slides.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04110A]">
+        <div className="w-10 h-10 rounded-full border-2 border-[#22C55E] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   const slide = slides[currentSlide] || slides[0];
 
   return (

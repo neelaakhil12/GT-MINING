@@ -14,8 +14,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppSafeArea } from '../utils/safeArea';
-import { API_BASE_URL } from '../config/api';
-import { appStorage } from '../utils/storage';
+import {
+  fetchAndCacheOnboardingBanners,
+  getCachedOnboardingSlidesFromStorage,
+  getMemoryOnboardingSlides,
+} from '../utils/onboardingCache';
 
 const { width } = Dimensions.get('window');
 
@@ -26,11 +29,13 @@ export const SplashScreen: React.FC = () => {
 
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('INITIALIZING NODE...');
+  const [bannersReady, setBannersReady] = useState<boolean>(() => Boolean(getMemoryOnboardingSlides()?.length));
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const navigatedRef = useRef(false);
 
-  // Pulse & slow rotation animation
+  // Pulse & slow rotation animation + preload live onboarding banners
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -55,25 +60,29 @@ export const SplashScreen: React.FC = () => {
       })
     ).start();
 
-    // Prefetch live onboarding banners in exact admin order
-    fetch(`${API_BASE_URL}/onboarding-banners`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-          const sorted = data.banners
-            .filter((b: any) => b.isActive !== false)
-            .sort((a: any, b: any) => {
-              const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
-              const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
-              return ordA - ordB;
-            });
-          appStorage.setItem('@gt_cached_onboarding_banners', JSON.stringify(sorted)).catch(() => {});
-        }
-      })
-      .catch(() => {});
+    let active = true;
+    // Prime from storage first if available, then always sync live server order
+    getCachedOnboardingSlidesFromStorage().catch(() => null);
+    fetchAndCacheOnboardingBanners(4500)
+      .catch(() => null)
+      .finally(() => {
+        if (active) setBannersReady(true);
+      });
+
+    // Safety fallback so Splash never blocks longer than 5s if completely offline
+    const fallbackTimer = setTimeout(() => {
+      if (active) setBannersReady(true);
+    }, 5000);
+
+    return () => {
+      active = false;
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   const proceedNavigation = () => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
     if (isAuthenticated) {
       // User is already logged in -> go straight to main app dashboard
       navigation.replace('MainTabs');
@@ -83,18 +92,13 @@ export const SplashScreen: React.FC = () => {
     }
   };
 
-  // Smooth loading progression from 0 to 100%
+  // Smooth loading progression from 0 to 100%, holding at 100% until banners & session resolve
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          clearInterval(timer);
-          setTimeout(() => {
-            proceedNavigation();
-          }, 250);
           return 100;
         }
-
         const next = prev + 3;
         if (next > 30 && next < 60) setStatusText('CONNECTING NODES & PEERS...');
         else if (next >= 60 && next < 85) setStatusText('SYNCING 4H EPOCH LEDGER...');
@@ -104,10 +108,29 @@ export const SplashScreen: React.FC = () => {
     }, 65);
 
     return () => clearInterval(timer);
-  }, [navigation, isAuthenticated, isSessionLoaded]);
+  }, []);
+
+  useEffect(() => {
+    if (progress >= 100 && bannersReady && isSessionLoaded) {
+      const t = setTimeout(() => {
+        proceedNavigation();
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [progress, bannersReady, isSessionLoaded, isAuthenticated, navigation]);
 
   const handleSkip = () => {
-    proceedNavigation();
+    if (bannersReady || isAuthenticated) {
+      proceedNavigation();
+    } else {
+      // Finish live fetch quickly before showing Onboarding so hardcoded slides never flash
+      Promise.race([
+        fetchAndCacheOnboardingBanners(2500),
+        new Promise((resolve) => setTimeout(resolve, 2500)),
+      ]).finally(() => {
+        proceedNavigation();
+      });
+    }
   };
 
   const spin = rotateAnim.interpolate({

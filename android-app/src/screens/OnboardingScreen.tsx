@@ -1,144 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
-  Animated,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../config/api';
-import { appStorage } from '../utils/storage';
-
-const { width, height } = Dimensions.get('window');
-
-interface Slide {
-  id: number;
-  title: string;
-  description: string;
-  image: any;
-}
-
-const DEFAULT_SLIDES: Slide[] = [
-  {
-    id: 1,
-    title: 'Automated 4-Hour Mining Engine',
-    description:
-      'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device or web browser.',
-    image: require('../../assets/onboarding/story_1.jpg'),
-  },
-  {
-    id: 2,
-    title: "Recognized by the world's largest stock exchange",
-    description:
-      'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
-    image: require('../../assets/onboarding/story_2.jpg'),
-  },
-  {
-    id: 3,
-    title: 'Autonomous 10% Yield Accrual',
-    description:
-      'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
-    image: require('../../assets/onboarding/story_3.jpg'),
-  },
-  {
-    id: 4,
-    title: 'Powered by Visa & Mastercard',
-    description:
-      'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
-    image: require('../../assets/onboarding/story_4.png'),
-  },
-  {
-    id: 5,
-    title: 'Instant Direct Wallet Claims',
-    description:
-      'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
-    image: require('../../assets/onboarding/story_5.jpg'),
-  },
-];
+import {
+  OnboardingSlide as Slide,
+  DEFAULT_SLIDES,
+  fetchAndCacheOnboardingBanners,
+  getCachedOnboardingSlidesFromStorage,
+  getMemoryOnboardingSlides,
+} from '../utils/onboardingCache';
 
 export const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isAuthenticated } = useAuth();
 
-  const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
+  const [slides, setSlides] = useState<Slide[]>(() => getMemoryOnboardingSlides() || []);
+  const [isLoadingSlides, setIsLoadingSlides] = useState<boolean>(
+    () => !(getMemoryOnboardingSlides() && getMemoryOnboardingSlides()!.length > 0)
+  );
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0);
 
-  // Dynamically fetch live pre-opening banners from server in strict order
+  // Synchronize live pre-opening banners from server in strict admin order (never flash hardcoded first)
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Immediately read cached banners in exact order from storage
-    appStorage.getItem('@gt_cached_onboarding_banners').then((cached) => {
-      if (!isMounted || !cached) return;
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sorted = parsed.slice().sort((a: any, b: any) => {
-            const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
-            const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
-            return ordA - ordB;
-          });
-          setSlides(
-            sorted.map((b: any, i: number) => ({
-              id: b.id || b.stepNumber || i + 1,
-              title: b.title,
-              description: b.description,
-              image: b.imageUrl
-                ? (b.imageUrl.startsWith('data:') || b.imageUrl.startsWith('http')
-                    ? { uri: b.imageUrl }
-                    : { uri: `https://gtnetwork.in${b.imageUrl}` })
-                : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].image,
-            }))
-          );
-        }
-      } catch {}
-    });
+    const loadOrderedBanners = async () => {
+      let hasResolvedSlides = Boolean(getMemoryOnboardingSlides()?.length);
 
-    // 2. Fetch fresh banners from server & keep strictly ordered
-    const fetchBanners = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/onboarding-banners`);
-        const data = await res.json();
-        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-          const active = data.banners
-            .filter((b: any) => b.isActive !== false)
-            .sort((a: any, b: any) => {
-              const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
-              const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
-              return ordA - ordB;
-            });
-
-          if (active.length > 0 && isMounted) {
-            setSlides(
-              active.map((b: any, i: number) => ({
-                id: b.id || b.stepNumber || i + 1,
-                title: b.title,
-                description: b.description,
-                image: b.imageUrl
-                  ? (b.imageUrl.startsWith('data:') || b.imageUrl.startsWith('http')
-                      ? { uri: b.imageUrl }
-                      : { uri: `https://gtnetwork.in${b.imageUrl}` })
-                  : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].image,
-              }))
-            );
-            appStorage.setItem('@gt_cached_onboarding_banners', JSON.stringify(active)).catch(() => {});
-          }
+      if (!hasResolvedSlides) {
+        const cached = await getCachedOnboardingSlidesFromStorage();
+        if (isMounted && cached && cached.length > 0) {
+          setSlides(cached);
+          setIsLoadingSlides(false);
+          hasResolvedSlides = true;
         }
-      } catch (err) {
-        // Fallback to default local slides if network is unavailable
+      }
+
+      const live = await fetchAndCacheOnboardingBanners(4500);
+      if (!isMounted) return;
+
+      if (live && live.length > 0) {
+        setSlides(live);
+        setIsLoadingSlides(false);
+        hasResolvedSlides = true;
+      } else if (!hasResolvedSlides) {
+        // Offline with zero cache fallback
+        setSlides(DEFAULT_SLIDES);
+        setIsLoadingSlides(false);
       }
     };
-    fetchBanners();
+
+    loadOrderedBanners();
     return () => {
       isMounted = false;
     };
@@ -170,7 +95,7 @@ export const OnboardingScreen: React.FC = () => {
 
   // Auto story progress
   useEffect(() => {
-    if (isHolding || isAuthenticated) return;
+    if (isHolding || isAuthenticated || isLoadingSlides || slides.length === 0) return;
 
     const timer = setInterval(() => {
       setSlideProgress((prev) => {
@@ -189,7 +114,7 @@ export const OnboardingScreen: React.FC = () => {
     }, 55);
 
     return () => clearInterval(timer);
-  }, [currentIdx, isHolding, navigation, isAuthenticated, slides.length]);
+  }, [currentIdx, isHolding, navigation, isAuthenticated, isLoadingSlides, slides.length]);
 
   const handleNext = () => {
     if (currentIdx < slides.length - 1) {
@@ -213,7 +138,15 @@ export const OnboardingScreen: React.FC = () => {
     proceedToNext();
   };
 
-  const activeSlide = slides[currentIdx] || slides[0] || DEFAULT_SLIDES[0];
+  if (isLoadingSlides || slides.length === 0) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#22C55E" />
+      </View>
+    );
+  }
+
+  const activeSlide = slides[currentIdx] || slides[0];
 
   return (
     <View style={styles.container}>

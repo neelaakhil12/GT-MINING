@@ -611,3 +611,4 @@ export const AdminTopMinersPage: React.FC = () => {
 };
 
 export default AdminTopMinersPage;
+
