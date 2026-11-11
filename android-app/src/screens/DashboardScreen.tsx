@@ -44,44 +44,18 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { API_BASE_URL } from '../config/api';
+import {
+  DEFAULT_HOME_BANNERS,
+  HomeBannerSlide,
+  fetchAndCacheHomeBanners,
+  getCachedHomeBannersFromStorage,
+  getMemoryHomeBanners,
+  prefetchHomeBannerImages,
+} from '../utils/homeBannerCache';
 
 const { width } = Dimensions.get('window');
 
-const DEFAULT_BANNER_SLIDES = [
-  {
-    id: 1,
-    tag: 'GT ECOSYSTEM',
-    title: 'Join the Future of Mining',
-    description: 'Experience the GT network.',
-    ctaText: 'Explore Now',
-    targetRoute: 'Mine' as const,
-    gradient: ['#0A2A18', '#05180E'] as const,
-    accentColor: '#22C55E',
-    imageUrl: '',
-  },
-  {
-    id: 2,
-    tag: 'GLOBAL ALLIANCE',
-    title: 'Exclusive Rewards',
-    description: 'Invite your circle and multiply your GT mining hashpower.',
-    ctaText: 'Invite Friends',
-    targetRoute: 'Referrals' as const,
-    gradient: ['#07241C', '#041611'] as const,
-    accentColor: '#38BDF8',
-    imageUrl: '',
-  },
-  {
-    id: 3,
-    tag: 'DECENTRALIZED VAULT',
-    title: 'Next-Gen Asset Security',
-    description: 'Fair allocation protocol locked by 4-hour cryptographic epochs.',
-    ctaText: 'View Wallet',
-    targetRoute: 'Wallet' as const,
-    gradient: ['#121829', '#060A14'] as const,
-    accentColor: '#A855F7',
-    imageUrl: '',
-  },
-];
+const DEFAULT_BANNER_SLIDES: HomeBannerSlide[] = DEFAULT_HOME_BANNERS;
 
 interface CryptoRate {
   price: number;
@@ -101,7 +75,9 @@ export const DashboardScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
-  const [bannerSlides, setBannerSlides] = useState(DEFAULT_BANNER_SLIDES);
+  const [bannerSlides, setBannerSlides] = useState<HomeBannerSlide[]>(
+    () => getMemoryHomeBanners() || DEFAULT_BANNER_SLIDES
+  );
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Dynamic live crypto rates from Coinbase WebSocket & REST
@@ -184,52 +160,25 @@ export const DashboardScreen: React.FC = () => {
     };
   }, []);
 
-  // Restore cached banners from storage immediately so there is never a hardcoded banner flash
-  useEffect(() => {
-    appStorage.getItem('gt_cached_mobile_home_banners').then((cached) => {
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBannerSlides(parsed);
-          }
-        } catch { }
-      }
-    });
-  }, []);
-
-  // Fetch live home carousel banners from production server
+  // Restore cached banners + sync live server banners with pre-fetched image cache
   useEffect(() => {
     let isMounted = true;
-    const fetchHomeBanners = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/home-banners`);
-        const data = await res.json();
-        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-          const active = data.banners.filter((b: any) => b.isActive !== false);
-          if (active.length > 0 && isMounted) {
-            const mapped = active.map((b: any, idx: number) => ({
-              id: b.order || idx + 1,
-              tag: b.tag || 'GT ECOSYSTEM',
-              title: b.title,
-              description: b.description,
-              ctaText: b.ctaText || 'Explore Now',
-              targetRoute: (b.targetRoute === '/referrals'
-                ? 'Referrals'
-                : b.targetRoute === '/wallet'
-                  ? 'Wallet'
-                  : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
-              gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
-              accentColor: b.accentColor || '#22C55E',
-              imageUrl: b.imageUrl || '',
-            }));
-            setBannerSlides(mapped);
-            appStorage.setItem('gt_cached_mobile_home_banners', JSON.stringify(mapped)).catch(() => { });
-          }
+
+    const syncHomeBanners = async () => {
+      if (!getMemoryHomeBanners()) {
+        const cached = await getCachedHomeBannersFromStorage();
+        if (isMounted && cached && cached.length > 0) {
+          setBannerSlides(cached);
         }
-      } catch { }
+      }
+      const live = await fetchAndCacheHomeBanners(4500);
+      if (isMounted && live && live.length > 0) {
+        setBannerSlides(live);
+        prefetchHomeBannerImages(live, 2500).catch(() => {});
+      }
     };
-    fetchHomeBanners();
+
+    syncHomeBanners();
     return () => {
       isMounted = false;
     };
@@ -289,20 +238,26 @@ export const DashboardScreen: React.FC = () => {
           {/* 2. Interactive Slides Carousel Banner matching website HomeBanners */}
           <View style={styles.carouselWrapper}>
             <View style={styles.carouselCard}>
-              {/* Background: uploaded image if present, else gradient */}
-              {activeSlide.imageUrl ? (
-                <Image
-                  source={{ uri: activeSlide.imageUrl }}
-                  style={StyleSheet.absoluteFillObject}
-                  resizeMode="cover"
-                />
-              ) : (
-                <LinearGradient
-                  colors={activeSlide.gradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFillObject}
-                />
+              {/* Always-rendered gradient underlay + pre-mounted image stack so transitions never flash black */}
+              <LinearGradient
+                colors={activeSlide.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              {bannerSlides.map((slide, idx) =>
+                slide.imageUrl ? (
+                  <Image
+                    key={`hb_${slide.id || idx}`}
+                    source={{ uri: slide.imageUrl }}
+                    fadeDuration={0}
+                    style={[
+                      StyleSheet.absoluteFillObject,
+                      { opacity: idx === currentSlide ? 1 : 0 },
+                    ]}
+                    resizeMode="cover"
+                  />
+                ) : null
               )}
 
               {/* Gentle bottom scrim for text readability */}

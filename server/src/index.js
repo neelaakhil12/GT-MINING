@@ -74,47 +74,59 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/market', marketRouter);
 
-// Public Banners Endpoints
-app.get('/api/onboarding-banners/:id/image', (req, res) => {
-  const db = readDB();
-  const banner = (db.onboardingBanners || []).find(b => b.id === req.params.id);
+function serveBannerImage(res, list, id) {
+  const banner = (list || []).find((b) => b.id === id);
   if (!banner || !banner.imageUrl) {
     return res.status(404).send('Not found');
   }
   if (banner.imageUrl.startsWith('data:')) {
     const match = banner.imageUrl.match(/^data:([^;]+);base64,(.*)$/);
     if (!match) return res.status(400).send('Invalid image data');
-    const mimeType = match[1];
-    const buffer = Buffer.from(match[2], 'base64');
-    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Type', match[1]);
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.send(buffer);
+    return res.send(Buffer.from(match[2], 'base64'));
   }
   return res.redirect(banner.imageUrl);
-});
+}
 
-app.get('/api/onboarding-banners', (req, res) => {
-  const db = readDB();
-  const banners = (db.onboardingBanners || [])
-    .filter(b => b.isActive !== false)
+function normalizeBannersWithImageUrls(list, routePrefix) {
+  return (list || [])
+    .filter((b) => b && b.isActive !== false)
+    .slice()
     .sort((a, b) => {
       const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
       const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
       return ordA - ordB;
     })
-    .map(b => {
+    .map((b) => {
       if (b.imageUrl && b.imageUrl.startsWith('data:')) {
         const version = encodeURIComponent(b.updatedAt || b.createdAt || '1');
-        return { ...b, imageUrl: `/api/onboarding-banners/${b.id}/image?v=${version}` };
+        return { ...b, imageUrl: `${routePrefix}/${b.id}/image?v=${version}` };
       }
       return b;
     });
+}
+
+// Public Banners Endpoints
+app.get('/api/onboarding-banners/:id/image', (req, res) => {
+  const db = readDB();
+  return serveBannerImage(res, db.onboardingBanners, req.params.id);
+});
+
+app.get('/api/onboarding-banners', (req, res) => {
+  const db = readDB();
+  const banners = normalizeBannersWithImageUrls(db.onboardingBanners, '/api/onboarding-banners');
   return res.json({ success: true, banners });
+});
+
+app.get('/api/home-banners/:id/image', (req, res) => {
+  const db = readDB();
+  return serveBannerImage(res, db.homeBanners, req.params.id);
 });
 
 app.get('/api/home-banners', (req, res) => {
   const db = readDB();
-  const banners = (db.homeBanners || []).filter(b => b.isActive !== false);
+  const banners = normalizeBannersWithImageUrls(db.homeBanners, '/api/home-banners');
   return res.json({ success: true, banners });
 });
 

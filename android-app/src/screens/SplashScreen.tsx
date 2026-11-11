@@ -19,6 +19,10 @@ import {
   getCachedOnboardingSlidesFromStorage,
   getMemoryOnboardingSlides,
 } from '../utils/onboardingCache';
+import {
+  fetchAndCacheHomeBanners,
+  getCachedHomeBannersFromStorage,
+} from '../utils/homeBannerCache';
 
 const { width } = Dimensions.get('window');
 
@@ -61,13 +65,16 @@ export const SplashScreen: React.FC = () => {
     ).start();
 
     let active = true;
-    // Prime from storage first if available, then always sync live server order
+    // Prime both onboarding sliders & home carousel banners + prefetch their images during Splash
     getCachedOnboardingSlidesFromStorage().catch(() => null);
-    fetchAndCacheOnboardingBanners(4500)
-      .catch(() => null)
-      .finally(() => {
-        if (active) setBannersReady(true);
-      });
+    getCachedHomeBannersFromStorage().catch(() => null);
+
+    Promise.allSettled([
+      fetchAndCacheOnboardingBanners(4500),
+      fetchAndCacheHomeBanners(4500),
+    ]).finally(() => {
+      if (active) setBannersReady(true);
+    });
 
     // Safety fallback so Splash never blocks longer than 5s if completely offline
     const fallbackTimer = setTimeout(() => {

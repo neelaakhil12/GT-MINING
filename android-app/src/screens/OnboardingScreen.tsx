@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -150,11 +151,18 @@ export const OnboardingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Fullscreen Background Images - Pre-mounted to prevent black screen delay */}
+      {/* Emerald gradient base prevents harsh black frame before image decode */}
+      <LinearGradient
+        colors={['#0B3B22', '#062414', '#03150C']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Fullscreen Background Images - Pre-mounted with fadeDuration={0} to prevent black screen delay */}
       {slides.map((s, idx) => (
         <Image
           key={`bg_${s.id || idx}`}
           source={s.image}
+          fadeDuration={0}
           style={[
             styles.bgImage,
             {

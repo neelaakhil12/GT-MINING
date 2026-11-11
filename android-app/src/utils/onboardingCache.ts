@@ -63,13 +63,25 @@ function sortBanners(list: any[]): any[] {
     });
 }
 
+const BUNDLED_STORY_IMAGES: Record<string, any> = {
+  '/onboarding/story_1.jpg': require('../../assets/onboarding/story_1.jpg'),
+  '/onboarding/story_2.jpg': require('../../assets/onboarding/story_2.jpg'),
+  '/onboarding/story_3.jpg': require('../../assets/onboarding/story_3.jpg'),
+  '/onboarding/story_4.png': require('../../assets/onboarding/story_4.png'),
+  '/onboarding/story_5.jpg': require('../../assets/onboarding/story_5.jpg'),
+};
+
 function mapBannerToSlide(b: any, idx: number): OnboardingSlide {
   let image: any = DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image;
   if (b.imageUrl && typeof b.imageUrl === 'string') {
-    if (b.imageUrl.startsWith('data:') || b.imageUrl.startsWith('http')) {
-      image = { uri: b.imageUrl };
+    const trimmed = b.imageUrl.trim();
+    if (BUNDLED_STORY_IMAGES[trimmed]) {
+      // Built-in default slide assets render from app bundle in 0ms without network delay
+      image = BUNDLED_STORY_IMAGES[trimmed];
+    } else if (trimmed.startsWith('data:') || trimmed.startsWith('http')) {
+      image = { uri: trimmed };
     } else {
-      const path = b.imageUrl.startsWith('/') ? b.imageUrl : `/${b.imageUrl}`;
+      const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
       image = { uri: `${SERVER_HOST}${path}` };
     }
   }
@@ -79,6 +91,23 @@ function mapBannerToSlide(b: any, idx: number): OnboardingSlide {
     description: b.description || '',
     image,
   };
+}
+
+export async function prefetchOnboardingImages(slides: OnboardingSlide[], maxWaitMs = 3000): Promise<void> {
+  const uris = slides
+    .map((s) => (typeof s.image === 'object' && s.image && 'uri' in s.image ? s.image.uri : null))
+    .filter((u): u is string => typeof u === 'string' && u.startsWith('http'));
+  if (uris.length === 0) return;
+
+  // Prefetch slide 1 first with highest priority, then all remaining slides in parallel
+  const [firstUri, ...restUris] = uris;
+  await Promise.race([
+    Promise.allSettled([
+      Image.prefetch(firstUri).catch(() => false),
+      ...restUris.map((u) => Image.prefetch(u).catch(() => false)),
+    ]),
+    new Promise<void>((resolve) => setTimeout(resolve, maxWaitMs)),
+  ]);
 }
 
 export function getMemoryOnboardingSlides(): OnboardingSlide[] | null {
@@ -97,6 +126,7 @@ export async function getCachedOnboardingSlidesFromStorage(): Promise<Onboarding
     if (!memorySlides) {
       memorySlides = mapped;
     }
+    prefetchOnboardingImages(mapped, 1500).catch(() => {});
     return mapped;
   } catch {
     return null;
@@ -125,14 +155,8 @@ export function fetchAndCacheOnboardingBanners(timeoutMs = 5000): Promise<Onboar
           memorySlides = mapped;
           appStorage.setItem(CACHE_KEY, JSON.stringify(sorted)).catch(() => {});
 
-          // Pre-warm the first slide image before onboarding renders, without blocking long
-          const firstUri = mapped[0]?.image?.uri;
-          if (firstUri && typeof firstUri === 'string' && !firstUri.startsWith('data:')) {
-            await Promise.race([
-              Image.prefetch(firstUri).catch(() => false),
-              new Promise((resolve) => setTimeout(resolve, 900)),
-            ]);
-          }
+          // Pre-warm all remote slide images into native Image cache before leaving Splash
+          await prefetchOnboardingImages(mapped, 3000);
           return mapped;
         }
       }
