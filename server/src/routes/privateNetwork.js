@@ -4,12 +4,35 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+function getPublicBaseUrl(req) {
+  const host = req?.get?.('host') || '';
+  if (host.includes('localhost') || host.includes('127.0.0.1')) {
+    return `http://${host}`;
+  }
+  return 'https://gtnetwork.in';
+}
+
+function resolveCompactAvatar(userObj, fallbackName = 'M', baseUrl = 'https://gtnetwork.in') {
+  const initial = (userObj?.fullName || fallbackName || 'M').trim().charAt(0).toUpperCase() || 'M';
+  const raw = userObj?.avatar || userObj?.profileImage || '';
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return initial;
+  }
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    return raw.length <= 512 ? raw : `${baseUrl}/api/private-network/avatar/${userObj.id}`;
+  }
+  if (raw.startsWith('data:image/') && userObj?.id) {
+    return `${baseUrl}/api/private-network/avatar/${userObj.id}`;
+  }
+  return raw.slice(0, 2).toUpperCase() || initial;
+}
+
 /**
  * Determine which circle a user belongs to and retrieve its host, members, and messages.
  * If user was referred by someone (e.g. ramuj was referred by rajesh), user is a member of that circle.
  * If user has no referrer, user is the host of their own circle.
  */
-function resolveCircle(db, currentUser) {
+function resolveCircle(db, currentUser, baseUrl = 'https://gtnetwork.in') {
   if (!db.privateNetworks) {
     db.privateNetworks = {};
   }
@@ -115,6 +138,21 @@ function resolveCircle(db, currentUser) {
   const activeMiningCount = memberList.filter(m => m.isMiningActive).length;
   const idleCount = memberList.length - activeMiningCount;
 
+  const rawMessages = db.privateNetworks[circleHostId].messages || [];
+  const compactMessages = rawMessages.map((msg) => {
+    const av = msg?.senderAvatar;
+    if (typeof av === 'string' && av.length > 512) {
+      const sender = (db.users || []).find((u) => u.id === msg.senderId);
+      return {
+        ...msg,
+        senderAvatar: sender
+          ? resolveCompactAvatar(sender, msg.senderName, baseUrl)
+          : (msg.senderName || 'M').trim().charAt(0).toUpperCase() || 'M',
+      };
+    }
+    return msg;
+  });
+
   return {
     circleHostId,
     circleHost: {
@@ -125,7 +163,7 @@ function resolveCircle(db, currentUser) {
       isCurrentUserHost,
     },
     members: memberList,
-    messages: db.privateNetworks[circleHostId].messages || [],
+    messages: compactMessages,
     stats: {
       totalMembers: memberList.length,
       activeMiningCount,
@@ -133,6 +171,33 @@ function resolveCircle(db, currentUser) {
     },
   };
 }
+
+// GET /api/private-network/avatar/:userId (serves compact avatar binary instead of embedding base64 in chat payloads)
+router.get('/avatar/:userId', (req, res) => {
+  try {
+    const db = readDB();
+    const user = (db.users || []).find((u) => u.id === req.params.userId);
+    const raw = user?.avatar || user?.profileImage || '';
+    if (!raw || typeof raw !== 'string') {
+      return res.status(404).end();
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return res.redirect(raw);
+    }
+    const match = raw.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
+    if (!match) {
+      return res.status(404).end();
+    }
+    const mimeType = match[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(buffer);
+  } catch (err) {
+    console.error('Error in GET /api/private-network/avatar:', err);
+    return res.status(404).end();
+  }
+});
 
 // GET /api/private-network
 router.get('/', requireAuth, (req, res) => {
@@ -143,7 +208,7 @@ router.get('/', requireAuth, (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const circle = resolveCircle(db, user);
+    const circle = resolveCircle(db, user, getPublicBaseUrl(req));
 
     return res.json({
       success: true,
@@ -172,7 +237,8 @@ router.post('/messages', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
-    const circle = resolveCircle(db, user);
+    const baseUrl = getPublicBaseUrl(req);
+    const circle = resolveCircle(db, user, baseUrl);
     const senderRole = user.id === circle.circleHostId ? 'HOST' : 'MEMBER';
 
     const newMessage = {
@@ -181,7 +247,7 @@ router.post('/messages', requireAuth, (req, res) => {
       senderId: user.id,
       senderName: user.fullName,
       senderRole,
-      senderAvatar: user.avatar || user.profileImage || user.fullName.charAt(0).toUpperCase(),
+      senderAvatar: resolveCompactAvatar(user, user.fullName, baseUrl),
       text: text.trim(),
       type,
       targetMemberId: targetMemberId || null,
@@ -244,7 +310,8 @@ router.post('/ping-member', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, message: 'Member ID is required.' });
     }
 
-    const circle = resolveCircle(db, user);
+    const baseUrl = getPublicBaseUrl(req);
+    const circle = resolveCircle(db, user, baseUrl);
     const member = circle.members.find(m => m.id === memberId || m.userId === memberId);
     if (member) {
       member.lastPingedAt = new Date().toISOString();
@@ -258,7 +325,7 @@ router.post('/ping-member', requireAuth, (req, res) => {
       senderId: user.id,
       senderName: user.fullName,
       senderRole: user.id === circle.circleHostId ? 'HOST' : 'MEMBER',
-      senderAvatar: user.avatar || user.profileImage || user.fullName.charAt(0).toUpperCase(),
+      senderAvatar: resolveCompactAvatar(user, user.fullName, baseUrl),
       text: pingText,
       type: 'REMINDER',
       targetMemberId: memberId,

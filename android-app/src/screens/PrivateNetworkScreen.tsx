@@ -13,6 +13,7 @@ import {
   Clipboard,
   Alert,
   BackHandler,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -62,6 +63,35 @@ interface MemberItem {
   isMiningActive: boolean;
   streakDays: number;
 }
+
+const resolveAvatarUri = (raw?: string): string | null => {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/')) {
+    return `${API_BASE_URL.replace(/\/api$/, '')}${trimmed}`;
+  }
+  return null;
+};
+
+const toCompactAvatarValue = (
+  rawAvatar: unknown,
+  senderId?: string,
+  fallbackName = 'M'
+): string => {
+  const initial = (fallbackName || 'M').trim().charAt(0).toUpperCase() || 'M';
+  if (typeof rawAvatar !== 'string' || !rawAvatar.trim()) return initial;
+  const trimmed = rawAvatar.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed.length <= 512 ? trimmed : senderId ? `${API_BASE_URL}/private-network/avatar/${senderId}` : initial;
+  }
+  if (trimmed.startsWith('data:image/')) {
+    return senderId ? `${API_BASE_URL}/private-network/avatar/${senderId}` : initial;
+  }
+  return trimmed.slice(0, 2).toUpperCase() || initial;
+};
 
 interface QuickReplyItem {
   id: string;
@@ -121,14 +151,18 @@ export const PrivateNetworkScreen: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // A. Instant cached messages
+    // A. Instant cached messages (strip any legacy inline base64 strings so Text layout never stalls)
     appStorage.getItem('gt_cached_circle_messages').then((cached) => {
       if (cached && isMounted) {
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            memoryCachedMessages = parsed;
-            setMessages(parsed);
+            const sanitized = parsed.map((m: any) => ({
+              ...m,
+              senderAvatar: toCompactAvatarValue(m?.senderAvatar, m?.senderId, m?.senderName || 'M'),
+            }));
+            memoryCachedMessages = sanitized;
+            setMessages(sanitized);
           }
         } catch {}
       }
@@ -259,7 +293,7 @@ export const PrivateNetworkScreen: React.FC = () => {
               senderId: msg.senderId,
               senderName: msg.senderName,
               senderRole: msg.senderRole || 'MEMBER',
-              senderAvatar: msg.senderAvatar || 'M',
+              senderAvatar: toCompactAvatarValue(msg.senderAvatar, msg.senderId, msg.senderName || 'M'),
               text: msg.text,
               type: msg.type || 'CHAT',
               time: timeStr,
@@ -387,7 +421,7 @@ export const PrivateNetworkScreen: React.FC = () => {
     const isCurrentUserHost = circleHost?.isCurrentUserHost !== false;
     const myRole = isCurrentUserHost ? 'HOST' : 'MEMBER';
     const senderName = user?.fullName || (isCurrentUserHost ? 'Circle Host' : 'Miner');
-    const senderAvatar = user?.avatar || user?.profileImage || senderName.charAt(0).toUpperCase();
+    const senderAvatar = toCompactAvatarValue(user?.avatar || user?.profileImage, user?.id, senderName);
 
     const now = new Date();
     const hours = now.getHours();
@@ -440,7 +474,7 @@ export const PrivateNetworkScreen: React.FC = () => {
     const isCurrentUserHost = circleHost?.isCurrentUserHost !== false;
     const myRole = isCurrentUserHost ? 'HOST' : 'MEMBER';
     const senderName = user?.fullName || (isCurrentUserHost ? 'Circle Host' : 'Miner');
-    const senderAvatar = user?.avatar || user?.profileImage || senderName.charAt(0).toUpperCase();
+    const senderAvatar = toCompactAvatarValue(user?.avatar || user?.profileImage, user?.id, senderName);
 
     const now = new Date();
     const hours = now.getHours();
@@ -504,6 +538,27 @@ export const PrivateNetworkScreen: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
+  const renderChatAvatar = (avatarStr: string, fallbackName: string, isMe: boolean) => {
+    const uri = resolveAvatarUri(avatarStr);
+    const boxStyle = isMe ? styles.hostAvatarBox : styles.memberAvatarBox;
+    const textStyle = isMe ? styles.hostAvatarText : styles.memberAvatarText;
+    const safeInitial = (
+      uri
+        ? (fallbackName || 'M').trim().charAt(0)
+        : (avatarStr || fallbackName || 'M').trim().slice(0, 2)
+    ).toUpperCase() || 'M';
+
+    return (
+      <View style={boxStyle}>
+        {uri ? (
+          <Image source={{ uri }} style={styles.avatarImage} resizeMode="cover" />
+        ) : (
+          <Text style={textStyle}>{safeInitial}</Text>
+        )}
+      </View>
+    );
+  };
+
   const renderMessageItem = useCallback(
     ({ item }: { item: ChatMsg }) => {
       const isMyMessage = item.senderId === user?.id;
@@ -517,13 +572,7 @@ export const PrivateNetworkScreen: React.FC = () => {
           ]}
         >
           {/* Other Member Avatar on Left */}
-          {!isMyMessage && (
-            <View style={styles.memberAvatarBox}>
-              <Text style={styles.memberAvatarText}>
-                {item.senderAvatar || (item.senderName ? item.senderName.charAt(0).toUpperCase() : 'M')}
-              </Text>
-            </View>
-          )}
+          {!isMyMessage && renderChatAvatar(item.senderAvatar, item.senderName, false)}
 
           {/* Bubble Content Stack */}
           <View
@@ -594,13 +643,7 @@ export const PrivateNetworkScreen: React.FC = () => {
           </View>
 
           {/* My Avatar on Right */}
-          {isMyMessage && (
-            <View style={styles.hostAvatarBox}>
-              <Text style={styles.hostAvatarText}>
-                {item.senderAvatar || (user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U')}
-              </Text>
-            </View>
-          )}
+          {isMyMessage && renderChatAvatar(item.senderAvatar, user?.fullName || item.senderName || 'U', true)}
         </View>
       );
     },
@@ -715,14 +758,12 @@ export const PrivateNetworkScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 4. CONTENT AREA: TAB 1: CHAT */}
-        <KeyboardAvoidingView
-          style={[
-            styles.chatAreaContainer,
-            { display: activeTab === 'CHAT' ? 'flex' : 'none' },
-          ]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        {/* 4 & 5. ACTIVE TAB CONTENT (conditional render prevents hidden scroll/flatlist layout contention on Android) */}
+        {activeTab === 'CHAT' ? (
+          <KeyboardAvoidingView
+            style={styles.chatAreaContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -782,18 +823,14 @@ export const PrivateNetworkScreen: React.FC = () => {
               <Send size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-
-        {/* 5. CONTENT AREA: TAB 2: MINERS STATUS */}
-        <ScrollView
-          style={[
-            styles.minersAreaContainer,
-            { display: activeTab === 'STATUS' ? 'flex' : 'none' },
-          ]}
-          contentContainerStyle={styles.minersContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+          </KeyboardAvoidingView>
+        ) : (
+          <ScrollView
+            style={styles.minersAreaContainer}
+            contentContainerStyle={styles.minersContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
           <View style={styles.minersCard}>
               {/* Header: Referred Miners, active/idle count, total badge */}
               <View style={styles.minersHeaderRow}>
@@ -974,6 +1011,7 @@ export const PrivateNetworkScreen: React.FC = () => {
               </View>
             </View>
           </ScrollView>
+        )}
 
         {/* 6. QUICK REPLIES POPOVER SHEET (Image 4) */}
         {showQuickSheet && (
@@ -1512,6 +1550,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
+    overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(34, 197, 94, 0.3)',
@@ -1522,6 +1561,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
   memberAvatarText: {
     fontSize: 11,
     fontWeight: '900',
@@ -1531,6 +1574,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
+    overflow: 'hidden',
     backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',

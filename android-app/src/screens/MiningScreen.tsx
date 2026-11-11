@@ -193,7 +193,7 @@ export const MiningScreen: React.FC = () => {
             </View>
 
             {/* 3D Segmented Mint-Green Cube Globe matching website */}
-            <View style={{ marginVertical: -10, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: '100%', height: 235, marginVertical: -6, alignItems: 'center', justifyContent: 'center' }}>
               <MiningGlobe3D spinning={isFastSpinning} />
             </View>
           </View>
