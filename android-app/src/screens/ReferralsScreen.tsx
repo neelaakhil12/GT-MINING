@@ -32,7 +32,7 @@ import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import * as Haptics from 'expo-haptics';
 import { appStorage } from '../utils/storage';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, SERVER_HOST } from '../config/api';
 import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
@@ -135,6 +135,37 @@ export const ReferralsScreen: React.FC = () => {
 
   useEffect(() => {
     loadReferrals();
+    const normalizeReferralSlides = (list: any[]) =>
+      list.map((b: any) => {
+        const rawUrl = b?.imageUrl || b?.image || '';
+        const imageUrl =
+          rawUrl && !/^https?:\/\//i.test(rawUrl) && !rawUrl.startsWith('data:')
+            ? `${SERVER_HOST}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`
+            : rawUrl;
+        return { ...b, imageUrl };
+      });
+
+    const prefetchSlides = (list: any[]) => {
+      const urls = list
+        .map((b) => b?.imageUrl)
+        .filter((u): u is string => typeof u === 'string' && /^https?:\/\//i.test(u));
+      Promise.allSettled(urls.map((u) => Image.prefetch(u))).catch(() => {});
+    };
+
+    const loadCachedSlides = async () => {
+      try {
+        const cached = await appStorage.getItem('gt_cached_referral_banners');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const normalized = normalizeReferralSlides(parsed);
+            setSlides(normalized);
+            prefetchSlides(normalized);
+          }
+        }
+      } catch {}
+    };
+
     const fetchReferralBanners = async () => {
       try {
         const endpoints = [
@@ -146,13 +177,17 @@ export const ReferralsScreen: React.FC = () => {
             const res = await fetch(`${base}/referral-banners`);
             const data = await res.json();
             if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-              setSlides(data.banners);
+              const normalized = normalizeReferralSlides(data.banners);
+              setSlides(normalized);
+              prefetchSlides(normalized);
+              appStorage.setItem('gt_cached_referral_banners', JSON.stringify(normalized)).catch(() => {});
               break;
             }
           } catch {}
         }
       } catch {}
     };
+    loadCachedSlides();
     fetchReferralBanners();
   }, [user]);
 
@@ -320,7 +355,6 @@ export const ReferralsScreen: React.FC = () => {
   };
 
   const currentSlideData = slides[activeSlide] || slides[0] || defaultDividendSlides[0];
-  const hasSlideImage = !!currentSlideData.imageUrl;
 
   return (
     <View style={styles.container}>
@@ -334,55 +368,67 @@ export const ReferralsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
-          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL WITH IMAGE SLIDES */}
-          <View style={[styles.carouselBannerCard, hasSlideImage && styles.carouselBannerCardImage]}>
-            {hasSlideImage && (
-              <>
+          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL (matches Home Page Banners: clear image, zero green overlay) */}
+          <View style={styles.carouselBannerCard}>
+            {/* Gradient underlay prevents any black flash before images paint */}
+            <LinearGradient
+              colors={['#0A2A18', '#05180E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            {slides.map((slide, idx) =>
+              slide.imageUrl ? (
                 <Image
-                  source={{ uri: currentSlideData.imageUrl }}
-                  style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
+                  key={`rb_${slide.id || idx}`}
+                  source={{ uri: slide.imageUrl }}
+                  fadeDuration={0}
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    { opacity: idx === activeSlide ? 1 : 0 },
+                  ]}
                   resizeMode="cover"
                 />
-                <LinearGradient
-                  colors={['rgba(6, 78, 59, 0.82)', 'rgba(2, 44, 23, 0.92)']}
-                  style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
-                />
-              </>
+              ) : null
             )}
 
+            {/* Gentle bottom scrim only for text contrast — matches Home Banner */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={StyleSheet.absoluteFillObject}
+            />
+
             <View style={styles.carouselHeaderRow}>
-              <View style={[styles.dividendTagPill, hasSlideImage && styles.dividendTagPillImage]}>
+              <View style={styles.dividendTagPill}>
                 <View style={styles.pulsingGreenDot} />
-                <Text style={[styles.dividendTagText, hasSlideImage && { color: '#FFFFFF' }]}>
+                <Text style={styles.dividendTagText}>
                   {currentSlideData.tag || 'PROTOCOL DIVIDEND'}
                 </Text>
               </View>
 
               <View style={styles.dotsRow}>
                 {slides.map((_, idx) => (
-                  <View
+                  <TouchableOpacity
                     key={idx}
+                    onPress={() => setActiveSlide(idx)}
+                    activeOpacity={0.7}
                     style={[
                       styles.dot,
-                      activeSlide === idx
-                        ? hasSlideImage
-                          ? { width: 16, backgroundColor: '#4ADE80' }
-                          : styles.dotActive
-                        : hasSlideImage
-                        ? { width: 4, backgroundColor: 'rgba(255, 255, 255, 0.4)' }
-                        : styles.dotInactive,
+                      activeSlide === idx ? styles.dotActive : styles.dotInactive,
                     ]}
                   />
                 ))}
               </View>
             </View>
 
-            <Text style={[styles.carouselTitle, hasSlideImage && { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }]}>
-              {currentSlideData.title}
-            </Text>
-            <Text style={[styles.carouselDesc, hasSlideImage && { color: 'rgba(255, 255, 255, 0.9)', textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>
-              {currentSlideData.description || currentSlideData.desc}
-            </Text>
+            <View style={styles.carouselTextFooter}>
+              <Text style={styles.carouselTitle}>
+                {currentSlideData.title}
+              </Text>
+              <Text style={styles.carouselDesc} numberOfLines={2}>
+                {currentSlideData.description || currentSlideData.desc}
+              </Text>
+            </View>
           </View>
 
           {/* 2. GROW YOUR NETWORK & 2x2 STATS GRID matching website */}
@@ -762,54 +808,49 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   carouselBannerCard: {
+    minHeight: 180,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    backgroundColor: '#0A2A18',
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     padding: 18,
-    gap: 8,
+    justifyContent: 'space-between',
     shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 6,
     overflow: 'hidden',
-  },
-  carouselBannerCardImage: {
-    backgroundColor: '#064E3B',
-    borderColor: 'rgba(134, 239, 172, 0.3)',
   },
   carouselHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    zIndex: 2,
   },
   dividendTagPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 12,
-    backgroundColor: 'rgba(21, 128, 61, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderWidth: 1,
-    borderColor: 'rgba(21, 128, 61, 0.2)',
-  },
-  dividendTagPillImage: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   pulsingGreenDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#4ADE80',
   },
   dividendTagText: {
     fontSize: 9.5,
     fontWeight: '900',
-    color: '#15803D',
-    letterSpacing: 0.8,
+    color: '#FFFFFF',
+    letterSpacing: 1.0,
+    textTransform: 'uppercase',
   },
   dotsRow: {
     flexDirection: 'row',
@@ -821,24 +862,36 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   dotActive: {
-    width: 16,
-    backgroundColor: '#15803D',
+    width: 18,
+    backgroundColor: '#4ADE80',
   },
   dotInactive: {
     width: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  carouselTextFooter: {
+    gap: 4,
+    maxWidth: '94%',
+    zIndex: 2,
+    marginTop: 12,
   },
   carouselTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#0A341B',
+    color: '#FFFFFF',
     letterSpacing: -0.3,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   carouselDesc: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '500',
-    color: '#1E5E36',
-    lineHeight: 18,
+    color: 'rgba(255, 255, 255, 0.88)',
+    lineHeight: 16,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   growSection: {
     gap: 10,

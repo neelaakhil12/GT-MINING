@@ -53,7 +53,16 @@ export const ReferralsPage: React.FC = () => {
   const { user, updateWalletBalance } = useAuth();
   const { showToast } = useToast();
 
-  const [slides, setSlides] = useState<any[]>(defaultDividendSlides);
+  const [slides, setSlides] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_referral_banners');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return defaultDividendSlides;
+  });
   const [activeSlide, setActiveSlide] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -108,9 +117,12 @@ export const ReferralsPage: React.FC = () => {
         const res = await api.getPublicReferralBanners();
         if (res && res.success && Array.isArray(res.banners) && res.banners.length > 0) {
           setSlides(res.banners);
+          try {
+            localStorage.setItem('gt_cached_referral_banners', JSON.stringify(res.banners));
+          } catch {}
         }
       } catch (err) {
-        // Fallback to default slides
+        // Fallback to cached/default slides
       }
     };
     fetchSlides();
@@ -217,67 +229,75 @@ export const ReferralsPage: React.FC = () => {
     }
   };
 
-  const currentSlide = slides[activeSlide] || slides[0] || defaultDividendSlides[0];
-
   return (
     <div className="space-y-6 max-w-xl mx-auto px-1 sm:px-0">
 
-      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER WITH IMAGE SLIDES */}
-      <div 
-        className="relative overflow-hidden rounded-[26px] p-5 sm:p-6 transition-all duration-500 border border-white/90 shadow-[0_8px_25px_rgba(34,197,94,0.08)] group"
-        style={{
-          background: currentSlide.imageUrl
-            ? `linear-gradient(135deg, rgba(6,78,59,0.85), rgba(2,44,23,0.92)), url(${currentSlide.imageUrl}) center/cover no-repeat`
-            : `linear-gradient(135deg, ${currentSlide.gradientStart || '#E8F8EE'}, ${currentSlide.gradientEnd || '#F4FBF6'})`,
-        }}
-      >
-        {/* If image present, render backdrop overlay */}
-        {currentSlide.imageUrl && (
-          <img
-            src={currentSlide.imageUrl}
-            alt={currentSlide.title}
-            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50 pointer-events-none transition-transform duration-700 group-hover:scale-105"
-          />
-        )}
+      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER (matches HomeBanners: clear image, zero green overlay) */}
+      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
+        <div className="relative h-[165px] sm:h-[210px] md:h-[250px] w-full overflow-hidden">
+          {slides.map((slide, index) => {
+            const isActive = index === activeSlide;
+            const slideImg = slide.imageUrl || slide.image;
+            return (
+              <div
+                key={slide.id || index}
+                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                }`}
+                style={
+                  !slideImg
+                    ? {
+                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
+                      }
+                    : undefined
+                }
+              >
+                {slideImg && (
+                  <img
+                    src={slideImg}
+                    alt={slide.title}
+                    className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 group-hover:scale-105"
+                    loading="eager"
+                  />
+                )}
 
-        <div className="relative z-10 flex items-center justify-between">
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase backdrop-blur-md ${
-            currentSlide.imageUrl
-              ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
-            <span>{currentSlide.tag || 'PROTOCOL DIVIDEND'}</span>
-          </div>
+                {/* Gentle bottom scrim only so title & tag stay crisp without tinting or obscuring image */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+
+                <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2 z-20">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-ping" />
+                    <span>{slide.tag || 'PROTOCOL DIVIDEND'}</span>
+                  </div>
+
+                  <h2 className="text-base sm:text-2xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                    {slide.title}
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-white/85 line-clamp-2 font-medium max-w-md drop-shadow">
+                    {slide.description || slide.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
 
           {/* Dots Indicator */}
-          <div className="flex items-center gap-1.5">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveSlide(idx)}
-                className={`transition-all duration-300 rounded-full ${
-                  activeSlide === idx
-                    ? currentSlide.imageUrl ? 'w-5 h-1.5 bg-[#4ADE80]' : 'w-5 h-1.5 bg-[#15803D]'
-                    : currentSlide.imageUrl ? 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70' : 'w-1.5 h-1.5 bg-black/20 hover:bg-black/40'
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-3.5 space-y-1">
-          <h2 className={`text-xl sm:text-2xl font-black tracking-tight ${
-            currentSlide.imageUrl ? 'text-white drop-shadow-md' : 'text-[#0A341B]'
-          }`}>
-            {currentSlide.title}
-          </h2>
-          <p className={`text-xs sm:text-sm font-medium leading-relaxed ${
-            currentSlide.imageUrl ? 'text-white/90 drop-shadow' : 'text-[#1E5E36]'
-          }`}>
-            {currentSlide.description || currentSlide.desc}
-          </p>
+          {slides.length > 1 && (
+            <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-1.5 z-30">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveSlide(idx)}
+                  className={`transition-all duration-300 rounded-full h-1.5 ${
+                    activeSlide === idx
+                      ? 'w-5 bg-[#4ADE80]'
+                      : 'w-1.5 bg-white/50 hover:bg-white/80'
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

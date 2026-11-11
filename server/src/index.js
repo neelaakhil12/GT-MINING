@@ -131,11 +131,14 @@ app.get('/api/home-banners', (req, res) => {
 });
 
 // Public Referral Page Sliders Endpoint
+app.get('/api/referral-banners/:id/image', (req, res) => {
+  const db = readDB();
+  return serveBannerImage(res, db.referralBanners, req.params.id);
+});
+
 app.get('/api/referral-banners', (req, res) => {
   const db = readDB();
-  const banners = (db.referralBanners || [])
-    .filter(b => b.isActive !== false)
-    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  const banners = normalizeBannersWithImageUrls(db.referralBanners, '/api/referral-banners');
   return res.json({ success: true, banners });
 });
 
