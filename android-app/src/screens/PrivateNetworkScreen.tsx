@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -52,7 +52,41 @@ interface ChatMsg {
   text: string;
   type: 'CHAT' | 'REMINDER';
   time: string;
+  createdAt?: string;
 }
+
+interface ChatMsgWithDate extends ChatMsg {
+  dateLabel: string;
+  showDateHeader: boolean;
+}
+
+const getChatDateKey = (isoOrDate?: string): string => {
+  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+  if (Number.isNaN(d.getTime())) return 'today';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const formatChatDateSeparator = (isoOrDate?: string): string => {
+  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+  if (Number.isNaN(d.getTime())) return 'Today';
+  const now = new Date();
+  const todayKey = getChatDateKey(now.toISOString());
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  const yesterdayKey = getChatDateKey(yest.toISOString());
+  const targetKey = getChatDateKey(d.toISOString());
+  if (targetKey === todayKey) return 'Today';
+  if (targetKey === yesterdayKey) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
 interface MemberItem {
   id: string;
@@ -297,6 +331,7 @@ export const PrivateNetworkScreen: React.FC = () => {
               text: msg.text,
               type: msg.type || 'CHAT',
               time: timeStr,
+              createdAt: msg.createdAt || new Date().toISOString(),
             };
           });
 
@@ -305,7 +340,8 @@ export const PrivateNetworkScreen: React.FC = () => {
             const isSame =
               prev.length === formatted.length &&
               (prev.length === 0 ||
-                prev[prev.length - 1].id === formatted[formatted.length - 1].id);
+                (prev[prev.length - 1].id === formatted[formatted.length - 1].id &&
+                  Boolean(prev[0]?.createdAt) === Boolean(formatted[0]?.createdAt)));
             if (!isSame) {
               appStorage
                 .setItem('gt_cached_circle_messages', JSON.stringify(formatted))
@@ -440,6 +476,7 @@ export const PrivateNetworkScreen: React.FC = () => {
       text,
       type,
       time: timeStr,
+      createdAt: now.toISOString(),
     };
 
     setMessages((prev) => {
@@ -495,6 +532,7 @@ export const PrivateNetworkScreen: React.FC = () => {
       text: pingText,
       type: 'REMINDER',
       time: timeStr,
+      createdAt: now.toISOString(),
     };
 
     setMessages((prev) => [...prev, pingMsg]);
@@ -559,91 +597,109 @@ export const PrivateNetworkScreen: React.FC = () => {
     );
   };
 
+  const messagesWithDates = useMemo<ChatMsgWithDate[]>(() => {
+    let lastKey: string | null = null;
+    return messages.map((msg) => {
+      const dateKey = getChatDateKey(msg.createdAt);
+      const showDateHeader = dateKey !== lastKey;
+      lastKey = dateKey;
+      return {
+        ...msg,
+        dateLabel: formatChatDateSeparator(msg.createdAt),
+        showDateHeader,
+      };
+    });
+  }, [messages]);
+
   const renderMessageItem = useCallback(
-    ({ item }: { item: ChatMsg }) => {
+    ({ item }: { item: ChatMsgWithDate }) => {
       const isMyMessage = item.senderId === user?.id;
       const isReminder = item.type === 'REMINDER';
 
       return (
-        <View
-          style={[
-            styles.messageRow,
-            isMyMessage ? styles.messageRowHost : styles.messageRowMember,
-          ]}
-        >
-          {/* Other Member Avatar on Left */}
-          {!isMyMessage && renderChatAvatar(item.senderAvatar, item.senderName, false)}
-
-          {/* Bubble Content Stack */}
+        <View>
+          {item.showDateHeader && (
+            <View style={styles.dateSeparatorWrap}>
+              <View style={styles.dateSeparatorPill}>
+                <Text style={styles.dateSeparatorText}>{item.dateLabel}</Text>
+              </View>
+            </View>
+          )}
           <View
             style={[
-              styles.bubbleWrapper,
-              isMyMessage ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
+              styles.messageRow,
+              isMyMessage ? styles.messageRowHost : styles.messageRowMember,
             ]}
           >
-            {/* Name + Time Row */}
+            {/* Other Member Avatar on Left */}
+            {!isMyMessage && renderChatAvatar(item.senderAvatar, item.senderName, false)}
+
+            {/* Bubble Content Stack */}
             <View
               style={[
-                styles.bubbleHeaderRow,
-                isMyMessage ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
+                styles.bubbleWrapper,
+                isMyMessage ? styles.bubbleWrapperHost : styles.bubbleWrapperMember,
               ]}
             >
-              <Text style={styles.senderNameText}>{item.senderName}</Text>
-              {item.senderRole === 'HOST' && (
-                <View style={styles.hostBadge}>
-                  <Text style={styles.hostBadgeText}>HOST</Text>
-                </View>
-              )}
-              <Text style={styles.messageTimeText}>{item.time}</Text>
-            </View>
-
-            {/* Bubble Box */}
-            <View
-              style={[
-                styles.bubbleBox,
-                isMyMessage ? styles.bubbleBoxHost : styles.bubbleBoxMember,
-                isReminder && styles.bubbleBoxReminder,
-              ]}
-            >
-              {isReminder && (
-                <View style={styles.reminderHeader}>
-                  <Bell size={13} color="#B45309" />
-                  <Text style={styles.reminderHeaderText}>
-                    MINING ALERT & CYCLE REMINDER
-                  </Text>
-                </View>
-              )}
-
-              <Text
+              {/* Name + Time Row (no HOST badge) */}
+              <View
                 style={[
-                  styles.bubbleText,
-                  isMyMessage ? styles.bubbleTextHost : styles.bubbleTextMember,
+                  styles.bubbleHeaderRow,
+                  isMyMessage ? styles.bubbleHeaderHost : styles.bubbleHeaderMember,
                 ]}
               >
-                {item.text}
-              </Text>
+                <Text style={styles.senderNameText}>{item.senderName}</Text>
+                <Text style={styles.messageTimeText}>{item.time}</Text>
+              </View>
 
-              {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
-              {isReminder && (
-                <View style={styles.reminderActionRow}>
-                  <Text style={styles.reminderYieldText}>
-                    {cycleHours}-Hour cycle yield: +{miningReward.toFixed(2)} GT
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Mine' })}
-                    style={styles.reminderMineBtn}
-                    activeOpacity={0.85}
-                  >
-                    <Pickaxe size={12} color="#FFFFFF" />
-                    <Text style={styles.reminderMineBtnText}>Mine Now</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              {/* Bubble Box */}
+              <View
+                style={[
+                  styles.bubbleBox,
+                  isMyMessage ? styles.bubbleBoxHost : styles.bubbleBoxMember,
+                  isReminder && styles.bubbleBoxReminder,
+                ]}
+              >
+                {isReminder && (
+                  <View style={styles.reminderHeader}>
+                    <Bell size={13} color="#B45309" />
+                    <Text style={styles.reminderHeaderText}>
+                      MINING ALERT & CYCLE REMINDER
+                    </Text>
+                  </View>
+                )}
+
+                <Text
+                  style={[
+                    styles.bubbleText,
+                    isMyMessage && !isReminder ? styles.bubbleTextHost : styles.bubbleTextMember,
+                  ]}
+                >
+                  {item.text}
+                </Text>
+
+                {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
+                {isReminder && (
+                  <View style={styles.reminderActionRow}>
+                    <Text style={styles.reminderYieldText}>
+                      {cycleHours}-Hour cycle yield: +{miningReward.toFixed(2)} GT
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Mine' })}
+                      style={styles.reminderMineBtn}
+                      activeOpacity={0.85}
+                    >
+                      <Pickaxe size={12} color="#FFFFFF" />
+                      <Text style={styles.reminderMineBtnText}>Mine Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          {/* My Avatar on Right */}
-          {isMyMessage && renderChatAvatar(item.senderAvatar, user?.fullName || item.senderName || 'U', true)}
+            {/* My Avatar on Right */}
+            {isMyMessage && renderChatAvatar(item.senderAvatar, user?.fullName || item.senderName || 'U', true)}
+          </View>
         </View>
       );
     },
@@ -766,7 +822,7 @@ export const PrivateNetworkScreen: React.FC = () => {
           >
           <FlatList
             ref={flatListRef}
-            data={messages}
+            data={messagesWithDates}
             keyExtractor={(item) => item.id}
             contentContainerStyle={[
               styles.messagesList,
@@ -1673,8 +1729,31 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   bubbleTextMember: {
-    color: '#0A341B',
+    color: '#111827',
     fontWeight: '500',
+  },
+  dateSeparatorWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  dateSeparatorPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  dateSeparatorText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#1E5E36',
   },
   reminderActionRow: {
     flexDirection: 'row',

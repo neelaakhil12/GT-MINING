@@ -38,7 +38,35 @@ import {
   PrivateNetworkData,
 } from '../types';
 
-export interface QuickReply {
+export const getChatDateKey = (isoOrDate?: string): string => {
+  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+  if (Number.isNaN(d.getTime())) return 'today';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const formatChatDateSeparator = (isoOrDate?: string): string => {
+  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+  if (Number.isNaN(d.getTime())) return 'Today';
+  const now = new Date();
+  const todayKey = getChatDateKey(now.toISOString());
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  const yesterdayKey = getChatDateKey(yest.toISOString());
+  const targetKey = getChatDateKey(d.toISOString());
+  if (targetKey === todayKey) return 'Today';
+  if (targetKey === yesterdayKey) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+interface QuickReply {
   id: string;
   shortcut: string;
   label: string;
@@ -841,15 +869,25 @@ export const PrivateNetworkPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              {(data?.messages || []).map((msg) => {
+              {(data?.messages || []).map((msg, index, arr) => {
                 const isHost = msg.senderRole === 'HOST' || msg.senderId === user?.id;
                 const isReminder = msg.type === 'REMINDER';
+                const currentKey = getChatDateKey(msg.createdAt);
+                const prevKey = index > 0 ? getChatDateKey(arr[index - 1]?.createdAt) : null;
+                const showDateDivider = currentKey !== prevKey;
 
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-2.5 ${isHost ? 'flex-row-reverse' : 'flex-row'}`}
-                  >
+                  <React.Fragment key={msg.id}>
+                    {showDateDivider && (
+                      <div className="flex justify-center my-2">
+                        <span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#22C55E]/25 text-[11px] font-bold text-[#1E5E36] shadow-2xs">
+                          {formatChatDateSeparator(msg.createdAt)}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`flex gap-2.5 ${isHost ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
                     {/* Avatar */}
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 overflow-hidden ${
@@ -896,8 +934,14 @@ export const PrivateNetworkPage: React.FC = () => {
                             <span>MINING ALERT & CYCLE REMINDER</span>
                           </div>
                         )}
-                        <div className="leading-relaxed whitespace-pre-wrap break-words">
-                          {renderMessageText(msg.text, isHost)}
+                        <div className="leading-relaxed whitespace-pre-wrap break-words text-[#111827] dark:text-[#111827]">
+                          {isReminder ? (
+                            <span className="text-[#111827]">{renderMessageText(msg.text, false)}</span>
+                          ) : (
+                            <span className={isHost ? 'text-white' : 'text-[#111827]'}>
+                              {renderMessageText(msg.text, isHost)}
+                            </span>
+                          )}
                         </div>
 
                         {/* Interactive Mine Now Call to Action inside Reminder bubbles */}
@@ -918,6 +962,7 @@ export const PrivateNetworkPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                  </React.Fragment>
                 );
               })}
               <div ref={messagesEndRef} />
