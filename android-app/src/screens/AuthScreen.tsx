@@ -431,11 +431,10 @@ export const AuthScreen: React.FC = () => {
           throw new Error('Google Sign-In did not return an email address.');
         }
 
-        const isSignup = mode === 'SIGNUP';
         await googleLogin({
           email: targetEmail.trim().toLowerCase(),
           name: targetName,
-          isSignup,
+          isSignup: false,
         });
 
         navigation.replace('MainTabs');
@@ -446,7 +445,7 @@ export const AuthScreen: React.FC = () => {
       if (typeof window !== 'undefined') {
         const client_id = GOOGLE_WEB_CLIENT_ID;
         const redirect_uri = window.location.origin;
-        sessionStorage.setItem('gt_app_google_mode', mode === 'SIGNUP' ? 'signup' : 'login');
+        sessionStorage.setItem('gt_app_google_mode', 'login');
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(
           redirect_uri
         )}&response_type=token&scope=openid%20profile%20email&prompt=select_account`;
@@ -812,25 +811,6 @@ export const AuthScreen: React.FC = () => {
                             {loading ? 'Sending Code...' : 'Send Verification Code'}
                           </Text>
                           <ArrowRight size={16} color="#FFFFFF" />
-                        </TouchableOpacity>
-
-                        {/* Divider OR */}
-                        <View style={styles.dividerRow}>
-                          <View style={styles.dividerLine} />
-                          <Text style={styles.dividerText}>OR</Text>
-                          <View style={styles.dividerLine} />
-                        </View>
-
-                        {/* Google Sign In Button */}
-                        <TouchableOpacity
-                          onPress={handleGoogleSubmit}
-                          style={styles.googleBtn}
-                          activeOpacity={0.85}
-                        >
-                          <View style={styles.googleIconBox}>
-                            <Text style={styles.googleG}>G</Text>
-                          </View>
-                          <Text style={styles.googleBtnText}>Continue with Google</Text>
                         </TouchableOpacity>
                       </>
                     )}
