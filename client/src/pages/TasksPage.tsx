@@ -277,36 +277,74 @@ export const TasksPage: React.FC = () => {
   // Handle proof image upload via canvas compression (<200KB for instant transfer)
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset input value so picking the same file again still triggers onChange
+    e.target.value = '';
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    const looksLikeImage =
+      file.type.startsWith('image/') ||
+      /\.(png|jpe?g|webp|gif|bmp|heic|heif|avif)$/i.test(file.name || '');
+
+    if (!looksLikeImage) {
       showToast('Please select a valid image file (PNG, JPG, WebP)', 'error');
       return;
     }
 
-    if (file.size > 12 * 1024 * 1024) {
-      showToast('Image size is too large. Please select a photo under 12MB.', 'error');
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('Image size is too large. Please select a photo under 15MB.', 'error');
       return;
     }
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      showToast('Could not read the selected image file. Please try another screenshot.', 'error');
+    };
     reader.onload = (event) => {
+      const rawDataUrl = typeof event.target?.result === 'string' ? event.target.result : '';
+      if (!rawDataUrl) {
+        showToast('Could not process screenshot file.', 'error');
+        return;
+      }
+
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxW = 900;
-        const scale = Math.min(1, maxW / img.width);
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setProofImage(dataUrl);
-          showToast('Screenshot loaded! Tap "Submit Proof" to send to admin.', 'info');
+        try {
+          const w = img.naturalWidth || img.width;
+          const h = img.naturalHeight || img.height;
+          if (!w || !h) {
+            setProofImage(rawDataUrl);
+            showToast('Screenshot loaded! Tap "Submit Proof to Admin" to send.', 'info');
+            return;
+          }
+          const canvas = document.createElement('canvas');
+          const maxW = 900;
+          const scale = Math.min(1, maxW / w);
+          canvas.width = Math.max(1, Math.round(w * scale));
+          canvas.height = Math.max(1, Math.round(h * scale));
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            setProofImage(dataUrl);
+            showToast('Screenshot loaded! Tap "Submit Proof to Admin" to send.', 'info');
+          } else {
+            setProofImage(rawDataUrl);
+            showToast('Screenshot loaded! Tap "Submit Proof to Admin" to send.', 'info');
+          }
+        } catch {
+          setProofImage(rawDataUrl);
+          showToast('Screenshot loaded! Tap "Submit Proof to Admin" to send.', 'info');
         }
       };
-      img.src = event.target?.result as string;
+      img.onerror = () => {
+        if (file.size <= 8 * 1024 * 1024) {
+          setProofImage(rawDataUrl);
+          showToast('Screenshot loaded! Tap "Submit Proof to Admin" to send.', 'info');
+        } else {
+          showToast('Unsupported image format or oversized file. Please use a JPG or PNG screenshot.', 'error');
+        }
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -876,7 +914,7 @@ export const TasksPage: React.FC = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleImageFileChange}
-                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                  accept="image/*"
                   className="hidden"
                 />
 

@@ -25,7 +25,7 @@ import {
   Check,
   Upload,
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImageFromGallery } from '../utils/imagePicker';
 import { useAuth } from '../context/AuthContext';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
@@ -87,8 +87,13 @@ export const ProfileScreen: React.FC = () => {
   // Upload Custom Photo from Gallery
   const handlePickCustomPhoto = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
+      const picked = await pickImageFromGallery({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (picked.permissionDenied) {
         Alert.alert(
           'Permission Required',
           'Please allow access to your photos to upload a profile picture.'
@@ -96,24 +101,10 @@ export const ProfileScreen: React.FC = () => {
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
+      if (!picked.canceled && picked.dataUri) {
         setUploadingPhoto(true);
-
-        const dataUri = asset.base64
-          ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
-          : asset.uri;
-
-        setSelectedAvatarUrl(dataUri);
-        const ok = await updateUserAvatar(dataUri);
+        setSelectedAvatarUrl(picked.dataUri);
+        const ok = await updateUserAvatar(picked.dataUri);
         if (ok) {
           Alert.alert('Success', 'Profile photo updated successfully!');
         } else {
@@ -121,7 +112,7 @@ export const ProfileScreen: React.FC = () => {
         }
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not pick image.');
+      Alert.alert('Error', err?.message || 'Could not pick image.');
     } finally {
       setUploadingPhoto(false);
     }

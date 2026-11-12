@@ -32,7 +32,7 @@ import {
   Coins,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
-import * as ImagePicker from 'expo-image-picker';
+import { pickImageFromGallery } from '../utils/imagePicker';
 import { OrbBackground } from '../components/OrbBackground';
 import { AppNavbar } from '../components/AppNavbar';
 import { useNavigation } from '@react-navigation/native';
@@ -339,33 +339,25 @@ export const TasksScreen: React.FC = () => {
   // Pick proof screenshot from phone gallery
   const handlePickProofImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
+      const picked = await pickImageFromGallery({
+        allowsEditing: false,
+        quality: 0.6,
+      });
+
+      if (picked.permissionDenied) {
         Alert.alert(
           'Permission Required',
-          'Please grant access to your photo library to select a verification screenshot.'
+          'Please allow photo library access in app permissions to select a verification screenshot.'
         );
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.6,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset.base64) {
-          const mimeType = asset.mimeType || 'image/jpeg';
-          setProofImage(`data:${mimeType};base64,${asset.base64}`);
-        } else if (asset.uri) {
-          setProofImage(asset.uri);
-        }
+      if (!picked.canceled && picked.dataUri) {
+        setProofImage(picked.dataUri);
       }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to pick image from photo library.');
+    } catch (err: any) {
+      const msg = err?.message ? ` (${err.message})` : '';
+      Alert.alert('Error', `Failed to pick image from photo library.${msg}`);
     }
   };
 
@@ -389,12 +381,19 @@ export const TasksScreen: React.FC = () => {
         body: JSON.stringify({
           taskId: proofModalTask.id,
           proofImage,
-          proofNote,
+          proofNote: proofNote.trim(),
         }),
       });
 
-      const data = await res.json();
-      if (data && data.success) {
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = null;
+      }
+
+      if (res.ok && data && data.success) {
         Alert.alert(
           '🎉 Proof Submitted!',
           'Sent to admin for review. Your reward will be credited directly to your wallet upon approval.'
@@ -405,7 +404,7 @@ export const TasksScreen: React.FC = () => {
         await fetchTasksAndSubmissions();
         refreshUserData();
       } else {
-        throw new Error(data?.message || 'Failed to submit proof');
+        throw new Error(data?.message || `Server error (${res.status}). Please try a smaller screenshot.`);
       }
     } catch (err: any) {
       Alert.alert('Submission Error', err.message || 'Failed to submit task proof');
