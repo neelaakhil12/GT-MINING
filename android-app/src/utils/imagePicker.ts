@@ -112,3 +112,4 @@ export async function pickImageFromGallery(
     ? lastError
     : new Error('Unable to open photo library on this device.');
 }
+
