@@ -81,7 +81,7 @@ export const ReferralsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const referralCode = user?.referralCode || '';
-  const referralLink = `https://gtnetwork.in/signup?ref=${referralCode}`;
+  const referralLink = `https://gtmining.xyz/signup?ref=${referralCode}`;
 
   const loadReferrals = async () => {
     try {

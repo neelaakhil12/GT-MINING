@@ -72,7 +72,7 @@ const buildCoinHtml = () => `<!DOCTYPE html>
 
       const logoImg = new Image();
       logoImg.crossOrigin = 'anonymous';
-      logoImg.src = 'https://gtnetwork.in/gt-header-logo.png';
+      logoImg.src = 'https://gtmining.xyz/gt-header-logo.png';
 
       function drawFace() {
         ctx.clearRect(0, 0, 512, 512);
@@ -237,7 +237,7 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   return (
     <View style={[styles.container, { width, height }]} pointerEvents="none">
       <WebView
-        source={{ html, baseUrl: 'https://gtnetwork.in' }}
+        source={{ html, baseUrl: 'https://gtmining.xyz' }}
         style={styles.webView}
         scrollEnabled={false}
         originWhitelist={['*']}

@@ -48,7 +48,7 @@ router.get('/summary', requireAuth, (req, res) => {
       }
     });
 
-    const baseUrl = settings.websiteUrl || 'https://gtnetwork.in';
+    const baseUrl = settings.websiteUrl || 'https://gtmining.xyz';
     const referralLink = `${baseUrl}/signup?ref=${user.referralCode}`;
 
     return res.json({

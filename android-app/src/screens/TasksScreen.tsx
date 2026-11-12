@@ -66,7 +66,7 @@ function buildVideoHtml(rawUrl: string): string {
 </head>
 <body>
   <iframe
-    src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://gtnetwork.in"
+    src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://gtmining.xyz"
     frameborder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowfullscreen
@@ -1004,9 +1004,9 @@ export const TasksScreen: React.FC = () => {
                 key={watchingVideoModalTask.id}
                 source={{
                   html: buildVideoHtml(watchingVideoModalTask.url),
-                  baseUrl: 'https://gtnetwork.in',
+                  baseUrl: 'https://gtmining.xyz',
                   headers: {
-                    Referer: 'https://gtnetwork.in',
+                    Referer: 'https://gtmining.xyz',
                   },
                 }}
                 style={styles.fullScreenWebView}
