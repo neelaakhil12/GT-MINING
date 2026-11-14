@@ -38,9 +38,7 @@ router.post('/signup/send-otp', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid email address format.' });
   }
 
-  if (!phone || !phone.trim() || phone.trim().length < 8) {
-    return res.status(400).json({ success: false, message: 'Please enter a valid phone number (at least 8 digits).' });
-  }
+  const cleanPhone = (phone && typeof phone === 'string') ? phone.trim() : '';
 
   await lockManager.acquire('signup_lock');
   try {
@@ -512,7 +510,7 @@ router.post('/login', async (req, res) => {
 
 // Google OAuth Login / Registration
 router.post('/google', async (req, res) => {
-  const { credential, email, name, googleId, isSignup } = req.body;
+  const { credential, email, name, googleId, isSignup, referralCode } = req.body;
   const targetEmail = (email || '').toLowerCase().trim();
 
   if (!targetEmail) {
@@ -538,6 +536,12 @@ router.post('/google', async (req, res) => {
         });
       }
 
+      // Check referral user if provided
+      let referrerUser = null;
+      if (referralCode) {
+        referrerUser = db.users.find(u => u.referralCode === referralCode.trim().toUpperCase() && !u.deletedAt);
+      }
+
       // If user is explicitly signing up with Google -> register them
       const userId = generateId('usr');
       const userReferralCode = generateReferralCode(db.users);
@@ -549,7 +553,7 @@ router.post('/google', async (req, res) => {
         email: targetEmail,
         passwordHash: await bcrypt.hash(generateId('g_pass'), 10),
         referralCode: userReferralCode,
-        referredByUserId: null,
+        referredByUserId: referrerUser ? referrerUser.id : null,
         role: 'USER',
         accountStatus: 'ACTIVE',
         emailVerifiedAt: now,

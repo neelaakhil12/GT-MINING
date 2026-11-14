@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { GtLogo } from '../components/GtLogo';
 import { GlassCard } from '../components/GlassCard';
 import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 
@@ -110,7 +109,7 @@ export const LoginPage: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-block mb-2">
-            <GtLogo size="lg" animated glow />
+            <img src="/gt-auth-logo.png" alt="GT Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto" />
           </Link>
           <h2 className="text-3xl font-black text-[#0A341B] tracking-tight">Welcome Back</h2>
           <p className="text-sm font-medium text-[#1E5E36]">Access your GT wallet & 4-hour mining cycle</p>

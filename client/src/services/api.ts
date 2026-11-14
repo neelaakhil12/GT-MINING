@@ -76,7 +76,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth
-  sendSignupOtp: (body: { fullName: string; email: string; phone: string; referralCode?: string }) =>
+  sendSignupOtp: (body: { fullName: string; email: string; phone?: string; referralCode?: string }) =>
     request<any>('/auth/signup/send-otp', { method: 'POST', body: JSON.stringify(body) }),
   verifySignupOtp: (body: { email: string; otpCode: string }) =>
     request<any>('/auth/signup/verify-otp', { method: 'POST', body: JSON.stringify(body) }),

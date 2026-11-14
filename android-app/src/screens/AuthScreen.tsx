@@ -17,7 +17,6 @@ import {
   Mail,
   Lock,
   User as UserIcon,
-  Phone,
   Gift,
   Eye,
   EyeOff,
@@ -88,7 +87,6 @@ export const AuthScreen: React.FC = () => {
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
   const [forgotStep, setForgotStep] = useState<'REQUEST_OTP' | 'VERIFY_OTP'>('REQUEST_OTP');
   const [signupStep, setSignupStep] = useState<'DETAILS' | 'OTP' | 'PASSWORD'>('DETAILS');
-  const [phone, setPhone] = useState('');
   const [signupCountdown, setSignupCountdown] = useState(60);
   const [canResendSignupOtp, setCanResendSignupOtp] = useState(false);
 
@@ -139,7 +137,6 @@ export const AuthScreen: React.FC = () => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setPhone('');
     setOtpCode('');
     setSignupStep('DETAILS');
     setForgotStep('REQUEST_OTP');
@@ -195,17 +192,12 @@ export const AuthScreen: React.FC = () => {
       setErrorMessage('Please enter a valid email address');
       return;
     }
-    if (!phone.trim() || phone.trim().length < 8) {
-      setErrorMessage('Please enter a valid phone number (at least 8 digits)');
-      return;
-    }
 
     setLoading(true);
     try {
       const res = await sendSignupOtp({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
         referralCode: referralCode.trim() || undefined,
       });
       setSuccessMessage(res.message || `Verification code sent to ${email.trim()}! Please check your inbox.`);
@@ -230,7 +222,6 @@ export const AuthScreen: React.FC = () => {
       await sendSignupOtp({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
         referralCode: referralCode.trim() || undefined,
       });
       setSuccessMessage(`New code sent to ${email.trim()}!`);
@@ -434,7 +425,8 @@ export const AuthScreen: React.FC = () => {
         await googleLogin({
           email: targetEmail.trim().toLowerCase(),
           name: targetName,
-          isSignup: false,
+          isSignup: mode === 'SIGNUP',
+          referralCode: referralCode.trim() || undefined,
         });
 
         navigation.replace('MainTabs');
@@ -445,7 +437,7 @@ export const AuthScreen: React.FC = () => {
       if (typeof window !== 'undefined') {
         const client_id = GOOGLE_WEB_CLIENT_ID;
         const redirect_uri = window.location.origin;
-        sessionStorage.setItem('gt_app_google_mode', 'login');
+        sessionStorage.setItem('gt_app_google_mode', mode === 'SIGNUP' ? 'signup' : 'login');
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(
           redirect_uri
         )}&response_type=token&scope=openid%20profile%20email&prompt=select_account`;
@@ -486,7 +478,7 @@ export const AuthScreen: React.FC = () => {
             <View style={styles.headerArea}>
               <View style={styles.logoBox}>
                 <Image
-                  source={require('../../assets/gt-logo.png')}
+                  source={require('../../assets/gt-auth-logo.png')}
                   style={styles.logoImg}
                   resizeMode="contain"
                 />
@@ -755,29 +747,6 @@ export const AuthScreen: React.FC = () => {
                           </View>
                         </View>
 
-                        {/* Phone Number */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Phone Number</Text>
-                          <View style={styles.inputWrapper}>
-                            <Phone size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={styles.input}
-                              placeholder="e.g. +91 9876543210"
-                              placeholderTextColor="#9CA3AF"
-                              value={phone}
-                              onChangeText={setPhone}
-                              keyboardType="phone-pad"
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              autoComplete="off"
-                              textContentType="none"
-                              importantForAutofill="no"
-                              readOnly={!unlocked}
-                              onFocus={() => setUnlocked(true)}
-                            />
-                          </View>
-                        </View>
-
                         {/* Referral Code */}
                         <View style={styles.inputGroup}>
                           <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
@@ -811,6 +780,26 @@ export const AuthScreen: React.FC = () => {
                             {loading ? 'Sending Code...' : 'Send Verification Code'}
                           </Text>
                           <ArrowRight size={16} color="#FFFFFF" />
+                        </TouchableOpacity>
+
+                        {/* Divider OR */}
+                        <View style={styles.dividerRow}>
+                          <View style={styles.dividerLine} />
+                          <Text style={styles.dividerText}>OR</Text>
+                          <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Google Sign Up Button */}
+                        <TouchableOpacity
+                          onPress={handleGoogleSubmit}
+                          style={styles.googleBtn}
+                          activeOpacity={0.85}
+                          disabled={loading}
+                        >
+                          <View style={styles.googleIconBox}>
+                            <Text style={styles.googleG}>G</Text>
+                          </View>
+                          <Text style={styles.googleBtnText}>Continue with Google</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -1120,24 +1109,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoBox: {
-    width: 68,
-    height: 68,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
-    shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 4,
+    marginBottom: 12,
   },
   logoImg: {
-    width: 48,
-    height: 48,
+    width: 76,
+    height: 76,
   },
   headerTitle: {
     fontSize: 26,

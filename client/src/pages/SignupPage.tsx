@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Phone, Gift, AlertCircle, Eye, EyeOff, ShieldCheck, ArrowRight, ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Gift, AlertCircle, Eye, EyeOff, ShieldCheck, ArrowRight, ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { GtLogo } from '../components/GtLogo';
 import { GlassCard } from '../components/GlassCard';
 import { api } from '../services/api';
+import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 
 type SignupStep = 'DETAILS' | 'OTP' | 'PASSWORD';
 
 export const SignupPage: React.FC = () => {
-  const { completeSignup } = useAuth();
+  const { completeSignup, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -21,7 +21,6 @@ export const SignupPage: React.FC = () => {
   // Step 1: Details
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [referralCode, setReferralCode] = useState('');
 
   // Step 2: OTP
@@ -78,6 +77,57 @@ export const SignupPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Handle return from Google OAuth redirect flow
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await checkGoogleRedirectResponse();
+        if (result && result.profile) {
+          setLoading(true);
+          await googleLogin({
+            email: result.profile.email,
+            name: result.profile.name,
+            googleId: result.profile.sub,
+            isSignup: true,
+            referralCode: referralCode.trim() || undefined,
+          });
+          showToast('Signed up with Google successfully! Welcome to GT Mining!', 'success');
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err: any) {
+        showToast(err.message || 'Google sign up failed.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRedirect();
+  }, [referralCode]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const profile = await triggerGoogleSignIn(false);
+      if (profile && profile.email) {
+        await googleLogin({
+          email: profile.email,
+          name: profile.name,
+          googleId: profile.sub,
+          isSignup: true,
+          referralCode: referralCode.trim() || undefined,
+        });
+        showToast('Signed up with Google successfully! Welcome to GT Mining!', 'success');
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (err: any) {
+      if (err.message && !err.message.includes('canceled') && !err.message.includes('closed')) {
+        showToast(err.message || 'Google sign up failed.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Step 1: Send OTP to email
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,17 +143,11 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
-    if (!phone.trim() || phone.trim().length < 8) {
-      setError('Please enter a valid phone number (at least 8 digits).');
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await api.sendSignupOtp({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
         referralCode: referralCode.trim() || undefined,
       });
 
@@ -133,7 +177,6 @@ export const SignupPage: React.FC = () => {
       const res = await api.sendSignupOtp({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
         referralCode: referralCode.trim() || undefined,
       });
 
@@ -223,7 +266,7 @@ export const SignupPage: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-block mb-1">
-            <GtLogo size="lg" animated glow />
+            <img src="/gt-auth-logo.png" alt="GT Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto" />
           </Link>
           <h2 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">Create Free Account</h2>
           <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
@@ -285,22 +328,6 @@ export const SignupPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Phone Number */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E5E36]">Phone Number</label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. +91 9876543210"
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
-                  />
-                </div>
-              </div>
-
               {/* Referral Code */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-[#1E5E36] flex items-center justify-between">
@@ -328,6 +355,41 @@ export const SignupPage: React.FC = () => {
                 <span>{loading ? 'Sending OTP Code...' : 'Send Verification Code'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              {/* Google Sign Up */}
+              <div className="space-y-3 pt-2">
+                <div className="relative flex items-center justify-center">
+                  <div className="border-t border-black/10 w-full" />
+                  <span className="bg-white/80 px-3 text-[11px] font-bold text-[#1E5E36] absolute rounded-full">OR</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  className="w-full py-2.5 rounded-2xl border border-white/90 bg-white/80 hover:bg-white text-xs font-bold text-[#0A341B] transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.67-5.17 3.67-9.15z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.27v3.15C3.25 21.37 7.34 24 12 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.27C.46 8.23 0 10.06 0 12s.46 3.77 1.27 5.39l4-3.15z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.63 1.27 6.61l4 3.15c.95-2.85 3.6-4.96 6.73-4.96z"
+                    />
+                  </svg>
+                  <span>Continue with Google</span>
+                </button>
+              </div>
             </form>
           )}
 
