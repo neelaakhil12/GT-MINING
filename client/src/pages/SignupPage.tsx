@@ -21,7 +21,6 @@ export const SignupPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // Password Visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -222,11 +221,6 @@ export const SignupPage: React.FC = () => {
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
-      return;
-    }
-
-    if (!agreedToTerms) {
-      setError('You must agree to the Terms & Conditions and Privacy Policy.');
       return;
     }
 
@@ -458,19 +452,6 @@ export const SignupPage: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
               )}
             </div>
-
-            {/* Row 7: Terms & Conditions Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer pt-1 select-none">
-              <input
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 rounded text-[#16A34A] border-gray-300 focus:ring-[#22C55E] cursor-pointer accent-[#16A34A]"
-              />
-              <span className="text-xs font-semibold text-[#1E5E36]">
-                I agree to the <span className="underline font-bold text-[#0A341B]">Terms & Conditions</span> and <span className="underline font-bold text-[#0A341B]">Privacy Policy</span>
-              </span>
-            </label>
 
             {/* Create Account Submit Button */}
             <button

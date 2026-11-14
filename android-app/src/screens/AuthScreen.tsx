@@ -112,7 +112,6 @@ export const AuthScreen: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // Prevent aggressive browser password managers (Edge/Chrome) from autofilling credentials on load
   const [unlocked, setUnlocked] = useState(Platform.OS !== 'web');
@@ -229,10 +228,6 @@ export const AuthScreen: React.FC = () => {
     }
     if (password !== confirmPassword) {
       setErrorMessage('Passwords do not match');
-      return;
-    }
-    if (!agreedToTerms) {
-      setErrorMessage('You must agree to the Terms & Conditions and Privacy Policy');
       return;
     }
 
@@ -830,20 +825,6 @@ export const AuthScreen: React.FC = () => {
                         <CheckCircle2 size={14} color="#16A34A" />
                       )}
                     </View>
-
-                    {/* Row 7: Terms & Conditions Checkbox */}
-                    <TouchableOpacity
-                      onPress={() => setAgreedToTerms(!agreedToTerms)}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}
-                      activeOpacity={0.8}
-                    >
-                      <View style={{ width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: agreedToTerms ? '#16A34A' : '#9CA3AF', backgroundColor: agreedToTerms ? '#16A34A' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
-                        {agreedToTerms && <CheckCircle2 size={12} color="#FFFFFF" />}
-                      </View>
-                      <Text style={{ fontSize: 11, color: '#1E5E36', fontWeight: '600', flex: 1 }}>
-                        I agree to the <Text style={{ textDecorationLine: 'underline', fontWeight: '800', color: '#0A341B' }}>Terms & Conditions</Text> and <Text style={{ textDecorationLine: 'underline', fontWeight: '800', color: '#0A341B' }}>Privacy Policy</Text>
-                      </Text>
-                    </TouchableOpacity>
 
                     {/* Create Account Submit Button */}
                     <TouchableOpacity
