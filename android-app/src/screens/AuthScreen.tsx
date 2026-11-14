@@ -38,7 +38,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 
 export const AuthScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { login, signup, sendSignupOtp, verifySignupOtp, completeSignup, googleLogin, isAuthenticated } = useAuth();
+  const { login, demoLogin, signup, sendSignupOtp, googleLogin, isAuthenticated } = useAuth();
   const { top, stackContentPaddingBottom } = useAppSafeArea();
 
   useEffect(() => {
@@ -86,9 +86,8 @@ export const AuthScreen: React.FC = () => {
 
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
   const [forgotStep, setForgotStep] = useState<'REQUEST_OTP' | 'VERIFY_OTP'>('REQUEST_OTP');
-  const [signupStep, setSignupStep] = useState<'DETAILS' | 'OTP' | 'PASSWORD'>('DETAILS');
-  const [signupCountdown, setSignupCountdown] = useState(60);
-  const [canResendSignupOtp, setCanResendSignupOtp] = useState(false);
+  const [signupCountdown, setSignupCountdown] = useState(0);
+  const [otpSent, setOtpSent] = useState(false);
 
   // Configure native Google Play Services Google Sign-In
   useEffect(() => {
@@ -117,28 +116,21 @@ export const AuthScreen: React.FC = () => {
   // Signup OTP countdown timer
   useEffect(() => {
     let interval: any = null;
-    if (mode === 'SIGNUP' && signupStep === 'OTP' && signupCountdown > 0) {
+    if (signupCountdown > 0) {
       interval = setInterval(() => {
-        setSignupCountdown((prev) => {
-          if (prev <= 1) {
-            setCanResendSignupOtp(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+        setSignupCountdown((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [mode, signupStep, signupCountdown]);
+  }, [signupCountdown]);
 
   useEffect(() => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setOtpCode('');
-    setSignupStep('DETAILS');
     setForgotStep('REQUEST_OTP');
     setErrorMessage('');
     setSuccessMessage('');
@@ -180,10 +172,39 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  // Step 1: Send OTP to email for signup
+  // Send OTP code to email
   const handleSendSignupOtp = async () => {
     setErrorMessage('');
     setSuccessMessage('');
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMessage('Please enter a valid email address first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await sendSignupOtp({
+        fullName: fullName.trim() || 'GT Pioneer',
+        email: cleanEmail,
+        referralCode: referralCode.trim() || undefined,
+      });
+      setOtpSent(true);
+      setSuccessMessage(res.message || `Verification code sent to ${cleanEmail}! Please check your inbox.`);
+      setSignupCountdown(60);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Failed to dispatch verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Complete single-page registration
+  const handleCompleteSinglePageSignup = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+
     if (!fullName.trim()) {
       setErrorMessage('Please enter your full name');
       return;
@@ -192,78 +213,10 @@ export const AuthScreen: React.FC = () => {
       setErrorMessage('Please enter a valid email address');
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await sendSignupOtp({
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        referralCode: referralCode.trim() || undefined,
-      });
-      setSuccessMessage(res.message || `Verification code sent to ${email.trim()}! Please check your inbox.`);
-      setSignupStep('OTP');
-      setSignupCountdown(60);
-      setCanResendSignupOtp(false);
-      setOtpCode('');
-    } catch (e: any) {
-      setErrorMessage(e.message || 'Failed to dispatch verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Resend Signup OTP
-  const handleResendSignupOtp = async () => {
-    if (!canResendSignupOtp || loading) return;
-    setErrorMessage('');
-    setSuccessMessage('');
-    setLoading(true);
-    try {
-      await sendSignupOtp({
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        referralCode: referralCode.trim() || undefined,
-      });
-      setSuccessMessage(`New code sent to ${email.trim()}!`);
-      setSignupCountdown(60);
-      setCanResendSignupOtp(false);
-      setOtpCode('');
-    } catch (e: any) {
-      setErrorMessage(e.message || 'Failed to resend code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Verify OTP
-  const handleVerifySignupOtp = async () => {
-    setErrorMessage('');
-    setSuccessMessage('');
-    const cleanCode = otpCode.trim();
-    if (cleanCode.length !== 6) {
-      setErrorMessage('Please enter the 6-digit verification code');
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      setErrorMessage('Please enter the 6-digit verification code sent to your email');
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await verifySignupOtp({
-        email: email.trim().toLowerCase(),
-        otpCode: cleanCode,
-      });
-      setSuccessMessage(res.message || 'Email verified! Now create your password.');
-      setSignupStep('PASSWORD');
-    } catch (e: any) {
-      setErrorMessage(e.message || 'Invalid verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 3: Complete signup with password
-  const handleCompleteSignupSubmit = async () => {
-    setErrorMessage('');
-    setSuccessMessage('');
     if (!password.trim() || password.length < 6) {
       setErrorMessage('Password must be at least 6 characters');
       return;
@@ -275,10 +228,13 @@ export const AuthScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await completeSignup({
+      await signup({
+        fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
         password,
         confirmPassword,
+        referralCode: referralCode.trim() || undefined,
+        otpCode: otpCode.trim(),
       });
       navigation.replace('MainTabs');
     } catch (e: any) {
@@ -288,7 +244,20 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleSignupSubmit = handleSendSignupOtp;
+  // Demo Login - instant access without account creation
+  const handleDemoLogin = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    setLoading(true);
+    try {
+      await demoLogin();
+      navigation.replace('MainTabs');
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Demo login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Step 1: Request OTP code dispatched via Gmail SMTP
   const handleRequestForgotOtp = async () => {
@@ -495,11 +464,7 @@ export const AuthScreen: React.FC = () => {
                 {mode === 'LOGIN'
                   ? 'Access your GT wallet & 4-hour mining cycle'
                   : mode === 'SIGNUP'
-                  ? signupStep === 'DETAILS'
-                    ? 'Step 1 of 3: Enter profile details'
-                    : signupStep === 'OTP'
-                    ? 'Step 2 of 3: Verify email with 6-digit OTP'
-                    : 'Step 3 of 3: Create account password'
+                  ? 'Enter profile details to start mining'
                   : forgotStep === 'REQUEST_OTP'
                   ? 'Enter your email to receive a 6-digit recovery code'
                   : 'Enter the 6-digit code and choose a new password'}
@@ -690,44 +655,30 @@ export const AuthScreen: React.FC = () => {
               ) : (
                 /* LOGIN & SIGNUP FORMS */
                 mode === 'SIGNUP' ? (
-                  /* MULTI-STEP SIGNUP */
+                  /* SINGLE-PAGE SIGNUP FORM */
                   <>
-                    {/* Step Progress Indicators */}
-                    <View style={styles.stepIndicatorRow}>
-                      <View style={[styles.stepIndicatorPill, styles.stepIndicatorPillActive]} />
-                      <View style={[styles.stepIndicatorPill, signupStep === 'OTP' || signupStep === 'PASSWORD' ? styles.stepIndicatorPillActive : null]} />
-                      <View style={[styles.stepIndicatorPill, signupStep === 'PASSWORD' ? styles.stepIndicatorPillActive : null]} />
-                    </View>
-
-                    {signupStep === 'DETAILS' && (
-                      /* STEP 1: DETAILS */
-                      <>
-                        {/* Full Name */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Full Name</Text>
-                          <View style={styles.inputWrapper}>
-                            <UserIcon size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={styles.input}
-                              placeholder="Enter miner name"
-                              placeholderTextColor="#9CA3AF"
-                              value={fullName}
-                              onChangeText={setFullName}
-                              autoCapitalize="words"
-                              autoCorrect={false}
-                              autoComplete="off"
-                              textContentType="none"
-                              importantForAutofill="no"
-                              readOnly={!unlocked}
-                              onFocus={() => setUnlocked(true)}
-                            />
-                          </View>
+                    {/* Full Name */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Full Name</Text>
+                        <View style={styles.inputWrapper}>
+                          <UserIcon size={16} color="#16A34A" style={styles.inputIcon} />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Enter miner name"
+                            placeholderTextColor="#9CA3AF"
+                            value={fullName}
+                            onChangeText={setFullName}
+                            autoCapitalize="words"
+                            autoCorrect={false}
+                          />
                         </View>
+                      </View>
 
-                        {/* Email Address */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Email Address</Text>
-                          <View style={styles.inputWrapper}>
+                      {/* Email Address with Send OTP button */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Email Address</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                          <View style={[styles.inputWrapper, { flex: 1 }]}>
                             <Mail size={16} color="#16A34A" style={styles.inputIcon} />
                             <TextInput
                               style={styles.input}
@@ -738,222 +689,143 @@ export const AuthScreen: React.FC = () => {
                               keyboardType="email-address"
                               autoCapitalize="none"
                               autoCorrect={false}
-                              autoComplete="off"
-                              textContentType="none"
-                              importantForAutofill="no"
-                              readOnly={!unlocked}
-                              onFocus={() => setUnlocked(true)}
                             />
                           </View>
-                        </View>
-
-                        {/* Referral Code */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
-                          <View style={styles.inputWrapper}>
-                            <Gift size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={styles.input}
-                              placeholder="e.g. GT88241"
-                              placeholderTextColor="#9CA3AF"
-                              value={referralCode}
-                              onChangeText={setReferralCode}
-                              autoCapitalize="characters"
-                              autoCorrect={false}
-                              autoComplete="off"
-                              textContentType="none"
-                              importantForAutofill="no"
-                              readOnly={!unlocked}
-                              onFocus={() => setUnlocked(true)}
-                            />
-                          </View>
-                        </View>
-
-                        {/* Step 1 Submit Button */}
-                        <TouchableOpacity
-                          onPress={handleSendSignupOtp}
-                          style={styles.primaryBtn}
-                          activeOpacity={0.88}
-                          disabled={loading}
-                        >
-                          <Text style={styles.primaryBtnText}>
-                            {loading ? 'Sending Code...' : 'Send Verification Code'}
-                          </Text>
-                          <ArrowRight size={16} color="#FFFFFF" />
-                        </TouchableOpacity>
-
-                        {/* Divider OR */}
-                        <View style={styles.dividerRow}>
-                          <View style={styles.dividerLine} />
-                          <Text style={styles.dividerText}>OR</Text>
-                          <View style={styles.dividerLine} />
-                        </View>
-
-                        {/* Google Sign Up Button */}
-                        <TouchableOpacity
-                          onPress={handleGoogleSubmit}
-                          style={styles.googleBtn}
-                          activeOpacity={0.85}
-                          disabled={loading}
-                        >
-                          <View style={styles.googleIconBox}>
-                            <Text style={styles.googleG}>G</Text>
-                          </View>
-                          <Text style={styles.googleBtnText}>Continue with Google</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-
-                    {signupStep === 'OTP' && (
-                      /* STEP 2: OTP VERIFICATION */
-                      <>
-                        <View style={styles.codeSentNotice}>
-                          <Text style={styles.codeSentNoticeText}>
-                            Code dispatched to <Text style={{ fontWeight: '900', color: '#0A341B' }}>{email}</Text>
-                          </Text>
                           <TouchableOpacity
-                            onPress={() => {
-                              setErrorMessage('');
-                              setSuccessMessage('');
-                              setSignupStep('DETAILS');
-                            }}
-                            style={styles.changeEmailBtn}
-                          >
-                            <RotateCcw size={12} color="#16A34A" />
-                            <Text style={styles.changeEmailText}>Edit</Text>
-                          </TouchableOpacity>
-                        </View>
-
-                        {/* 6-Digit OTP */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Enter 6-Digit Email Code</Text>
-                          <View style={styles.inputWrapper}>
-                            <ShieldCheck size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={[styles.input, { letterSpacing: 8, fontWeight: '900', fontSize: 18, textAlign: 'center' }]}
-                              placeholder="••••••"
-                              placeholderTextColor="#9CA3AF"
-                              value={otpCode}
-                              onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, ''))}
-                              keyboardType="numeric"
-                              maxLength={6}
-                              autoComplete="one-time-code"
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                            />
-                          </View>
-                        </View>
-
-                        {/* Resend Row */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 16 }}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setErrorMessage('');
-                              setSuccessMessage('');
-                              setSignupStep('DETAILS');
+                            onPress={handleSendSignupOtp}
+                            disabled={loading || signupCountdown > 0 || !email.includes('@')}
+                            style={{
+                              backgroundColor: signupCountdown > 0 ? '#E2E8F0' : '#16A34A',
+                              paddingHorizontal: 14,
+                              paddingVertical: 12,
+                              borderRadius: 14,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              minWidth: 85,
                             }}
                           >
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#1E5E36' }}>← Edit Details</Text>
-                          </TouchableOpacity>
-
-                          {canResendSignupOtp ? (
-                            <TouchableOpacity onPress={handleResendSignupOtp} disabled={loading}>
-                              <Text style={{ fontSize: 12, fontWeight: '900', color: '#16A34A' }}>Resend Code</Text>
-                            </TouchableOpacity>
-                          ) : (
-                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>
-                              Resend in <Text style={{ fontWeight: '900', color: '#0A341B' }}>{signupCountdown}s</Text>
+                            <Text style={{ color: signupCountdown > 0 ? '#64748B' : '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
+                              {signupCountdown > 0 ? `${signupCountdown}s` : otpSent ? 'Resend' : 'Send OTP'}
                             </Text>
-                          )}
+                          </TouchableOpacity>
                         </View>
+                      </View>
 
-                        {/* Step 2 Submit Button */}
-                        <TouchableOpacity
-                          onPress={handleVerifySignupOtp}
-                          style={styles.primaryBtn}
-                          activeOpacity={0.88}
-                          disabled={loading || otpCode.length !== 6}
-                        >
-                          <CheckCircle2 size={16} color="#FFFFFF" />
-                          <Text style={styles.primaryBtnText}>
-                            {loading ? 'Verifying Code...' : 'Verify Code & Continue'}
-                          </Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-
-                    {signupStep === 'PASSWORD' && (
-                      /* STEP 3: CREATE PASSWORD */
-                      <>
-                        <View style={styles.codeSentNotice}>
-                          <Text style={styles.codeSentNoticeText}>
-                            Email verified <Text style={{ fontWeight: '900', color: '#16A34A' }}>✓</Text>! Create your password:
-                          </Text>
+                      {/* 6-Digit OTP */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Email Verification Code (OTP)</Text>
+                        <View style={styles.inputWrapper}>
+                          <ShieldCheck size={16} color="#16A34A" style={styles.inputIcon} />
+                          <TextInput
+                            style={[styles.input, { letterSpacing: 6, fontWeight: '900', fontSize: 16 }]}
+                            placeholder="Enter 6-digit code"
+                            placeholderTextColor="#9CA3AF"
+                            value={otpCode}
+                            onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            maxLength={6}
+                          />
                         </View>
+                      </View>
 
-                        {/* Password */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>New Password (min 6 chars)</Text>
-                          <View style={styles.inputWrapper}>
-                            <Lock size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={[styles.input, { paddingRight: 40 }]}
-                              placeholder="Create strong password"
-                              placeholderTextColor="#9CA3AF"
-                              value={password}
-                              onChangeText={setPassword}
-                              secureTextEntry={!showPassword}
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              autoComplete="new-password"
-                            />
-                            <TouchableOpacity
-                              onPress={() => setShowPassword((prev) => !prev)}
-                              style={styles.eyeBtn}
-                            >
-                              {showPassword ? (
-                                <EyeOff size={16} color="#6B7280" />
-                              ) : (
-                                <Eye size={16} color="#6B7280" />
-                              )}
-                            </TouchableOpacity>
-                          </View>
+                      {/* Password */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Create Password</Text>
+                        <View style={styles.inputWrapper}>
+                          <Lock size={16} color="#16A34A" style={styles.inputIcon} />
+                          <TextInput
+                            style={[styles.input, { paddingRight: 40 }]}
+                            placeholder="At least 6 characters"
+                            placeholderTextColor="#9CA3AF"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowPassword((prev) => !prev)}
+                            style={styles.eyeBtn}
+                          >
+                            {showPassword ? <EyeOff size={16} color="#6B7280" /> : <Eye size={16} color="#6B7280" />}
+                          </TouchableOpacity>
                         </View>
+                      </View>
 
-                        {/* Confirm Password */}
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Confirm Password</Text>
-                          <View style={styles.inputWrapper}>
-                            <Lock size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={[styles.input, { paddingRight: 40 }]}
-                              placeholder="Re-enter password"
-                              placeholderTextColor="#9CA3AF"
-                              value={confirmPassword}
-                              onChangeText={setConfirmPassword}
-                              secureTextEntry={!showPassword}
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              autoComplete="new-password"
-                            />
-                          </View>
+                      {/* Confirm Password */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Confirm Password</Text>
+                        <View style={styles.inputWrapper}>
+                          <Lock size={16} color="#16A34A" style={styles.inputIcon} />
+                          <TextInput
+                            style={[styles.input, { paddingRight: 40 }]}
+                            placeholder="Re-enter password"
+                            placeholderTextColor="#9CA3AF"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowPassword((prev) => !prev)}
+                            style={styles.eyeBtn}
+                          >
+                            {showPassword ? <EyeOff size={16} color="#6B7280" /> : <Eye size={16} color="#6B7280" />}
+                          </TouchableOpacity>
                         </View>
+                      </View>
 
-                        {/* Step 3 Submit Button */}
-                        <TouchableOpacity
-                          onPress={handleCompleteSignupSubmit}
-                          style={styles.primaryBtn}
-                          activeOpacity={0.88}
-                          disabled={loading || password.length < 6 || password !== confirmPassword}
-                        >
-                          <CheckCircle2 size={16} color="#FFFFFF" />
-                          <Text style={styles.primaryBtnText}>
-                            {loading ? 'Creating Account...' : 'Complete & Start Mining'}
-                          </Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                  </>
+                      {/* Referral Code */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
+                        <View style={styles.inputWrapper}>
+                          <Gift size={16} color="#16A34A" style={styles.inputIcon} />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="e.g. GT88241"
+                            placeholderTextColor="#9CA3AF"
+                            value={referralCode}
+                            onChangeText={setReferralCode}
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Create Account Submit Button */}
+                      <TouchableOpacity
+                        onPress={handleCompleteSinglePageSignup}
+                        style={styles.primaryBtn}
+                        activeOpacity={0.88}
+                        disabled={loading}
+                      >
+                        <Text style={styles.primaryBtnText}>
+                          {loading ? 'Creating Account...' : 'Create Account & Start Mining'}
+                        </Text>
+                        <ArrowRight size={16} color="#FFFFFF" />
+                      </TouchableOpacity>
+
+                      {/* Divider OR */}
+                      <View style={styles.dividerRow}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>OR</Text>
+                        <View style={styles.dividerLine} />
+                      </View>
+
+                      {/* Google Sign Up Button */}
+                      <TouchableOpacity
+                        onPress={handleGoogleSubmit}
+                        style={styles.googleBtn}
+                        activeOpacity={0.85}
+                        disabled={loading}
+                      >
+                        <View style={styles.googleIconBox}>
+                          <Text style={styles.googleG}>G</Text>
+                        </View>
+                        <Text style={styles.googleBtnText}>Continue with Google</Text>
+                      </TouchableOpacity>
+                    </>
                 ) : (
                   /* LOGIN FORM */
                   <>
@@ -1055,6 +927,18 @@ export const AuthScreen: React.FC = () => {
                         <Text style={styles.googleG}>G</Text>
                       </View>
                       <Text style={styles.googleBtnText}>Continue with Google</Text>
+                    </TouchableOpacity>
+
+                    {/* Try Demo Login Button */}
+                    <TouchableOpacity
+                      onPress={handleDemoLogin}
+                      style={[styles.googleBtn, { backgroundColor: '#EAF8EE', borderColor: '#22C55E', marginTop: 10 }]}
+                      activeOpacity={0.85}
+                      disabled={loading}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '900', color: '#15803D' }}>
+                        ⚡ Try Demo Login (Instant Access)
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )

@@ -7,7 +7,7 @@ import { GlassCard } from '../components/GlassCard';
 import { triggerGoogleSignIn, checkGoogleRedirectResponse } from '../services/googleAuth';
 
 export const LoginPage: React.FC = () => {
-  const { login, googleLogin } = useAuth();
+  const { login, demoLogin, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,6 +101,20 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+
+  const handleDemoLogin = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await demoLogin();
+      showToast('Logged in as Demo Miner! Welcome to GT Mining.', 'success');
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      showToast(err.message || 'Demo login failed.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
@@ -226,6 +240,16 @@ export const LoginPage: React.FC = () => {
                 />
               </svg>
               <span>Continue with Google</span>
+            </button>
+
+            {/* Try Demo Login Button */}
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={loading}
+              className="w-full py-2.5 rounded-2xl border border-[#22C55E]/40 bg-[#EAF8EE] hover:bg-[#DCFCE7] text-xs font-black text-[#15803D] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <span>⚡ Try Demo Login (Instant Access)</span>
             </button>
           </div>
         </GlassCard>

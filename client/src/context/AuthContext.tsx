@@ -9,8 +9,9 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
+  demoLogin: () => Promise<void>;
   googleLogin: (data?: any) => Promise<void>;
-  signup: (userData: { fullName: string; email: string; password: string; confirmPassword?: string; referralCode?: string }) => Promise<void>;
+  signup: (userData: { fullName: string; email: string; password: string; confirmPassword?: string; referralCode?: string; otpCode?: string }) => Promise<void>;
   completeSignup: (data: { email: string; password: string; confirmPassword?: string }) => Promise<any>;
   logout: () => void;
   refreshSession: () => Promise<void>;
@@ -65,6 +66,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return res;
     } else {
       throw new Error(res.message || 'Account not found. Please sign up first.');
+    }
+  };
+
+  const demoLogin = async () => {
+    const res = await api.demoLogin();
+    if (res.success && res.token) {
+      setToken(res.token);
+      setUser(res.user);
+      await refreshSession();
+      return res;
+    } else {
+      throw new Error(res.message || 'Demo login failed. Please try again.');
     }
   };
 
@@ -131,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: user?.role === 'ADMIN',
         isLoading,
         login,
+        demoLogin,
         googleLogin,
         signup,
         completeSignup,

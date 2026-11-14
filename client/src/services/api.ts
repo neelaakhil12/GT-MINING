@@ -84,6 +84,7 @@ export const api = {
     request<any>('/auth/signup/complete', { method: 'POST', body: JSON.stringify(body) }),
   signup: (body: any) => request<any>('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   login: (body: any) => request<any>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  demoLogin: () => request<any>('/auth/demo', { method: 'POST' }),
   googleLogin: (body: any) => request<any>('/auth/google', { method: 'POST', body: JSON.stringify(body) }),
   getSession: () => request<any>('/auth/session'),
   forgotPassword: (email: string, isAdmin?: boolean) => request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email, isAdmin }) }),

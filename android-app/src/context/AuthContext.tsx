@@ -13,7 +13,8 @@ interface AuthContextType {
   miningStats: MiningStats;
   isMiningActive: boolean;
   login: (credentials: { email: string; password?: string }) => Promise<void>;
-  signup: (data: { fullName: string; email: string; password?: string; referralCode?: string }) => Promise<void>;
+  demoLogin: () => Promise<void>;
+  signup: (data: { fullName: string; email: string; password?: string; confirmPassword?: string; referralCode?: string; otpCode?: string }) => Promise<void>;
   sendSignupOtp: (data: { fullName: string; email: string; phone?: string; referralCode?: string }) => Promise<{ success: boolean; message: string }>;
   verifySignupOtp: (data: { email: string; otpCode: string }) => Promise<{ success: boolean; message: string }>;
   completeSignup: (data: { email: string; password: string; confirmPassword?: string }) => Promise<void>;
@@ -166,13 +167,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Real database account registration
-  const signup = async (data: { fullName: string; email: string; password?: string; referralCode?: string }) => {
+  const signup = async (data: { fullName: string; email: string; password?: string; confirmPassword?: string; referralCode?: string; otpCode?: string }) => {
     const cleanEmail = (data.email || '').trim().toLowerCase();
     const result = await callAuthApi('/auth/signup', {
       fullName: data.fullName?.trim() || 'GT Pioneer',
       email: cleanEmail,
       password: data.password,
+      confirmPassword: data.confirmPassword || data.password,
       referralCode: data.referralCode?.trim() || undefined,
+      otpCode: data.otpCode?.trim() || undefined,
     });
 
     if (!result || !result.success) {
@@ -187,6 +190,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       referralCode: backendUser.referralCode || `GT-${Math.floor(1000 + Math.random() * 9000)}`,
       balance: Number(result.wallet?.availableBalance ?? 0.0),
       totalMined: Number(result.wallet?.lifetimeEarned ?? 0.0),
+      miningRate: 1.0,
+      isMining: false,
+      miningExpiresAt: 0,
+    };
+
+    setUser(newUser);
+    setIsAuthenticated(true);
+    await appStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(newUser));
+    if (result.token) {
+      await appStorage.setItem('gt_mobile_token', result.token);
+    }
+  };
+
+  // Demo Login - instant access without creating account
+  const demoLogin = async () => {
+    const result = await callAuthApi('/auth/demo', {});
+    if (!result || !result.success) {
+      throw new Error(result?.message || 'Demo login failed. Please try again.');
+    }
+
+    const backendUser = result.user;
+    const newUser: User = {
+      id: backendUser.id || 'usr_demo_miner',
+      fullName: backendUser.fullName || 'Demo Miner',
+      email: backendUser.email || 'demo@gtnetwork.io',
+      referralCode: backendUser.referralCode || 'GTDEMO',
+      balance: Number(result.wallet?.availableBalance ?? 5.0),
+      totalMined: Number(result.wallet?.lifetimeEarned ?? 5.0),
       miningRate: 1.0,
       isMining: false,
       miningExpiresAt: 0,
@@ -412,6 +443,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       miningStats,
       isMiningActive,
       login,
+      demoLogin,
       signup,
       sendSignupOtp,
       verifySignupOtp,

@@ -319,12 +319,12 @@ router.post('/signup/complete', async (req, res) => {
   }
 });
 
-// Legacy direct Sign Up (backward compatibility)
+// Direct Single-Page Sign Up (Full Name, Email, OTP, Password, Confirm Password, Referral Code)
 router.post('/signup', async (req, res) => {
-  const { fullName, email, password, confirmPassword, referralCode } = req.body;
+  const { fullName, email, password, confirmPassword, referralCode, otpCode } = req.body;
 
   if (!fullName || !email || !password) {
-    return res.status(400).json({ success: false, message: 'All required fields must be provided.' });
+    return res.status(400).json({ success: false, message: 'Full name, email address, and password are required.' });
   }
 
   if (password.length < 6) {
@@ -346,6 +346,20 @@ router.post('/signup', async (req, res) => {
     if (existing) {
       lockManager.release('signup_lock');
       return res.status(400).json({ success: false, message: 'An account with this email address already exists.' });
+    }
+
+    // Verify OTP code if provided
+    if (otpCode) {
+      const cleanOtp = String(otpCode).trim();
+      const record = (db.signupVerifications || []).find(v => v.email === cleanEmail);
+      if (!record || record.otp !== cleanOtp) {
+        lockManager.release('signup_lock');
+        return res.status(400).json({ success: false, message: 'Invalid or incorrect email verification code.' });
+      }
+      if (new Date(record.expiresAt) < new Date()) {
+        lockManager.release('signup_lock');
+        return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+      }
     }
 
     // Check referral code if provided
@@ -609,6 +623,68 @@ router.get('/session', requireAuth, (req, res) => {
       lifetimeEarned: wallet.lifetimeEarned
     }
   });
+});
+
+// Demo Login - Instant access without creating an account
+router.post('/demo', async (req, res) => {
+  await lockManager.acquire('demo_auth_lock');
+  try {
+    const db = readDB();
+    const demoEmail = 'demo@gtnetwork.io';
+    let demoUser = db.users.find(u => u.email.toLowerCase() === demoEmail && !u.deletedAt);
+
+    const now = new Date().toISOString();
+    if (!demoUser) {
+      demoUser = {
+        id: 'usr_demo_miner',
+        fullName: 'Demo Miner',
+        email: demoEmail,
+        passwordHash: await bcrypt.hash('Demo@123456', 10),
+        referralCode: 'GTDEMO',
+        referredByUserId: null,
+        role: 'USER',
+        accountStatus: 'ACTIVE',
+        emailVerifiedAt: now,
+        lastMiningAt: null,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null
+      };
+      db.users.push(demoUser);
+
+      // Create demo wallet with 5.0 GT welcome balance
+      db.wallets.push({
+        id: 'wal_demo_miner',
+        userId: demoUser.id,
+        availableBalance: 5.0,
+        lifetimeEarned: 5.0,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      writeDB(db);
+    }
+
+    lockManager.release('demo_auth_lock');
+
+    const token = generateToken(demoUser);
+    const wallet = db.wallets.find(w => w.userId === demoUser.id) || { availableBalance: 5.0, lifetimeEarned: 5.0 };
+
+    return res.json({
+      success: true,
+      message: 'Demo login successful! Welcome to GT Mining Demo.',
+      token,
+      user: sanitizeUser(demoUser),
+      wallet: {
+        availableBalance: wallet.availableBalance,
+        lifetimeEarned: wallet.lifetimeEarned
+      }
+    });
+  } catch (err) {
+    lockManager.release('demo_auth_lock');
+    console.error('Demo login error:', err);
+    return res.status(500).json({ success: false, message: 'Demo login failed. Please try again.' });
+  }
 });
 
 // Forgot Password - Dispatches Real OTP Email via Gmail SMTP / Nodemailer
