@@ -1,7 +1,7 @@
 {
   "settings": {
     "appName": "GT Mining",
-    "websiteUrl": "https://gtnetwork.in",
+    "websiteUrl": "https://gtnetwork.io",
     "miningReward": 1,
     "cooldownSeconds": 14400,
     "referralReward": 0.5,

@@ -6,7 +6,7 @@ const getApiBase = (): string => {
   // When running locally on Vite dev server (localhost/127.0.0.1), direct all requests to AWS production server
   if (typeof window !== 'undefined') {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'https://gtmining.xyz/api';
+      return 'https://gtnetwork.io/api';
     }
   }
   return '/api';

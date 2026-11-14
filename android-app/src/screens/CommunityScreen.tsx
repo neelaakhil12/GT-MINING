@@ -293,7 +293,7 @@ export const CommunityScreen: React.FC = () => {
   const handleShare = async (title: string) => {
     try {
       await Share.share({
-        message: `${title} - Read more on GT Network: https://gtmining.xyz/community`,
+        message: `${title} - Read more on GT Network: https://gtnetwork.io/community`,
       });
     } catch (e) {}
   };

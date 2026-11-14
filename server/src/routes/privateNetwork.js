@@ -9,10 +9,10 @@ function getPublicBaseUrl(req) {
   if (host.includes('localhost') || host.includes('127.0.0.1')) {
     return `http://${host}`;
   }
-  return 'https://gtmining.xyz';
+  return 'https://gtnetwork.io';
 }
 
-function resolveCompactAvatar(userObj, fallbackName = 'M', baseUrl = 'https://gtmining.xyz') {
+function resolveCompactAvatar(userObj, fallbackName = 'M', baseUrl = 'https://gtnetwork.io') {
   const initial = (userObj?.fullName || fallbackName || 'M').trim().charAt(0).toUpperCase() || 'M';
   const raw = userObj?.avatar || userObj?.profileImage || '';
   if (typeof raw !== 'string' || !raw.trim()) {
@@ -32,7 +32,7 @@ function resolveCompactAvatar(userObj, fallbackName = 'M', baseUrl = 'https://gt
  * If user was referred by someone (e.g. ramuj was referred by rajesh), user is a member of that circle.
  * If user has no referrer, user is the host of their own circle.
  */
-function resolveCircle(db, currentUser, baseUrl = 'https://gtmining.xyz') {
+function resolveCircle(db, currentUser, baseUrl = 'https://gtnetwork.io') {
   if (!db.privateNetworks) {
     db.privateNetworks = {};
   }

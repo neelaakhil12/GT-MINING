@@ -176,13 +176,6 @@ export const AdminLoginPage: React.FC = () => {
     }
   };
 
-  const handleFillCredentials = () => {
-    setEmail(MASTER_ADMIN_EMAIL);
-    setPassword('Admin@123456');
-    setError(null);
-    setSuccessMsg(null);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
       <div className="w-full max-w-md relative z-10 space-y-6">
@@ -452,24 +445,6 @@ export const AdminLoginPage: React.FC = () => {
               </div>
             </form>
           )}
-
-          {/* Master Admin Credentials Callout with 1-click Auto-Fill */}
-          <div className="p-3.5 rounded-2xl bg-[#071F14] border border-[#F59E0B]/40 text-center space-y-1.5 shadow-sm">
-            <p className="text-xs font-bold text-[#FBBF24] flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#FBBF24]" />
-              <span>Authorized Master Admin Credentials</span>
-            </p>
-            <p className="text-xs font-mono font-bold text-[#86EFAC] tracking-wide select-all">
-              {MASTER_ADMIN_EMAIL} • Admin@123456
-            </p>
-            <button
-              type="button"
-              onClick={handleFillCredentials}
-              className="text-[11px] font-bold text-[#FBBF24] hover:text-[#FCD34D] underline cursor-pointer"
-            >
-              Click to Auto-Fill Master Credentials
-            </button>
-          </div>
 
           {/* Return to User Login Link */}
           <div className="text-center pt-1">

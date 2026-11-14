@@ -22,12 +22,12 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'https://gtnetwork.in',
+        target: 'https://gtnetwork.io',
         changeOrigin: true,
         secure: true,
       },
       '/uploads': {
-        target: 'https://gtnetwork.in',
+        target: 'https://gtnetwork.io',
         changeOrigin: true,
         secure: true,
       },

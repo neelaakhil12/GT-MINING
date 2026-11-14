@@ -87,8 +87,6 @@ export const AdminTopMinersPage: React.FC = () => {
   });
 
   const top1 = miners[0];
-  const top2 = miners[1];
-  const top3 = miners[2];
 
   const avgWalletCoins =
     totalMiners > 0 ? (totalCirculation / totalMiners).toFixed(2) : '0.00';
@@ -253,117 +251,7 @@ export const AdminTopMinersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. TOP 3 PODIUM SPOTLIGHT */}
-      {miners.length >= 3 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-          {/* #2 Silver */}
-          {top2 && (
-            <div
-              onClick={() => setSelectedMiner(top2)}
-              className="p-5 rounded-3xl bg-gradient-to-b from-[#0F2F1C]/90 to-[#07180E] border border-slate-300/30 hover:border-slate-300/60 shadow-lg relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] group order-2 md:order-1"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-300/20 text-slate-200 border border-slate-300/40 flex items-center gap-1.5 shadow-sm">
-                  <Medal className="w-3.5 h-3.5" />
-                  <span>RANK #2 • SILVER</span>
-                </span>
-                <span className="text-[11px] text-[#A7C9B1] font-mono">
-                  {top2.referralCode}
-                </span>
-              </div>
-
-              <div className="pt-4 space-y-1">
-                <p className="text-base font-black text-white group-hover:text-[#86EFAC] transition-colors truncate">
-                  {top2.fullName}
-                </p>
-                <p className="text-xs text-[#A7C9B1] truncate">{top2.email}</p>
-                <div className="pt-3">
-                  <span className="text-[10px] text-[#A7C9B1] font-bold uppercase tracking-wider block">
-                    GT Wallet Balance
-                  </span>
-                  <div className="text-2xl font-black text-white flex items-center gap-1.5">
-                    <span>{top2.gtWalletCoins.toLocaleString()}</span>
-                    <span className="text-xs text-[#22C55E]">GT</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* #1 Gold Champion */}
-          {top1 && (
-            <div
-              onClick={() => setSelectedMiner(top1)}
-              className="p-5 rounded-3xl bg-gradient-to-b from-[#1C3A24] to-[#0A2214] border-2 border-[#FBBF24] shadow-[0_0_30px_rgba(251,191,36,0.25)] relative overflow-hidden cursor-pointer transition-all hover:scale-[1.02] group order-1 md:order-2"
-            >
-              <div className="absolute -top-10 -right-10 w-36 h-36 bg-[#FBBF24]/20 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex items-center justify-between pb-3 border-b border-[#FBBF24]/30 relative z-10">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-[#FBBF24] text-[#07130D] flex items-center gap-1.5 shadow-md">
-                  <Crown className="w-4 h-4 fill-current" />
-                  <span>CHAMPION #1 • GOLD</span>
-                </span>
-                <span className="text-xs text-[#FBBF24] font-mono font-bold">
-                  {top1.referralCode}
-                </span>
-              </div>
-
-              <div className="pt-4 space-y-1 relative z-10">
-                <div className="flex items-center gap-2">
-                  <p className="text-lg font-black text-white truncate">{top1.fullName}</p>
-                  <Sparkles className="w-4 h-4 text-[#FBBF24] animate-pulse" />
-                </div>
-                <p className="text-xs text-[#A7C9B1] truncate">{top1.email}</p>
-                <div className="pt-3">
-                  <span className="text-[10px] text-[#FBBF24] font-bold uppercase tracking-wider block">
-                    Highest GT Wallet Balance
-                  </span>
-                  <div className="text-3xl font-black text-[#FBBF24] flex items-center gap-2 drop-shadow">
-                    <span>{top1.gtWalletCoins.toLocaleString()}</span>
-                    <span className="text-sm font-bold text-white">GT</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* #3 Bronze */}
-          {top3 && (
-            <div
-              onClick={() => setSelectedMiner(top3)}
-              className="p-5 rounded-3xl bg-gradient-to-b from-[#0F2F1C]/90 to-[#07180E] border border-amber-600/30 hover:border-amber-600/60 shadow-lg relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] group order-3"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-700/20 text-amber-300 border border-amber-600/40 flex items-center gap-1.5 shadow-sm">
-                  <Award className="w-3.5 h-3.5" />
-                  <span>RANK #3 • BRONZE</span>
-                </span>
-                <span className="text-[11px] text-[#A7C9B1] font-mono">
-                  {top3.referralCode}
-                </span>
-              </div>
-
-              <div className="pt-4 space-y-1">
-                <p className="text-base font-black text-white group-hover:text-[#86EFAC] transition-colors truncate">
-                  {top3.fullName}
-                </p>
-                <p className="text-xs text-[#A7C9B1] truncate">{top3.email}</p>
-                <div className="pt-3">
-                  <span className="text-[10px] text-[#A7C9B1] font-bold uppercase tracking-wider block">
-                    GT Wallet Balance
-                  </span>
-                  <div className="text-2xl font-black text-white flex items-center gap-1.5">
-                    <span>{top3.gtWalletCoins.toLocaleString()}</span>
-                    <span className="text-xs text-[#22C55E]">GT</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 4. SEARCH & FILTER BAR */}
+      {/* 3. SEARCH & FILTER BAR */}
       <div className="p-4 rounded-2xl bg-[#0B2516]/80 border border-[#86EFAC]/20 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
         <div className="relative w-full sm:w-96">
           <Search className="w-4 h-4 text-[#A7C9B1] absolute left-3.5 top-3 pointer-events-none" />
