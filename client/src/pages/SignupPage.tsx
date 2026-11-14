@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Gift, AlertCircle, Eye, EyeOff, ShieldCheck, ArrowRight, RefreshCw, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Gift, AlertCircle, Eye, EyeOff, ShieldCheck, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GlassCard } from '../components/GlassCard';
@@ -13,13 +13,15 @@ export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Form Fields
-  const [fullName, setFullName] = useState('');
+  // Form Fields (Split into First Name & Last Name as in design)
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // Password Visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -28,11 +30,20 @@ export const SignupPage: React.FC = () => {
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
   // Common UI State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Format seconds to mm:ss format (e.g. 00:26)
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -81,27 +92,42 @@ export const SignupPage: React.FC = () => {
     checkRedirect();
   }, [referralCode]);
 
+  // Validation helpers for right-side checkmarks
+  const isFirstNameValid = firstName.trim().length >= 2;
+  const isLastNameValid = lastName.trim().length >= 1;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  // Auto-verify OTP when 6 digits are entered
+  useEffect(() => {
+    const cleanOtp = otpCode.trim();
+    if (cleanOtp.length === 6 && otpSent && !otpVerified && !otpVerifying) {
+      handleVerifyOtp(cleanOtp);
+    }
+  }, [otpCode, otpSent, otpVerified]);
+
   // Send OTP to email
   const handleSendOtp = async () => {
     if (countdown > 0 || otpSending) return;
     setError(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
+    if (!cleanEmail || !isEmailValid) {
       setError('Please enter a valid email address first.');
       return;
     }
 
     setOtpSending(true);
     try {
+      const combinedName = `${firstName.trim()} ${lastName.trim()}`.trim() || 'Miner';
       const res = await api.sendSignupOtp({
-        fullName: fullName.trim() || 'Miner',
+        fullName: combinedName,
         email: cleanEmail,
         referralCode: referralCode.trim() || undefined,
       });
 
       if (res.success) {
         setOtpSent(true);
+        setOtpVerified(false);
         setCountdown(60);
         showToast(`Verification code sent to ${cleanEmail}! Please check inbox/spam.`, 'success');
       } else {
@@ -111,6 +137,35 @@ export const SignupPage: React.FC = () => {
       setError(err.message || 'Failed to send verification code.');
     } finally {
       setOtpSending(false);
+    }
+  };
+
+  // Verify OTP code
+  const handleVerifyOtp = async (codeToVerify?: string) => {
+    const targetCode = (codeToVerify || otpCode).trim();
+    if (!targetCode || targetCode.length !== 6) {
+      setError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setOtpVerifying(true);
+    try {
+      const res = await api.verifySignupOtp({
+        email: email.trim().toLowerCase(),
+        otpCode: targetCode,
+      });
+
+      if (res.success) {
+        setOtpVerified(true);
+        setError(null);
+        showToast('Email verified successfully!', 'success');
+      } else {
+        setError(res.message || 'Invalid verification code.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to verify OTP.');
+    } finally {
+      setOtpVerifying(false);
     }
   };
 
@@ -145,12 +200,12 @@ export const SignupPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!fullName.trim()) {
-      setError('Please enter your full name.');
+    if (!firstName.trim()) {
+      setError('Please enter your First Name.');
       return;
     }
 
-    if (!email.trim() || !email.includes('@')) {
+    if (!email.trim() || !isEmailValid) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -170,10 +225,16 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms & Conditions and Privacy Policy.');
+      return;
+    }
+
     setLoading(true);
     try {
+      const combinedFullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       await signup({
-        fullName: fullName.trim(),
+        fullName: combinedFullName,
         email: email.trim().toLowerCase(),
         password,
         confirmPassword,
@@ -194,18 +255,26 @@ export const SignupPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative">
       <div className="w-full max-w-md relative z-10 space-y-4">
-        {/* Header */}
-        <div className="text-center space-y-1.5">
+        {/* Top Back Button & Logo Header */}
+        <div className="text-center relative">
+          <Link
+            to="/login"
+            className="absolute left-0 top-1 p-2 rounded-full bg-white/80 border border-[#22C55E]/30 text-[#0A341B] hover:bg-white transition-all shadow-sm flex items-center justify-center"
+            title="Back to Sign In"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+
           <Link to="/" className="inline-block mb-1">
             <img src="/gt-auth-logo.png" alt="GT Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto" />
           </Link>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">Create Free Account</h2>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0A341B] tracking-tight">Create Account</h2>
           <p className="text-xs sm:text-sm font-medium text-[#1E5E36]">
-            Enter your details to create your wallet and start mining
+            Join GT Network and start your earning journey
           </p>
         </div>
 
-        <GlassCard glow className="space-y-4 bg-white/90 shadow-xl border border-white/80 p-5 sm:p-6">
+        <GlassCard glow className="space-y-4 bg-white/95 shadow-xl border border-white/80 p-5 sm:p-6">
           {error && (
             <div className="p-3 rounded-2xl bg-[#FEE2E2] border border-[#F87171]/50 flex items-center gap-2.5 text-xs font-semibold text-[#DC2626]">
               <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0" />
@@ -213,71 +282,74 @@ export const SignupPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-3.5">
-            {/* Full Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36]">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter miner name"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
-                />
+          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-3">
+            {/* Row 1: First Name & Last Name (Side by side) */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* First Name Field */}
+              <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3 py-2 flex items-center gap-2.5">
+                <User className="w-4 h-4 text-[#16A34A] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First Name"
+                    className="w-full bg-transparent text-sm font-semibold text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
+                  />
+                </div>
+                {isFirstNameValid && (
+                  <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
+                )}
+              </div>
+
+              {/* Last Name Field */}
+              <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3 py-2 flex items-center gap-2.5">
+                <User className="w-4 h-4 text-[#16A34A] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last Name"
+                    className="w-full bg-transparent text-sm font-semibold text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
+                  />
+                </div>
+                {isLastNameValid && (
+                  <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
+                )}
               </div>
             </div>
 
-            {/* Email Address + Send OTP Button */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36]">Email Address</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Mail className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={otpSending || countdown > 0 || !email.includes('@')}
-                  className="px-3.5 py-2.5 rounded-2xl font-bold text-xs text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:opacity-95 disabled:opacity-40 transition-all shrink-0 cursor-pointer shadow-sm flex items-center gap-1"
-                >
-                  {otpSending ? (
-                    <span>Sending...</span>
-                  ) : countdown > 0 ? (
-                    <span>{countdown}s</span>
-                  ) : otpSent ? (
-                    <span>Resend OTP</span>
-                  ) : (
-                    <span>Send OTP</span>
-                  )}
-                </button>
+            {/* Row 2: Email Address Field */}
+            <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
+              <Mail className="w-4 h-4 text-[#16A34A] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (otpVerified) setOtpVerified(false);
+                  }}
+                  placeholder="name@example.com"
+                  className="w-full bg-transparent text-sm font-semibold text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
+                />
               </div>
-              {otpSent && (
-                <p className="text-[11px] font-bold text-[#16A34A] flex items-center gap-1 pt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>OTP code sent to {email}. Check inbox or spam folder.</span>
-                </p>
+              {isEmailValid && (
+                <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
               )}
             </div>
 
-            {/* 6-Digit Verification Code */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36] flex items-center justify-between">
-                <span>Email Verification Code (OTP)</span>
-                {otpSent && <span className="text-[#16A34A] text-[10px] font-bold">6-digit code</span>}
-              </label>
-              <div className="relative">
-                <KeyRound className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
+            {/* Row 3: OTP Field with Countdown & Status Badge / Button */}
+            <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-[#16A34A] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">OTP</label>
                 <input
                   type="text"
                   required
@@ -285,98 +357,143 @@ export const SignupPage: React.FC = () => {
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                   placeholder="Enter 6-digit code"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-sm font-mono tracking-widest font-black text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
+                  className="w-full bg-transparent text-sm font-mono font-bold tracking-wider text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
                 />
+              </div>
+
+              {/* Right Side: Timer & Action Badge / Button */}
+              <div className="flex items-center gap-2 shrink-0">
+                {countdown > 0 && (
+                  <span className="text-xs font-mono font-bold text-[#1E5E36]">
+                    {formatTimer(countdown)}
+                  </span>
+                )}
+
+                {otpVerified ? (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-sm flex items-center gap-1">
+                    Verified ✓
+                  </span>
+                ) : otpSent ? (
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyOtp()}
+                    disabled={otpVerifying || otpCode.length !== 6}
+                    className="px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:opacity-95 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
+                  >
+                    {otpVerifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={otpSending || countdown > 0 || !isEmailValid}
+                    className="px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:opacity-95 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
+                  >
+                    {otpSending ? 'Sending...' : 'Send OTP'}
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Create Password */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36]">Create Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
+            {/* Row 4: Password Field */}
+            <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
+              <Lock className="w-4 h-4 text-[#16A34A] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Password</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
+                  placeholder="••••••••"
+                  className="w-full bg-transparent text-sm font-semibold text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-[#16A34A] hover:text-[#0A341B] cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-[#16A34A] hover:text-[#0A341B] cursor-pointer p-0.5 shrink-0"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36]">Confirm Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
+            {/* Row 5: Confirm Password Field */}
+            <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
+              <Lock className="w-4 h-4 text-[#16A34A] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Confirm Password</label>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
+                  placeholder="••••••••"
+                  className="w-full bg-transparent text-sm font-semibold text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3.5 top-3.5 text-[#16A34A] hover:text-[#0A341B] cursor-pointer"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="text-[#16A34A] hover:text-[#0A341B] cursor-pointer p-0.5 shrink-0"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
-            {/* Referral Code (Optional) */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#1E5E36] flex items-center justify-between">
-                <span>Referral Code (Optional)</span>
-                {referralCode && <span className="text-[#16A34A] font-bold text-[11px]">✓ Attributed</span>}
-              </label>
-              <div className="relative">
-                <Gift className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
+            {/* Row 6: Referral Code (Optional) */}
+            <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
+              <Gift className="w-4 h-4 text-[#16A34A] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Referral Code (Optional)</label>
                 <input
                   type="text"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   placeholder="e.g. GT88241"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-sm font-mono font-bold uppercase text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
+                  className="w-full bg-transparent text-sm font-mono font-bold uppercase text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
                 />
               </div>
+              {referralCode.trim().length >= 4 && (
+                <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
+              )}
             </div>
 
-            {/* Submit Button */}
+            {/* Row 7: Terms & Conditions Checkbox */}
+            <label className="flex items-center gap-2 cursor-pointer pt-1 select-none">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="w-4 h-4 rounded text-[#16A34A] border-gray-300 focus:ring-[#22C55E] cursor-pointer accent-[#16A34A]"
+              />
+              <span className="text-xs font-semibold text-[#1E5E36]">
+                I agree to the <span className="underline font-bold text-[#0A341B]">Terms & Conditions</span> and <span className="underline font-bold text-[#0A341B]">Privacy Policy</span>
+              </span>
+            </label>
+
+            {/* Create Account Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl font-black text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_8px_20px_rgba(34,197,94,0.35)] hover:shadow-[0_12px_25px_rgba(34,197,94,0.45)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 text-sm cursor-pointer"
+              className="w-full py-3.5 rounded-2xl font-black text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] shadow-[0_8px_20px_rgba(34,197,94,0.35)] hover:shadow-[0_12px_25px_rgba(34,197,94,0.45)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 text-sm cursor-pointer"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>{loading ? 'Creating Account...' : 'Create Account & Start Mining'}</span>
+              <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
             </button>
           </form>
 
           {/* Google Sign Up */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 pt-1">
             <div className="relative flex items-center justify-center">
               <div className="border-t border-black/10 w-full" />
-              <span className="bg-white/80 px-3 text-[11px] font-bold text-[#1E5E36] absolute rounded-full">OR</span>
+              <span className="bg-white px-3 text-[11px] font-bold text-[#1E5E36] absolute rounded-full">OR</span>
             </div>
 
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full py-2.5 rounded-2xl border border-white/90 bg-white/80 hover:bg-white text-xs font-bold text-[#0A341B] transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer"
+              className="w-full py-3 rounded-2xl border border-white/90 bg-white hover:bg-white/90 text-xs font-bold text-[#0A341B] transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path

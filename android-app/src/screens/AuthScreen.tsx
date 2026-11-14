@@ -105,10 +105,14 @@ export const AuthScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // Prevent aggressive browser password managers (Edge/Chrome) from autofilling credentials on load
   const [unlocked, setUnlocked] = useState(Platform.OS !== 'web');
@@ -185,8 +189,9 @@ export const AuthScreen: React.FC = () => {
 
     setLoading(true);
     try {
+      const combinedName = `${firstName.trim()} ${lastName.trim()}`.trim() || fullName.trim() || 'GT Pioneer';
       const res = await sendSignupOtp({
-        fullName: fullName.trim() || 'GT Pioneer',
+        fullName: combinedName,
         email: cleanEmail,
         referralCode: referralCode.trim() || undefined,
       });
@@ -205,8 +210,9 @@ export const AuthScreen: React.FC = () => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!fullName.trim()) {
-      setErrorMessage('Please enter your full name');
+    const combinedName = `${firstName.trim()} ${lastName.trim()}`.trim() || fullName.trim();
+    if (!firstName.trim() && !fullName.trim()) {
+      setErrorMessage('Please enter your First Name');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
@@ -225,11 +231,15 @@ export const AuthScreen: React.FC = () => {
       setErrorMessage('Passwords do not match');
       return;
     }
+    if (!agreedToTerms) {
+      setErrorMessage('You must agree to the Terms & Conditions and Privacy Policy');
+      return;
+    }
 
     setLoading(true);
     try {
       await signup({
-        fullName: fullName.trim(),
+        fullName: combinedName,
         email: email.trim().toLowerCase(),
         password,
         confirmPassword,
@@ -657,154 +667,195 @@ export const AuthScreen: React.FC = () => {
                 mode === 'SIGNUP' ? (
                   /* SINGLE-PAGE SIGNUP FORM */
                   <>
-                    {/* Full Name */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Full Name</Text>
-                        <View style={styles.inputWrapper}>
-                          <UserIcon size={16} color="#16A34A" style={styles.inputIcon} />
+                    {/* Row 1: First Name & Last Name (Side by Side) */}
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      {/* First Name */}
+                      <View style={{ flex: 1, backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <UserIcon size={16} color="#16A34A" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>First Name</Text>
                           <TextInput
-                            style={styles.input}
-                            placeholder="Enter miner name"
+                            style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '700', padding: 0 }}
+                            placeholder="First Name"
                             placeholderTextColor="#9CA3AF"
-                            value={fullName}
-                            onChangeText={setFullName}
+                            value={firstName}
+                            onChangeText={setFirstName}
                             autoCapitalize="words"
                             autoCorrect={false}
                           />
                         </View>
+                        {firstName.trim().length >= 2 && (
+                          <CheckCircle2 size={14} color="#16A34A" />
+                        )}
                       </View>
 
-                      {/* Email Address with Send OTP button */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Email Address</Text>
-                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                          <View style={[styles.inputWrapper, { flex: 1 }]}>
-                            <Mail size={16} color="#16A34A" style={styles.inputIcon} />
-                            <TextInput
-                              style={styles.input}
-                              placeholder="you@domain.com"
-                              placeholderTextColor="#9CA3AF"
-                              value={email}
-                              onChangeText={setEmail}
-                              keyboardType="email-address"
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            onPress={handleSendSignupOtp}
-                            disabled={loading || signupCountdown > 0 || !email.includes('@')}
-                            style={{
-                              backgroundColor: signupCountdown > 0 ? '#E2E8F0' : '#16A34A',
-                              paddingHorizontal: 14,
-                              paddingVertical: 12,
-                              borderRadius: 14,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              minWidth: 85,
-                            }}
-                          >
-                            <Text style={{ color: signupCountdown > 0 ? '#64748B' : '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
-                              {signupCountdown > 0 ? `${signupCountdown}s` : otpSent ? 'Resend' : 'Send OTP'}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      {/* 6-Digit OTP */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Email Verification Code (OTP)</Text>
-                        <View style={styles.inputWrapper}>
-                          <ShieldCheck size={16} color="#16A34A" style={styles.inputIcon} />
+                      {/* Last Name */}
+                      <View style={{ flex: 1, backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <UserIcon size={16} color="#16A34A" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Last Name</Text>
                           <TextInput
-                            style={[styles.input, { letterSpacing: 6, fontWeight: '900', fontSize: 16 }]}
-                            placeholder="Enter 6-digit code"
+                            style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '700', padding: 0 }}
+                            placeholder="Last Name"
                             placeholderTextColor="#9CA3AF"
-                            value={otpCode}
-                            onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, ''))}
-                            keyboardType="numeric"
-                            maxLength={6}
-                          />
-                        </View>
-                      </View>
-
-                      {/* Password */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Create Password</Text>
-                        <View style={styles.inputWrapper}>
-                          <Lock size={16} color="#16A34A" style={styles.inputIcon} />
-                          <TextInput
-                            style={[styles.input, { paddingRight: 40 }]}
-                            placeholder="At least 6 characters"
-                            placeholderTextColor="#9CA3AF"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowPassword((prev) => !prev)}
-                            style={styles.eyeBtn}
-                          >
-                            {showPassword ? <EyeOff size={16} color="#6B7280" /> : <Eye size={16} color="#6B7280" />}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      {/* Confirm Password */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Confirm Password</Text>
-                        <View style={styles.inputWrapper}>
-                          <Lock size={16} color="#16A34A" style={styles.inputIcon} />
-                          <TextInput
-                            style={[styles.input, { paddingRight: 40 }]}
-                            placeholder="Re-enter password"
-                            placeholderTextColor="#9CA3AF"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowPassword((prev) => !prev)}
-                            style={styles.eyeBtn}
-                          >
-                            {showPassword ? <EyeOff size={16} color="#6B7280" /> : <Eye size={16} color="#6B7280" />}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      {/* Referral Code */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
-                        <View style={styles.inputWrapper}>
-                          <Gift size={16} color="#16A34A" style={styles.inputIcon} />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="e.g. GT88241"
-                            placeholderTextColor="#9CA3AF"
-                            value={referralCode}
-                            onChangeText={setReferralCode}
-                            autoCapitalize="characters"
+                            value={lastName}
+                            onChangeText={setLastName}
+                            autoCapitalize="words"
                             autoCorrect={false}
                           />
                         </View>
+                        {lastName.trim().length >= 1 && (
+                          <CheckCircle2 size={14} color="#16A34A" />
+                        )}
                       </View>
+                    </View>
 
-                      {/* Create Account Submit Button */}
-                      <TouchableOpacity
-                        onPress={handleCompleteSinglePageSignup}
-                        style={styles.primaryBtn}
-                        activeOpacity={0.88}
-                        disabled={loading}
-                      >
-                        <Text style={styles.primaryBtnText}>
-                          {loading ? 'Creating Account...' : 'Create Account & Start Mining'}
-                        </Text>
-                        <ArrowRight size={16} color="#FFFFFF" />
+                    {/* Row 2: Email Address */}
+                    <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Mail size={16} color="#16A34A" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Email Address</Text>
+                        <TextInput
+                          style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '700', padding: 0 }}
+                          placeholder="name@example.com"
+                          placeholderTextColor="#9CA3AF"
+                          value={email}
+                          onChangeText={setEmail}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      {email.includes('@') && email.includes('.') && (
+                        <CheckCircle2 size={14} color="#16A34A" />
+                      )}
+                    </View>
+
+                    {/* Row 3: OTP Field with Countdown & Button */}
+                    <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <ShieldCheck size={16} color="#16A34A" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>OTP</Text>
+                        <TextInput
+                          style={{ height: 26, fontSize: 14, color: '#0A341B', fontWeight: '900', letterSpacing: 4, padding: 0 }}
+                          placeholder="538210"
+                          placeholderTextColor="#9CA3AF"
+                          value={otpCode}
+                          onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, ''))}
+                          keyboardType="numeric"
+                          maxLength={6}
+                        />
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {signupCountdown > 0 && (
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#1E5E36', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                            {`00:${signupCountdown < 10 ? '0' : ''}${signupCountdown}`}
+                          </Text>
+                        )}
+                        <TouchableOpacity
+                          onPress={handleSendSignupOtp}
+                          disabled={loading || signupCountdown > 0 || !email.includes('@')}
+                          style={{
+                            backgroundColor: signupCountdown > 0 ? '#E2E8F0' : '#16A34A',
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 12,
+                          }}
+                        >
+                          <Text style={{ color: signupCountdown > 0 ? '#64748B' : '#FFFFFF', fontWeight: '800', fontSize: 11 }}>
+                            {otpCode.length === 6 && otpSent ? 'Verified ✓' : otpSent ? 'Resend' : 'Send OTP'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Row 4: Password */}
+                    <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Lock size={16} color="#16A34A" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Password</Text>
+                        <TextInput
+                          style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '700', padding: 0 }}
+                          placeholder="••••••••"
+                          placeholderTextColor="#9CA3AF"
+                          value={password}
+                          onChangeText={setPassword}
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                        {showPassword ? <EyeOff size={16} color="#16A34A" /> : <Eye size={16} color="#16A34A" />}
                       </TouchableOpacity>
+                    </View>
+
+                    {/* Row 5: Confirm Password */}
+                    <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Lock size={16} color="#16A34A" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Confirm Password</Text>
+                        <TextInput
+                          style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '700', padding: 0 }}
+                          placeholder="••••••••"
+                          placeholderTextColor="#9CA3AF"
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          secureTextEntry={!showConfirmPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      <TouchableOpacity onPress={() => setShowConfirmPassword((prev) => !prev)}>
+                        {showConfirmPassword ? <EyeOff size={16} color="#16A34A" /> : <Eye size={16} color="#16A34A" />}
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Row 6: Referral Code (Optional) */}
+                    <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Gift size={16} color="#16A34A" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Referral Code (Optional)</Text>
+                        <TextInput
+                          style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '800', padding: 0 }}
+                          placeholder="e.g. GT88241"
+                          placeholderTextColor="#9CA3AF"
+                          value={referralCode}
+                          onChangeText={setReferralCode}
+                          autoCapitalize="characters"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      {referralCode.trim().length >= 4 && (
+                        <CheckCircle2 size={14} color="#16A34A" />
+                      )}
+                    </View>
+
+                    {/* Row 7: Terms & Conditions Checkbox */}
+                    <TouchableOpacity
+                      onPress={() => setAgreedToTerms(!agreedToTerms)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: agreedToTerms ? '#16A34A' : '#9CA3AF', backgroundColor: agreedToTerms ? '#16A34A' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                        {agreedToTerms && <CheckCircle2 size={12} color="#FFFFFF" />}
+                      </View>
+                      <Text style={{ fontSize: 11, color: '#1E5E36', fontWeight: '600', flex: 1 }}>
+                        I agree to the <Text style={{ textDecorationLine: 'underline', fontWeight: '800', color: '#0A341B' }}>Terms & Conditions</Text> and <Text style={{ textDecorationLine: 'underline', fontWeight: '800', color: '#0A341B' }}>Privacy Policy</Text>
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Create Account Submit Button */}
+                    <TouchableOpacity
+                      onPress={handleCompleteSinglePageSignup}
+                      style={styles.primaryBtn}
+                      activeOpacity={0.88}
+                      disabled={loading}
+                    >
+                      <Text style={styles.primaryBtnText}>
+                        {loading ? 'Creating Account...' : 'Create Account'}
+                      </Text>
+                    </TouchableOpacity>
 
                       {/* Divider OR */}
                       <View style={styles.dividerRow}>
