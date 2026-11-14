@@ -460,15 +460,15 @@ export const AuthScreen: React.FC = () => {
                   ? 'Create Account'
                   : 'Account Recovery'}
               </Text>
-              <Text style={styles.headerSubtitle}>
-                {mode === 'LOGIN'
-                  ? 'Access your GT wallet & 4-hour mining cycle'
-                  : mode === 'SIGNUP'
-                  ? 'Enter profile details to start mining'
-                  : forgotStep === 'REQUEST_OTP'
-                  ? 'Enter your email to receive a 6-digit recovery code'
-                  : 'Enter the 6-digit code and choose a new password'}
-              </Text>
+              {mode !== 'LOGIN' && (
+                <Text style={styles.headerSubtitle}>
+                  {mode === 'SIGNUP'
+                    ? 'Enter profile details to start mining'
+                    : forgotStep === 'REQUEST_OTP'
+                    ? 'Enter your email to receive a 6-digit recovery code'
+                    : 'Enter the 6-digit code and choose a new password'}
+                </Text>
+              )}
             </View>
 
             {/* Error Banner */}
