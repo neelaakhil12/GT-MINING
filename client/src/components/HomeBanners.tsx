@@ -291,25 +291,28 @@ export const HomeBanners: React.FC = () => {
         <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
           
           {/* Card 1: GT with 3D Animated Single Coin */}
-          <div className="relative overflow-hidden w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/95 border border-white shadow-sm flex flex-col justify-between gap-2.5 group">
-            {/* 3D Animated Single GT Coin with 3D rotation & GT logo */}
-            <div className="absolute -right-1 top-0 z-0 pointer-events-none">
-              <GtSingleCoin3D width={105} height={92} />
-            </div>
+          <div className="relative overflow-hidden w-[calc(50%-6px)] min-w-[145px] sm:w-auto sm:min-w-0 flex-shrink-0 snap-start p-3.5 sm:p-4 rounded-[24px] bg-white/95 border border-white shadow-sm flex flex-col justify-between gap-2 group">
+            {/* Top row: GT & Amount on Left, Animated Coin on Right */}
+            <div className="relative z-10 flex items-start justify-between gap-1">
+              <div className="space-y-0.5">
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1E5E36]/90 block">
+                  GT
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight whitespace-nowrap">
+                  5,200
+                </div>
+              </div>
 
-            {/* Subtle ambient corner glow */}
-            <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#22C55E]/15 rounded-full blur-xl pointer-events-none" />
-
-            {/* Card Content Overlay */}
-            <div className="relative z-10 space-y-0.5">
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1E5E36]/90 block">
-                GT
-              </span>
-              <div className="text-xl sm:text-2xl font-black text-[#0A341B] tracking-tight">
-                5,200
+              {/* Animated GT Coin nicely sized on the right side - never overlapping number */}
+              <div className="shrink-0 -mt-0.5 pointer-events-none">
+                <GtSingleCoin3D width={52} height={52} />
               </div>
             </div>
 
+            {/* Subtle ambient corner glow */}
+            <div className="absolute -top-4 -right-4 w-20 h-20 bg-[#22C55E]/15 rounded-full blur-xl pointer-events-none" />
+
+            {/* Bottom row: Price & Percentage */}
             <div className="relative z-10 flex items-center justify-between pt-0.5 text-xs">
               <span className="font-semibold text-[#1E5E36]">
                 $1,200

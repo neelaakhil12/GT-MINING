@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Image, StyleSheet, Animated, Easing } from 'react-native';
 
 interface GtSingleCoin3DProps {
   width?: number;
@@ -8,20 +8,65 @@ interface GtSingleCoin3DProps {
 
 /**
  * GtSingleCoin3D - Official GT Coin Display for Market Overview
- * Renders the official high-resolution GT coin asset (image copy.png)
+ * Renders the official high-resolution GT coin asset with smooth floating & tilt animation
  */
 export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
-  width = 90,
-  height = 90,
+  width = 52,
+  height = 52,
 }) => {
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(animValue, {
+          toValue: 1,
+          duration: 2500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(animValue, {
+          toValue: 0,
+          duration: 2500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [animValue]);
+
+  const translateY = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -4],
+  });
+
+  const rotate = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-3deg', '3deg'],
+  });
+
+  const scale = animValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.05, 1],
+  });
+
   return (
-    <View style={[styles.container, { width, height }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          width,
+          height,
+          transform: [{ translateY }, { rotate }, { scale }],
+        },
+      ]}
+    >
       <Image
         source={require('../../assets/gt-market-coin.png')}
-        style={{ width: width - 6, height: height - 6 }}
+        style={{ width: width - 4, height: height - 4 }}
         resizeMode="contain"
       />
-    </View>
+    </Animated.View>
   );
 };
 

@@ -323,13 +323,15 @@ export const DashboardScreen: React.FC = () => {
           >
             {/* Card 1: GT with 3D Continuous Coin Orbit */}
             <View style={styles.marketCardMain}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTokenLabel}>GT</Text>
-                <Text style={styles.cardTokenAmount}>5,200</Text>
-              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTokenLabel}>GT</Text>
+                  <Text style={styles.cardTokenAmount}>5,200</Text>
+                </View>
 
-              {/* Single 3D Green GT Coin with Smooth 360 Spin & Specular Glint */}
-              <GtSingleCoin3D width={90} height={90} />
+                {/* Single 3D Green GT Coin with Smooth Floating Animation */}
+                <GtSingleCoin3D width={52} height={52} />
+              </View>
 
               <View style={styles.cardFooter}>
                 <Text style={styles.cardPriceText}>$1,200</Text>
