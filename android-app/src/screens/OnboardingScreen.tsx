@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   TouchableWithoutFeedback,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,45 +25,35 @@ export const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isAuthenticated } = useAuth();
 
-  const [slides, setSlides] = useState<Slide[]>(() => getMemoryOnboardingSlides() || []);
-  const [isLoadingSlides, setIsLoadingSlides] = useState<boolean>(
-    () => !(getMemoryOnboardingSlides() && getMemoryOnboardingSlides()!.length > 0)
-  );
+  // Instant 0ms render from memory cache or bundled default slides
+  const [slides, setSlides] = useState<Slide[]>(() => {
+    const mem = getMemoryOnboardingSlides();
+    if (mem && mem.length > 0) return mem;
+    return DEFAULT_SLIDES;
+  });
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0);
 
-  // Synchronize live pre-opening banners from server in strict admin order (never flash hardcoded first)
+  // Background sync for admin updated banners (never blocks or delays screen presentation)
   useEffect(() => {
     let isMounted = true;
 
-    const loadOrderedBanners = async () => {
-      let hasResolvedSlides = Boolean(getMemoryOnboardingSlides()?.length);
-
-      if (!hasResolvedSlides) {
-        const cached = await getCachedOnboardingSlidesFromStorage();
-        if (isMounted && cached && cached.length > 0) {
-          setSlides(cached);
-          setIsLoadingSlides(false);
-          hasResolvedSlides = true;
-        }
+    const syncBanners = async () => {
+      // 1. Fast local storage cache check
+      const cached = await getCachedOnboardingSlidesFromStorage();
+      if (isMounted && cached && cached.length > 0) {
+        setSlides(cached);
       }
 
-      const live = await fetchAndCacheOnboardingBanners(4500);
-      if (!isMounted) return;
-
-      if (live && live.length > 0) {
+      // 2. Background live network fetch
+      const live = await fetchAndCacheOnboardingBanners(3000);
+      if (isMounted && live && live.length > 0) {
         setSlides(live);
-        setIsLoadingSlides(false);
-        hasResolvedSlides = true;
-      } else if (!hasResolvedSlides) {
-        // Offline with zero cache fallback
-        setSlides(DEFAULT_SLIDES);
-        setIsLoadingSlides(false);
       }
     };
 
-    loadOrderedBanners();
+    syncBanners();
     return () => {
       isMounted = false;
     };
@@ -96,7 +85,7 @@ export const OnboardingScreen: React.FC = () => {
 
   // Auto story progress
   useEffect(() => {
-    if (isHolding || isAuthenticated || isLoadingSlides || slides.length === 0) return;
+    if (isHolding || isAuthenticated || slides.length === 0) return;
 
     const timer = setInterval(() => {
       setSlideProgress((prev) => {
@@ -115,7 +104,7 @@ export const OnboardingScreen: React.FC = () => {
     }, 55);
 
     return () => clearInterval(timer);
-  }, [currentIdx, isHolding, navigation, isAuthenticated, isLoadingSlides, slides.length]);
+  }, [currentIdx, isHolding, navigation, isAuthenticated, slides.length]);
 
   const handleNext = () => {
     if (currentIdx < slides.length - 1) {
@@ -138,14 +127,6 @@ export const OnboardingScreen: React.FC = () => {
   const handleSkip = () => {
     proceedToNext();
   };
-
-  if (isLoadingSlides || slides.length === 0) {
-    return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color="#22C55E" />
-      </View>
-    );
-  }
 
   const activeSlide = slides[currentIdx] || slides[0];
 
