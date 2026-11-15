@@ -557,22 +557,21 @@ export const DashboardScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* Private Network / Circle Chat */}
+              {/* Private Room */}
               <TouchableOpacity
                 onPress={() => navigation.navigate('PrivateNetwork')}
                 style={styles.beamStatCard}
                 activeOpacity={0.88}
-                testID="circle-chat-button"
-                accessibilityLabel="Circle Chat Button"
+                testID="private-room-button"
+                accessibilityLabel="Private Room Button"
               >
                 <View style={styles.beamCardInner}>
-                  <View style={styles.statTopRow}>
-                    <Text style={styles.statLabelText} numberOfLines={1}>Private Netw...</Text>
+                  <View style={[styles.statTopRow, { justifyContent: 'flex-end' }]}>
                     <View style={styles.statIconBadge}>
                       <Users size={15} color="#16A34A" strokeWidth={2.2} />
                     </View>
                   </View>
-                  <Text style={styles.statMainValueDark} numberOfLines={1}>Circle Chat</Text>
+                  <Text style={styles.statMainValueDark} numberOfLines={1}>Private Room</Text>
                   <View style={styles.statSubRow}>
                     <View style={styles.onlineDot} />
                     <Text style={styles.statSubText} numberOfLines={1}>Open Chat & Mi... →</Text>

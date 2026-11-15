@@ -534,7 +534,7 @@ export const PrivateNetworkPage: React.FC = () => {
             </div>
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base font-black text-[#0A341B] truncate flex items-center gap-1.5">
-                <span>Private Circle Chat</span>
+                <span>Private Room</span>
               </h1>
               <p className="text-[10px] sm:text-[11px] font-semibold text-[#15803D] truncate flex items-center gap-1">
                 <span>{totalCount} Members</span>

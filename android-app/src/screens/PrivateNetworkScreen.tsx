@@ -742,7 +742,7 @@ export const PrivateNetworkScreen: React.FC = () => {
 
               <View style={styles.titleCol}>
                 <Text style={styles.mainTitle} numberOfLines={1}>
-                  Private Circle Chat
+                  Private Room
                 </Text>
                 <Text style={styles.subTitle} numberOfLines={1}>
                   {totalMembersCount} Members • {activeMembersCount} Mining Active
@@ -842,7 +842,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                 </View>
                 <Text style={styles.emptyMessagesTitle}>No circle messages yet</Text>
                 <Text style={styles.emptyMessagesText}>
-                  Welcome to your Private Circle Chat. Send a message or broadcast a mining reminder to your team below!
+                  Welcome to your Private Room. Send a message or broadcast a mining reminder to your team below!
                 </Text>
               </View>
             }

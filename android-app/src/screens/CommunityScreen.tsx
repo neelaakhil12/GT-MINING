@@ -310,21 +310,7 @@ export const CommunityScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
-          {/* 1. Header Banner matching video */}
-          <View style={styles.headerCard}>
-            <View style={styles.officialPillBadge}>
-              <Globe size={13} color="#15803D" />
-              <Text style={styles.officialPillText}>Official Node Network</Text>
-            </View>
-
-            <Text style={styles.feedMainTitle}>GT Node & Ecosystem Feed</Text>
-
-            <Text style={styles.feedSubDesc}>
-              Read the latest network node updates, core protocol upgrades, and mining milestones.
-            </Text>
-          </View>
-
-          {/* 2. Category Filter Pills: ONLY All and Latest */}
+          {/* Category Filter Pills: ONLY All and Latest */}
           <View style={styles.categoriesRow}>
             {categories.map((cat) => {
               const isActive = selectedCategory === cat;

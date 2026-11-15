@@ -561,6 +561,7 @@ input:-webkit-autofill:active {
   75% {
     transform: perspective(800px) translateY(5px) rotateX(270deg);
   }
+
   100% {
     transform: perspective(800px) translateY(0px) rotateX(360deg);
   }

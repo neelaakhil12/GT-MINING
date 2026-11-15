@@ -237,21 +237,6 @@ export const CommunityPage: React.FC = () => {
 
   return (
     <div className="space-y-6 w-full max-w-5xl mx-auto">
-      
-      {/* Header Banner matching DashboardPage */}
-      <GlassCard glow className="space-y-3">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#22C55E]/15 text-[#15803D] text-xs font-bold border border-[#22C55E]/30">
-          <Globe className="w-3.5 h-3.5" />
-          <span>Official Node Network</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#0A341B]">
-          GT Node & Ecosystem Feed
-        </h1>
-        <p className="text-xs sm:text-sm text-[#1E5E36] font-medium">
-          Read the latest network node updates, core protocol upgrades, and mining milestones.
-        </p>
-      </GlassCard>
-
       {/* Category Pills: Only All and Latest */}
       <div className="flex items-center gap-2">
         {categories.map((cat) => (

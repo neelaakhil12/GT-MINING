@@ -207,22 +207,21 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Private Network Button / Circle Chat */}
+        {/* Private Room */}
         <Link
           to="/private-network"
           id="private-network-button"
           className="border-beam-card border-beam-card-delay-3 group cursor-pointer h-full block text-left"
-          title="Open Private Network"
+          title="Open Private Room"
         >
           <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2 group-hover:bg-[#EAF8EE]/60 transition-colors">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] sm:text-xs font-bold text-[#1E5E36] truncate">Private Network</span>
+            <div className="flex items-center justify-end">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
             <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#0A341B] tracking-tight truncate">
-              Circle Chat
+              Private Room
             </p>
             <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
               <div className="flex items-center gap-1.5 truncate">

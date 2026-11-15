@@ -54,7 +54,7 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
     { label: 'Mining', path: '/mining', icon: Pickaxe, badge: cycleBadge },
     { label: 'Wallet', path: '/wallet', icon: Wallet },
     { label: 'My Referrals', path: '/referrals', icon: Users },
-    { label: 'Private Network', path: '/private-network', icon: MessageSquare, badge: 'Circle' },
+    { label: 'Private Room', path: '/private-network', icon: MessageSquare },
     { label: 'Community News', path: '/community', icon: Globe },
     { label: 'Notifications', path: '/notifications', icon: Bell },
     { label: 'Profile & Settings', path: '/profile', icon: User },
