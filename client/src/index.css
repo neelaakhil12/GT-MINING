@@ -14,7 +14,7 @@
 
   body {
     background-color: #EAF8EE;
-    background-image: 
+    background-image:
       radial-gradient(circle at 10% 20%, rgba(74, 222, 128, 0.4) 0%, transparent 45%),
       radial-gradient(circle at 90% 15%, rgba(134, 239, 172, 0.5) 0%, transparent 40%),
       radial-gradient(circle at 50% 60%, rgba(34, 197, 94, 0.25) 0%, transparent 50%),
@@ -34,7 +34,7 @@
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1.5px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 
+  box-shadow:
     0 20px 45px -10px rgba(22, 101, 52, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
@@ -46,7 +46,7 @@
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1.5px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 
+  box-shadow:
     0 20px 45px -10px rgba(22, 101, 52, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
@@ -57,7 +57,7 @@
 .glass-panel-interactive:hover {
   background: rgba(255, 255, 255, 0.78);
   border-color: rgba(255, 255, 255, 1);
-  box-shadow: 
+  box-shadow:
     0 25px 50px -10px rgba(34, 197, 94, 0.25),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1);
   transform: translateY(-2px);
@@ -86,15 +86,24 @@
 }
 
 /* Universal clean input focus reset */
-input, textarea, select, button {
+input,
+textarea,
+select,
+button {
   outline: none !important;
   outline-style: none !important;
   outline-width: 0 !important;
   -webkit-tap-highlight-color: transparent !important;
 }
 
-input:focus, textarea:focus, select:focus, button:focus,
-input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+input:focus,
+textarea:focus,
+select:focus,
+button:focus,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
   outline: none !important;
   outline-style: none !important;
   outline-width: 0 !important;
@@ -102,8 +111,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 
 /* Remove default browser autofill background and outline */
 input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 100px rgba(255, 255, 255, 0.95) inset !important;
   -webkit-text-fill-color: #0A341B !important;
@@ -116,7 +125,7 @@ input:-webkit-autofill:active {
 .orb-3d {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 28%, #BBF7D0 0%, #4ADE80 35%, #22C55E 70%, #15803D 100%);
-  box-shadow: 
+  box-shadow:
     0 20px 40px -10px rgba(21, 128, 61, 0.45),
     inset -5px -8px 15px rgba(10, 52, 27, 0.5),
     inset 5px 8px 12px rgba(255, 255, 255, 0.75);
@@ -125,6 +134,7 @@ input:-webkit-autofill:active {
 .orb-3d-glow {
   position: relative;
 }
+
 .orb-3d-glow::after {
   content: '';
   position: absolute;
@@ -172,18 +182,23 @@ input:-webkit-autofill:active {
   0% {
     transform: translateY(0px) rotateY(0deg);
   }
+
   50% {
     transform: translateY(-10px) rotateY(180deg);
   }
+
   100% {
     transform: translateY(0px) rotateY(360deg);
   }
 }
 
 @keyframes orb-float-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) scale(1);
   }
+
   50% {
     transform: translateY(-15px) scale(1.03);
   }
@@ -200,10 +215,12 @@ input:-webkit-autofill:active {
     transform: translateY(0px) rotateY(0deg) scale(1);
     filter: drop-shadow(0 10px 25px rgba(34, 197, 94, 0.4));
   }
+
   50% {
     transform: translateY(-12px) rotateY(2160deg) scale(1.15);
     filter: drop-shadow(0 0 55px rgba(74, 222, 128, 0.9));
   }
+
   100% {
     transform: translateY(0px) rotateY(4320deg) scale(1);
     filter: drop-shadow(0 10px 25px rgba(34, 197, 94, 0.4));
@@ -224,6 +241,7 @@ input:-webkit-autofill:active {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -254,16 +272,14 @@ input:-webkit-autofill:active {
   left: -150%;
   width: 400%;
   height: 400%;
-  background: conic-gradient(
-    from 0deg at 50% 50%,
-    transparent 0deg,
-    transparent 280deg,
-    rgba(34, 197, 94, 0.15) 305deg,
-    rgba(74, 222, 128, 0.7) 330deg,
-    #22c55e 348deg,
-    #86efac 356deg,
-    #ffffff 360deg
-  );
+  background: conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      transparent 280deg,
+      rgba(34, 197, 94, 0.15) 305deg,
+      rgba(74, 222, 128, 0.7) 330deg,
+      #22c55e 348deg,
+      #86efac 356deg,
+      #ffffff 360deg);
   animation: border-beam-spin 3.5s linear infinite;
   pointer-events: none;
   z-index: 1;
@@ -276,14 +292,12 @@ input:-webkit-autofill:active {
   left: -150%;
   width: 400%;
   height: 400%;
-  background: conic-gradient(
-    from 0deg at 50% 50%,
-    transparent 0deg,
-    transparent 320deg,
-    rgba(34, 197, 94, 0.45) 345deg,
-    rgba(134, 239, 172, 0.95) 358deg,
-    #ffffff 360deg
-  );
+  background: conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      transparent 320deg,
+      rgba(34, 197, 94, 0.45) 345deg,
+      rgba(134, 239, 172, 0.95) 358deg,
+      #ffffff 360deg);
   filter: blur(5px);
   animation: border-beam-spin 3.5s linear infinite;
   pointer-events: none;
@@ -337,21 +351,19 @@ input:-webkit-autofill:active {
   left: -150%;
   width: 400%;
   height: 400%;
-  background: conic-gradient(
-    from 0deg at 50% 50%,
-    transparent 0deg,
-    transparent 280deg,
-    rgba(34, 197, 94, 0.2) 310deg,
-    #22c55e 345deg,
-    #86efac 356deg,
-    #ffffff 360deg
-  );
+  background: conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      transparent 280deg,
+      rgba(34, 197, 94, 0.2) 310deg,
+      #22c55e 345deg,
+      #86efac 356deg,
+      #ffffff 360deg);
   animation: border-beam-spin 3s linear infinite;
   pointer-events: none;
   z-index: 1;
 }
 
-.border-beam-btn > * {
+.border-beam-btn>* {
   position: relative;
   z-index: 2;
 }
@@ -360,33 +372,44 @@ input:-webkit-autofill:active {
    ANIMATED COLOR AURORA BANNER (Referral Rewards)
    =================================================== */
 @keyframes aurora-mesh-1 {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0%, 0%) scale(1) rotate(0deg);
   }
+
   33% {
     transform: translate(25%, -20%) scale(1.25) rotate(45deg);
   }
+
   66% {
     transform: translate(-20%, 25%) scale(0.9) rotate(-35deg);
   }
 }
 
 @keyframes aurora-mesh-2 {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0%, 0%) scale(1.1) rotate(0deg);
   }
+
   33% {
     transform: translate(-30%, 15%) scale(0.85) rotate(-60deg);
   }
+
   66% {
     transform: translate(20%, -25%) scale(1.3) rotate(50deg);
   }
 }
 
 @keyframes aurora-mesh-3 {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0%, 0%) scale(0.95);
   }
+
   50% {
     transform: translate(15%, 20%) scale(1.35);
   }
@@ -396,6 +419,7 @@ input:-webkit-autofill:active {
   0% {
     transform: translateX(-100%) skewX(-20deg);
   }
+
   100% {
     transform: translateX(250%) skewX(-20deg);
   }
@@ -405,6 +429,7 @@ input:-webkit-autofill:active {
   0% {
     transform: rotateX(65deg) rotateZ(0deg);
   }
+
   100% {
     transform: rotateX(65deg) rotateZ(360deg);
   }
@@ -414,25 +439,32 @@ input:-webkit-autofill:active {
   0% {
     transform: rotateX(55deg) rotateY(25deg) rotateZ(360deg);
   }
+
   100% {
     transform: rotateX(55deg) rotateY(25deg) rotateZ(0deg);
   }
 }
 
 @keyframes float-gentle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) scale(1);
   }
+
   50% {
     transform: translateY(-8px) scale(1.02);
   }
 }
 
 @keyframes pulse-glow-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.55;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.95;
     transform: scale(1.08);
@@ -515,13 +547,22 @@ input:-webkit-autofill:active {
   color: #FFFFFF !important;
 }
 
-/* Market Overview GT Coin Animation: Pure Bottom-Up Continuous Vertical Flip */
-@keyframes gtMarketCoinBottomFlip {
+/* Market Overview GT Coin Animation: Continuous Top & Bottom Vertical Flip + Float */
+@keyframes gtMarketCoinTopBottomFlip {
   0% {
-    transform: perspective(800px) rotateX(0deg);
+    transform: perspective(800px) translateY(0px) rotateX(0deg);
+  }
+  25% {
+    transform: perspective(800px) translateY(-5px) rotateX(90deg);
+  }
+  50% {
+    transform: perspective(800px) translateY(0px) rotateX(180deg);
+  }
+  75% {
+    transform: perspective(800px) translateY(5px) rotateX(270deg);
   }
   100% {
-    transform: perspective(800px) rotateX(-360deg);
+    transform: perspective(800px) translateY(0px) rotateX(360deg);
   }
 }
 
@@ -537,7 +578,7 @@ input:-webkit-autofill:active {
 }
 
 .gt-coin-flip-container {
-  animation: gtMarketCoinBottomFlip 3.4s linear infinite !important;
+  animation: gtMarketCoinTopBottomFlip 3.5s linear infinite !important;
   will-change: transform;
   transform-style: preserve-3d;
 }
@@ -546,7 +587,3 @@ input:-webkit-autofill:active {
   animation: gtMarketCoinAuraPulse 3s ease-in-out infinite !important;
   will-change: opacity, transform;
 }
-
-
-
-
