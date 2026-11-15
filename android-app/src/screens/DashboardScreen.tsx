@@ -330,7 +330,7 @@ export const DashboardScreen: React.FC = () => {
                 </View>
 
                 {/* Single 3D Green GT Coin with Smooth Floating Animation */}
-                <GtSingleCoin3D width={52} height={52} />
+                <GtSingleCoin3D width={72} height={70} />
               </View>
 
               <View style={styles.cardFooter}>

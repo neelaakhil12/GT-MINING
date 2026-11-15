@@ -304,8 +304,8 @@ export const HomeBanners: React.FC = () => {
               </div>
 
               {/* Animated GT Coin nicely sized on the right side - never overlapping number */}
-              <div className="shrink-0 -mt-0.5 pointer-events-none">
-                <GtSingleCoin3D width={52} height={52} />
+              <div className="shrink-0 -mt-2 -mr-1 pointer-events-none">
+                <GtSingleCoin3D width={74} height={70} />
               </div>
             </div>
 
