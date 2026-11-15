@@ -91,7 +91,7 @@ const getInitialSlides = (): OnboardingSlide[] => {
       }
     } catch { }
   }
-  return [];
+  return onboardingSlides;
 };
 
 export const LandingPage: React.FC = () => {
@@ -359,9 +359,13 @@ export const LandingPage: React.FC = () => {
   const slide = slides[currentSlide] || slides[0];
 
   return (
-    <div className="fixed inset-0 z-50 w-full h-[100dvh] flex items-center justify-center bg-black overflow-hidden select-none">
+    <div className="fixed inset-0 z-50 w-full h-[100dvh] flex items-center justify-center bg-[#031107] overflow-hidden select-none">
       {/* Centered Story Frame */}
-      <div className="relative w-full h-full max-w-md mx-auto flex flex-col justify-between overflow-hidden shadow-2xl bg-black">
+      <div className="relative w-full h-full max-w-md mx-auto flex flex-col justify-between overflow-hidden shadow-2xl bg-[#04160A]">
+        {/* Instant Ambient Gradient & Glow (Prevents black void during image load) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#051B0D] via-[#0A2E18] to-[#04160A] -z-10" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#22C55E]/15 rounded-full blur-[90px] pointer-events-none -z-10" />
+
         {/* Background Pre-rendered Slide Images */}
         <div className="absolute inset-0 z-0">
           {slides.map((s, idx) => (
@@ -369,6 +373,14 @@ export const LandingPage: React.FC = () => {
               key={s.id || idx}
               src={s.image}
               alt={s.title}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                const fallbackImg = onboardingSlides[idx % onboardingSlides.length]?.image || '/onboarding/story_1.jpg';
+                if ((e.target as HTMLImageElement).src !== fallbackImg) {
+                  (e.target as HTMLImageElement).src = fallbackImg;
+                }
+              }}
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${
                 idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
               }`}

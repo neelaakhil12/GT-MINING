@@ -8,53 +8,47 @@ interface GtSingleCoin3DProps {
 
 /**
  * GtSingleCoin3D - Official GT Crystal Coin Display for Market Overview
- * Renders the crystal emerald GT coin with smooth 360-degree 3D rotation & floating bob
+ * Renders the crystal emerald GT coin (image-removebg-preview (56).png)
+ * with the exact smooth floating and 3D tilt animation matching reference video 20261115-0552-53.7682372.mp4
  */
 export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   width = 54,
   height = 54,
 }) => {
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const floatAnim = useRef(new Animated.Value(0)).current;
+  const animValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Continuous 360-degree rotation
-    Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 4200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // Subtle floating bob up and down
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, {
+        Animated.timing(animValue, {
           toValue: 1,
-          duration: 2100,
+          duration: 2500,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(floatAnim, {
+        Animated.timing(animValue, {
           toValue: 0,
-          duration: 2100,
+          duration: 2500,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
       ])
     ).start();
-  }, [spinAnim, floatAnim]);
+  }, [animValue]);
 
-  const rotateY = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const translateY = floatAnim.interpolate({
+  const translateY = animValue.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -4],
+  });
+
+  const rotate = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-3deg', '3deg'],
+  });
+
+  const scale = animValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.05, 1],
   });
 
   return (
@@ -65,12 +59,13 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
           height: height - 4,
           transform: [
             { translateY },
-            { rotateY },
+            { rotate },
+            { scale },
           ],
         }}
       >
         <Image
-          source={require('../../assets/gt-crystal-coin.png')}
+          source={require('../../assets/gt-market-coin.png')}
           style={{ width: '100%', height: '100%' }}
           resizeMode="contain"
         />
