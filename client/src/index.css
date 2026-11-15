@@ -515,5 +515,38 @@ input:-webkit-autofill:active {
   color: #FFFFFF !important;
 }
 
+/* Market Overview GT Coin Animation: Pure Bottom-Up Continuous Vertical Flip */
+@keyframes gtMarketCoinBottomFlip {
+  0% {
+    transform: perspective(800px) rotateX(0deg);
+  }
+  100% {
+    transform: perspective(800px) rotateX(-360deg);
+  }
+}
+
+@keyframes gtMarketCoinAuraPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.18);
+  }
+}
+
+.gt-coin-flip-container {
+  animation: gtMarketCoinBottomFlip 3.4s linear infinite !important;
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+.gt-coin-aura {
+  animation: gtMarketCoinAuraPulse 3s ease-in-out infinite !important;
+  will-change: opacity, transform;
+}
+
+
 
 

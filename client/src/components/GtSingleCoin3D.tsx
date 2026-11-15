@@ -7,9 +7,9 @@ interface GtSingleCoin3DProps {
 }
 
 /**
- * GtSingleCoin3D - Market Overview GT Coin
- * Renders the exact user-selected crystal emerald GT coin (gt-market-coin.png)
- * with the exact smooth 3D floating and tilt animation matching video 20261115-0552-53.7682372.mp4
+ * GtSingleCoin3D - Market Overview GT Crystal Coin
+ * Exact user-selected crystal emerald GT coin (gt-market-coin.png)
+ * Continuous Top & Bottom vertical flip with smooth floating bob.
  */
 export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   className = '',
@@ -19,54 +19,41 @@ export const GtSingleCoin3D: React.FC<GtSingleCoin3DProps> = ({
   return (
     <div
       className={`relative flex items-center justify-center select-none pointer-events-none ${className}`}
-      style={{ width, height, perspective: '700px' }}
+      style={{ width, height, perspective: '800px' }}
     >
-      <style>{`
-        @keyframes gtCoinFloatSpin {
-          0% {
-            transform: translateY(0px) rotateY(0deg) rotate(0deg) scale(1);
-          }
-          25% {
-            transform: translateY(-4px) rotateY(26deg) rotate(3deg) scale(1.05);
-          }
-          50% {
-            transform: translateY(0px) rotateY(0deg) rotate(0deg) scale(1);
-          }
-          75% {
-            transform: translateY(4px) rotateY(-26deg) rotate(-3deg) scale(0.97);
-          }
-          100% {
-            transform: translateY(0px) rotateY(0deg) rotate(0deg) scale(1);
-          }
-        }
-        @keyframes gtCoinGlowPulse {
-          0%, 100% {
-            opacity: 0.3;
-            transform: scale(0.9);
-          }
-          50% {
-            opacity: 0.75;
-            transform: scale(1.15);
-          }
-        }
-      `}</style>
-
-      {/* Ambient glowing aura behind the coin */}
+      {/* Ambient glowing emerald aura behind the coin */}
       <div
-        className="absolute inset-0 rounded-full bg-[#22C55E]/25 blur-md pointer-events-none"
-        style={{ animation: 'gtCoinGlowPulse 3.5s ease-in-out infinite' }}
+        className="absolute inset-0 rounded-full bg-[#22C55E]/30 blur-md pointer-events-none gt-coin-aura"
       />
 
-      {/* Exact Crystal Emerald GT Coin */}
-      <img
-        src="/gt-market-coin.png?v=2"
-        alt="GT Coin"
-        className="w-full h-full object-contain relative z-10 filter drop-shadow-[0_6px_14px_rgba(22,101,52,0.35)]"
-        style={{
-          animation: 'gtCoinFloatSpin 4.5s ease-in-out infinite',
-          transformStyle: 'preserve-3d',
-        }}
-      />
+      {/* Top & Bottom continuous vertical flip container */}
+      <div
+        className="relative w-full h-full flex items-center justify-center gt-coin-flip-container"
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        {/* Front Face */}
+        <img
+          src="/gt-market-coin.png"
+          alt="GT Coin Front"
+          className="absolute inset-0 w-full h-full object-contain filter drop-shadow-[0_6px_14px_rgba(22,101,52,0.35)]"
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+          }}
+        />
+
+        {/* Back Face (rotated 180deg over X axis so it is upright when flipped from top to bottom) */}
+        <img
+          src="/gt-market-coin.png"
+          alt="GT Coin Back"
+          className="absolute inset-0 w-full h-full object-contain filter drop-shadow-[0_6px_14px_rgba(22,101,52,0.35)]"
+          style={{
+            transform: 'rotateX(180deg)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+          }}
+        />
+      </div>
     </div>
   );
 };
