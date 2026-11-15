@@ -1353,4 +1353,240 @@ router.post('/email-change-requests/:id/reject', (req, res) => {
   });
 });
 
+// ==========================================
+// PRIVATE ROOMS & CHATS MANAGEMENT FOR ADMIN
+// ==========================================
+
+// GET /api/admin/private-rooms (List all private rooms / circles)
+router.get('/private-rooms', (req, res) => {
+  try {
+    const db = readDB();
+    if (!db.privateNetworks) db.privateNetworks = {};
+    if (!db.referrals) db.referrals = [];
+    if (!db.users) db.users = [];
+
+    const search = (req.query.search || '').trim().toLowerCase();
+
+    // Identify all hosts
+    const hostIdSet = new Set();
+    Object.keys(db.privateNetworks).forEach(id => hostIdSet.add(id));
+    db.referrals.forEach(r => {
+      if (r.referrerUserId) hostIdSet.add(r.referrerUserId);
+    });
+
+    const now = Date.now();
+    const cooldownMs = 14400 * 1000; // 4 hours
+    const rooms = [];
+
+    hostIdSet.forEach(hostId => {
+      const hostUser = db.users.find(u => u.id === hostId && !u.deletedAt && u.accountStatus !== 'DELETED');
+      if (!hostUser) return;
+
+      const circleData = db.privateNetworks[hostId] || { messages: [] };
+      const rawMessages = circleData.messages || [];
+
+      // Calculate members
+      const referredEntries = db.referrals.filter(r => r.referrerUserId === hostId);
+      const referredUserIds = referredEntries.map(r => r.referredUserId);
+      const members = [];
+
+      referredUserIds.forEach(mId => {
+        const mUser = db.users.find(u => u.id === mId && !u.deletedAt);
+        if (mUser) {
+          const lastClaimMs = mUser.lastMiningAt ? new Date(mUser.lastMiningAt).getTime() : 0;
+          const isMiningActive = (lastClaimMs + cooldownMs) > now && lastClaimMs > 0;
+          members.push({
+            id: mUser.id,
+            fullName: mUser.fullName,
+            email: mUser.email,
+            referralCode: mUser.referralCode,
+            isMiningActive,
+            avatar: mUser.avatar || mUser.profileImage || null
+          });
+        }
+      });
+
+      const hostLastClaim = hostUser.lastMiningAt ? new Date(hostUser.lastMiningAt).getTime() : 0;
+      const isHostMining = (hostLastClaim + cooldownMs) > now && hostLastClaim > 0;
+      const totalMembers = members.length + 1; // including host
+      const activeMiningCount = members.filter(m => m.isMiningActive).length + (isHostMining ? 1 : 0);
+
+      const lastMessage = rawMessages.length > 0 ? rawMessages[rawMessages.length - 1] : null;
+
+      // Filter by search query if provided
+      if (search) {
+        const matchesHost =
+          (hostUser.fullName && hostUser.fullName.toLowerCase().includes(search)) ||
+          (hostUser.email && hostUser.email.toLowerCase().includes(search)) ||
+          (hostUser.referralCode && hostUser.referralCode.toLowerCase().includes(search));
+        const matchesMember = members.some(m =>
+          (m.fullName && m.fullName.toLowerCase().includes(search)) ||
+          (m.email && m.email.toLowerCase().includes(search))
+        );
+        const matchesMessage = rawMessages.some(m =>
+          m.text && m.text.toLowerCase().includes(search)
+        );
+
+        if (!matchesHost && !matchesMember && !matchesMessage) {
+          return;
+        }
+      }
+
+      rooms.push({
+        circleHostId: hostId,
+        host: {
+          id: hostUser.id,
+          fullName: hostUser.fullName,
+          email: hostUser.email,
+          referralCode: hostUser.referralCode,
+          avatar: hostUser.avatar || hostUser.profileImage || null,
+          accountStatus: hostUser.accountStatus,
+          createdAt: hostUser.createdAt
+        },
+        stats: {
+          totalMembers,
+          activeMiningCount,
+          totalMessages: rawMessages.length
+        },
+        lastMessage: lastMessage ? {
+          id: lastMessage.id,
+          senderName: lastMessage.senderName,
+          senderRole: lastMessage.senderRole,
+          text: lastMessage.text,
+          createdAt: lastMessage.createdAt
+        } : null,
+        updatedAt: lastMessage?.createdAt || circleData.createdAt || hostUser.createdAt
+      });
+    });
+
+    // Sort by latest activity (lastMessage or updated date)
+    rooms.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    return res.json({
+      success: true,
+      totalRooms: rooms.length,
+      rooms
+    });
+  } catch (err) {
+    console.error('Error fetching admin private rooms:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch private rooms' });
+  }
+});
+
+// GET /api/admin/private-rooms/:circleHostId (Get full chat & members for a specific room)
+router.get('/private-rooms/:circleHostId', (req, res) => {
+  try {
+    const db = readDB();
+    const { circleHostId } = req.params;
+
+    const hostUser = (db.users || []).find(u => u.id === circleHostId && !u.deletedAt);
+    if (!hostUser) {
+      return res.status(404).json({ success: false, message: 'Private room host not found' });
+    }
+
+    const circleData = (db.privateNetworks && db.privateNetworks[circleHostId]) || { messages: [] };
+    const rawMessages = circleData.messages || [];
+
+    const now = Date.now();
+    const cooldownMs = 14400 * 1000;
+
+    // Members list
+    const referredEntries = (db.referrals || []).filter(r => r.referrerUserId === circleHostId);
+    const members = [];
+
+    // Add Host
+    const hostLastClaim = hostUser.lastMiningAt ? new Date(hostUser.lastMiningAt).getTime() : 0;
+    const isHostMining = (hostLastClaim + cooldownMs) > now && hostLastClaim > 0;
+    members.push({
+      id: hostUser.id,
+      fullName: hostUser.fullName,
+      email: hostUser.email,
+      referralCode: hostUser.referralCode,
+      role: 'HOST',
+      isHost: true,
+      isMiningActive: isHostMining,
+      lastMiningAt: hostUser.lastMiningAt || null,
+      avatar: hostUser.avatar || hostUser.profileImage || null
+    });
+
+    referredEntries.forEach(r => {
+      const mUser = (db.users || []).find(u => u.id === r.referredUserId && !u.deletedAt);
+      if (mUser) {
+        const lastClaimMs = mUser.lastMiningAt ? new Date(mUser.lastMiningAt).getTime() : 0;
+        const isMining = (lastClaimMs + cooldownMs) > now && lastClaimMs > 0;
+        members.push({
+          id: mUser.id,
+          fullName: mUser.fullName,
+          email: mUser.email,
+          referralCode: mUser.referralCode,
+          role: 'MEMBER',
+          isHost: false,
+          isMiningActive: isMining,
+          lastMiningAt: mUser.lastMiningAt || null,
+          avatar: mUser.avatar || mUser.profileImage || null,
+          rewardEarned: Number(r.rewardAmount || 0)
+        });
+      }
+    });
+
+    return res.json({
+      success: true,
+      circleHostId,
+      host: members[0],
+      members,
+      messages: rawMessages,
+      stats: {
+        totalMembers: members.length,
+        activeMiningCount: members.filter(m => m.isMiningActive).length,
+        totalMessages: rawMessages.length
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching admin private room detail:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch private room details' });
+  }
+});
+
+// DELETE /api/admin/private-rooms/:circleHostId/messages/:messageId (Moderation: delete message)
+router.delete('/private-rooms/:circleHostId/messages/:messageId', (req, res) => {
+  try {
+    const db = readDB();
+    const { circleHostId, messageId } = req.params;
+
+    if (!db.privateNetworks || !db.privateNetworks[circleHostId]) {
+      return res.status(404).json({ success: false, message: 'Private room not found' });
+    }
+
+    const messages = db.privateNetworks[circleHostId].messages || [];
+    const index = messages.findIndex(m => m.id === messageId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+
+    const [deletedMessage] = messages.splice(index, 1);
+    db.privateNetworks[circleHostId].messages = messages;
+
+    createAuditLog(
+      db,
+      req.user?.id || 'usr_admin_001',
+      'DELETE_PRIVATE_ROOM_MESSAGE',
+      'MESSAGE',
+      messageId,
+      `Deleted message by ${deletedMessage.senderName || deletedMessage.senderId} from room ${circleHostId}`,
+      { circleHostId, text: deletedMessage.text }
+    );
+
+    writeDB(db);
+
+    return res.json({
+      success: true,
+      message: 'Message deleted successfully',
+      deletedMessageId: messageId
+    });
+  } catch (err) {
+    console.error('Error deleting message:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete message' });
+  }
+});
+
 export default router;

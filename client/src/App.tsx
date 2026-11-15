@@ -42,6 +42,7 @@ import { AdminTaskSubmissionsPage } from './pages/admin/AdminTaskSubmissionsPage
 import { AdminEmailRequestsPage } from './pages/admin/AdminEmailRequestsPage';
 import { AdminTopMinersPage } from './pages/admin/AdminTopMinersPage';
 import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
+import { AdminPrivateRoomsPage } from './pages/admin/AdminPrivateRoomsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -354,6 +355,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminReferralsPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/private-rooms"
+                element={
+                  <AdminRoute>
+                    <AdminPrivateRoomsPage />
                   </AdminRoute>
                 }
               />

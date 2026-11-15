@@ -216,4 +216,12 @@ export const api = {
   updateAdminSettings: (body: any) => request<any>('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getAdminAuditLogs: () => request<any>('/admin/audit-logs'),
   getAdminTopMiners: () => request<any>('/admin/top-miners'),
+
+  // Private Rooms & Chats (Admin)
+  getAdminPrivateRooms: (search?: string) =>
+    request<any>(`/admin/private-rooms${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  getAdminPrivateRoomDetail: (circleHostId: string) =>
+    request<any>(`/admin/private-rooms/${circleHostId}`),
+  deleteAdminPrivateRoomMessage: (circleHostId: string, messageId: string) =>
+    request<any>(`/admin/private-rooms/${circleHostId}/messages/${messageId}`, { method: 'DELETE' }),
 };

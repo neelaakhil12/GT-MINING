@@ -22,6 +22,7 @@ import {
   BarChart3,
   Trophy,
   ArrowUpRight,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -96,6 +97,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
     { label: 'Parameters', path: '/admin/mining-settings', icon: Pickaxe },
     { label: 'Referral', path: '/admin/referrals', icon: Gift },
+    { label: 'Private Rooms', path: '/admin/private-rooms', icon: MessageSquare },
     { label: 'Transactions', path: '/admin/transactions', icon: Coins },
     { label: 'Node', path: '/admin/community', icon: Globe },
   ];
@@ -122,6 +124,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     if (p.includes('/reports')) return 'Reports & Analytics';
     if (p.includes('/mining-settings')) return 'Parameters';
     if (p.includes('/referrals')) return 'Referral';
+    if (p.includes('/private-rooms')) return 'Private Rooms & Chats';
     if (p.includes('/transactions')) return 'Transactions';
     if (p.includes('/community')) return 'Node';
     return 'Admin Control Center';
