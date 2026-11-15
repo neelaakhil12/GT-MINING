@@ -552,12 +552,15 @@ input:-webkit-autofill:active {
   0% {
     transform: perspective(800px) translateY(0px) rotateX(0deg);
   }
+
   25% {
     transform: perspective(800px) translateY(-5px) rotateX(90deg);
   }
+
   50% {
     transform: perspective(800px) translateY(0px) rotateX(180deg);
   }
+
   75% {
     transform: perspective(800px) translateY(5px) rotateX(270deg);
   }
@@ -568,10 +571,13 @@ input:-webkit-autofill:active {
 }
 
 @keyframes gtMarketCoinAuraPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
     transform: scale(0.88);
   }
+
   50% {
     opacity: 0.75;
     transform: scale(1.18);
