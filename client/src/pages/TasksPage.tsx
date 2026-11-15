@@ -413,10 +413,7 @@ export const TasksPage: React.FC = () => {
     }
 
     if (existingSub?.status === 'PENDING') {
-      showToast('Your proof is already submitted and pending admin review. You can re-upload if needed.', 'info');
-      setProofModalTask(task);
-      setProofImage(existingSub.proofImage || '');
-      setProofNote(existingSub.proofNote || '');
+      showToast(`Your proof for "${task.title}" is submitted and pending admin approval.`, 'info');
       return;
     }
 
@@ -695,7 +692,7 @@ export const TasksPage: React.FC = () => {
                       title="Proof submitted. Tap to review or re-upload if needed."
                     >
                       <Clock className="w-3.5 h-3.5 text-[#D97706]" />
-                      <span>Under Review</span>
+                      <span>Pending Approval</span>
                     </button>
                   ) : isRejected ? (
                     <button

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useIsFocused } from '@react-navigation/native';
 import {
   Pickaxe,
   Zap,
@@ -29,35 +30,145 @@ import { AppNavbar } from '../components/AppNavbar';
 import { MiningGlobe3D } from '../components/MiningGlobe3D';
 import { useAppSafeArea } from '../utils/safeArea';
 import { API_BASE_URL } from '../config/api';
+import { appStorage } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 
 export const MiningScreen: React.FC = () => {
-  const { user, miningStats, isMiningActive, startMiningSession } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
+  const isFocused = useIsFocused();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const [isFastSpinning, setIsFastSpinning] = useState(false);
+  const [claiming, setClaiming] = useState(false);
 
   // Dynamic mining config from server
-  const [cycleHours, setCycleHours] = useState<number>(4);
-  const [cooldownSec, setCooldownSec] = useState<number>(14400);
+  const [cycleHours, setCycleHours] = useState<number>(2);
+  const [cooldownSec, setCooldownSec] = useState<number>(7200);
   const [rewardAmount, setRewardAmount] = useState<number>(1.0);
   const [userMiningTarget, setUserMiningTarget] = useState<number>(1000);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/mining/config`)
-      .then((r) => r.json())
-      .then((data) => {
+  // Authoritative session states
+  const [nextEligibleAt, setNextEligibleAt] = useState<string | null>(null);
+  const [lastMiningAt, setLastMiningAt] = useState<string | null>(null);
+  const [countdownSec, setCountdownSec] = useState<number>(0);
+  const [isEligible, setIsEligible] = useState<boolean>(true);
+
+  // Non-intrusive notification toast
+  const [toastMessage, setToastMessage] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+
+  // Fetch authoritative mining status and config from server
+  const fetchStatus = useCallback(async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+
+      // 1. Fetch public config
+      fetch(`${API_BASE_URL}/mining/config`)
+        .then((r) => r.json())
+        .then((cfg) => {
+          if (cfg && cfg.success) {
+            if (cfg.cycleHours) setCycleHours(Number(cfg.cycleHours));
+            if (cfg.cooldownSeconds) setCooldownSec(Number(cfg.cooldownSeconds));
+            if (cfg.miningReward) setRewardAmount(Number(cfg.miningReward));
+            if (cfg.userMiningTarget) setUserMiningTarget(Number(cfg.userMiningTarget));
+          }
+        })
+        .catch(() => {});
+
+      // 2. Fetch authenticated mining status
+      if (token) {
+        const res = await fetch(`${API_BASE_URL}/mining/status`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
         if (data && data.success) {
           if (data.cycleHours) setCycleHours(Number(data.cycleHours));
           if (data.cooldownSeconds) setCooldownSec(Number(data.cooldownSeconds));
-          if (data.miningReward) setRewardAmount(Number(data.miningReward));
+          if (data.rewardPerClaim) setRewardAmount(Number(data.rewardPerClaim));
           if (data.userMiningTarget) setUserMiningTarget(Number(data.userMiningTarget));
+
+          setLastMiningAt(data.lastMiningAt || null);
+          setNextEligibleAt(data.nextEligibleAt || null);
+
+          if (data.nextEligibleAt) {
+            const diff = Math.max(
+              0,
+              Math.ceil((new Date(data.nextEligibleAt).getTime() - Date.now()) / 1000)
+            );
+            setCountdownSec(diff);
+            setIsEligible(diff <= 0 && Boolean(data.isEligible));
+            appStorage.setItem('gt_next_eligible_at', data.nextEligibleAt).catch(() => {});
+          } else {
+            setCountdownSec(0);
+            setIsEligible(Boolean(data.isEligible));
+          }
         }
-      })
-      .catch(() => {});
+      } else {
+        // Fallback from local storage if offline/no token
+        const cachedNext = await appStorage.getItem('gt_next_eligible_at');
+        if (cachedNext) {
+          setNextEligibleAt(cachedNext);
+          const diff = Math.max(
+            0,
+            Math.ceil((new Date(cachedNext).getTime() - Date.now()) / 1000)
+          );
+          setCountdownSec(diff);
+          setIsEligible(diff <= 0);
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching mining status:', e);
+    }
   }, []);
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchStatus();
+    }
+  }, [isFocused, fetchStatus]);
+
+  // Real-time ticking countdown based on actual timestamp
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (nextEligibleAt) {
+        const diff = Math.max(
+          0,
+          Math.ceil((new Date(nextEligibleAt).getTime() - Date.now()) / 1000)
+        );
+        setCountdownSec(diff);
+        if (diff <= 0) {
+          setIsEligible(true);
+        }
+      } else {
+        setCountdownSec((prev) => {
+          if (prev <= 1) {
+            setIsEligible(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [nextEligibleAt]);
+
+  // Auto-dismiss floating toast
+  useEffect(() => {
+    if (toastMessage) {
+      const t = setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+      return () => clearTimeout(t);
+    }
+  }, [toastMessage]);
 
   useEffect(() => {
     // Pulse animation for active mining node
@@ -86,11 +197,6 @@ export const MiningScreen: React.FC = () => {
     ).start();
   }, []);
 
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const formatCountdown = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -103,33 +209,32 @@ export const MiningScreen: React.FC = () => {
 
   const userTotalMined = Number(user?.totalMined ?? user?.balance ?? 0);
   const isTargetCompleted = userTotalMined >= userMiningTarget;
-  const isEligible = !isTargetCompleted && (!isMiningActive || miningStats.cycleRemainingSeconds <= 0);
 
-  const handleClaimOrMine = () => {
+  const handleClaimOrMine = async () => {
+    if (claiming) return;
+
     if (isTargetCompleted) {
-      Alert.alert(
-        'Mining Target Completed!',
-        `Your mining target is completed! You have reached your maximum lifetime limit of ${userMiningTarget.toLocaleString()} GT for this account.\n\nTo continue mining, please register again with a new email and details.`
-      );
+      setToastMessage({
+        title: 'Mining Target Completed!',
+        message: `Maximum lifetime limit of ${userMiningTarget.toLocaleString()} GT reached for this account.`,
+      });
       return;
     }
 
-    if (!isEligible) {
-      Alert.alert(
-        'Mining Cooldown Active',
-        `Your mining session is currently active. Next claim available in ${formatCountdown(
-          miningStats.cycleRemainingSeconds
-        )}.`
-      );
+    if (!isEligible || countdownSec > 0) {
+      setToastMessage({
+        title: 'Mining Cooldown Active',
+        message: `Session currently active. Next claim in ${formatCountdown(countdownSec)}.`,
+      });
       return;
     }
 
-    // Smoothly scroll to the top where the globe animation is located
+    // Smoothly scroll to the top where the 3D globe animation is located
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     setIsFastSpinning(true);
     setTimeout(() => {
       setIsFastSpinning(false);
-    }, 3000);
+    }, 3200);
 
     try {
       if (Platform.OS !== 'web') {
@@ -137,22 +242,85 @@ export const MiningScreen: React.FC = () => {
       }
     } catch (e) {}
 
-    startMiningSession();
-    Alert.alert('Mining Block Verified!', `+${rewardAmount.toFixed(2)} GT added to your balance.`);
+    setClaiming(true);
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      if (!token) {
+        // Guest / demo claim fallback
+        setIsEligible(false);
+        setCountdownSec(cooldownSec);
+        setToastMessage({
+          title: 'Mining Block Verified!',
+          message: `+${rewardAmount.toFixed(2)} GT added to your balance.`,
+        });
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/mining/claim`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (res.ok && data && data.success) {
+        setIsEligible(false);
+        const rem = data.miningState?.remainingSeconds || cooldownSec;
+        setCountdownSec(rem);
+        if (data.miningState?.nextEligibleAt) {
+          setNextEligibleAt(data.miningState.nextEligibleAt);
+          appStorage.setItem('gt_next_eligible_at', data.miningState.nextEligibleAt).catch(() => {});
+        }
+        setLastMiningAt(new Date().toISOString());
+
+        // Sleek non-intrusive floating toast notification without blocking the globe!
+        setToastMessage({
+          title: 'Mining Block Verified!',
+          message: `+${(data.claimedAmount || rewardAmount).toFixed(2)} GT added to your balance.`,
+        });
+
+        // Refresh user wallet data from server
+        refreshUserData();
+      } else {
+        setToastMessage({
+          title: 'Claim Notice',
+          message: data?.message || 'Cooldown is active. Please wait for cycle to finish.',
+        });
+      }
+    } catch (err: any) {
+      setToastMessage({
+        title: 'Connection Error',
+        message: 'Could not sync claim with server. Please check internet connection.',
+      });
+    } finally {
+      setClaiming(false);
+    }
   };
 
   // Progress percentage (Dynamic cycle duration from backend)
-  const totalCycleSec = cooldownSec || 14400;
-  const elapsedSec = Math.max(0, totalCycleSec - miningStats.cycleRemainingSeconds);
+  const totalCycleSec = cooldownSec || 7200;
+  const elapsedSec = Math.max(0, totalCycleSec - countdownSec);
   const progressPct = isEligible ? 100 : Math.min(100, Math.max(5, (elapsedSec / totalCycleSec) * 100));
 
-  const sessionStartedTime = (user as any)?.lastMiningAt || (miningStats as any)?.lastMiningAt
-    ? new Date((user as any)?.lastMiningAt || (miningStats as any)?.lastMiningAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-    : '05:16:58 PM';
+  const sessionStartedTime = lastMiningAt || (user as any)?.lastMiningAt
+    ? new Date(lastMiningAt || (user as any)?.lastMiningAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      })
+    : 'Active';
 
-  const estimatedSettlementTime = (miningStats as any)?.nextEligibleAt
-    ? new Date((miningStats as any)?.nextEligibleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-    : '09:16:58 PM';
+  const estimatedSettlementTime = nextEligibleAt
+    ? new Date(nextEligibleAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      })
+    : `${cycleHours} Hours from start`;
 
   return (
     <View style={styles.container}>
@@ -265,7 +433,7 @@ export const MiningScreen: React.FC = () => {
               <Text style={styles.sessionTitle}>MINING SESSION</Text>
               <View style={styles.countdownBadge}>
                 <Text style={styles.countdownText}>
-                  {formatCountdown(miningStats.cycleRemainingSeconds)}
+                  {formatCountdown(countdownSec)}
                 </Text>
               </View>
             </View>
@@ -344,7 +512,7 @@ export const MiningScreen: React.FC = () => {
                     ? `Target Completed (${userTotalMined.toFixed(0)}/${userMiningTarget.toLocaleString()} GT)`
                     : isEligible
                     ? `Activate ${cycleHours}-Hour Mining (+${rewardAmount.toFixed(1)} GT)`
-                    : `Mining Active (${formatCountdown(miningStats.cycleRemainingSeconds)})`}
+                    : `Mining Active (${formatCountdown(countdownSec)})`}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -353,10 +521,23 @@ export const MiningScreen: React.FC = () => {
                 ? `Mining target reached (${userMiningTarget.toLocaleString()} GT limit). Tap above to view details.`
                 : isEligible
                 ? `Tap above to activate ${cycleHours}-hour mining session and test live block animation`
-                : `Mining session in progress. Next claim unlock in ${formatCountdown(miningStats.cycleRemainingSeconds)}`}
+                : `Mining session in progress. Next claim unlock in ${formatCountdown(countdownSec)}`}
             </Text>
           </View>
         </ScrollView>
+
+        {/* Non-intrusive Floating Toast Notification (never blocks or covers the 3D globe!) */}
+        {toastMessage && (
+          <View style={styles.floatingToastWrapper} pointerEvents="none">
+            <View style={styles.floatingToastCard}>
+              <CheckCircle2 size={18} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.floatingToastTitle}>{toastMessage.title}</Text>
+                <Text style={styles.floatingToastBody}>{toastMessage.message}</Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -762,5 +943,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E5E36',
     textAlign: 'center',
+  },
+  floatingToastWrapper: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+    zIndex: 999,
+    alignItems: 'center',
+  },
+  floatingToastCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  floatingToastTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0A341B',
+  },
+  floatingToastBody: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#166534',
+    marginTop: 1,
   },
 });

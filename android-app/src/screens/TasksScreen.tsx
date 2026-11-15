@@ -422,10 +422,10 @@ export const TasksScreen: React.FC = () => {
     }
 
     if (existingSub?.status === 'PENDING') {
-      Alert.alert('Under Review', 'Your proof is already submitted and pending admin review. You can re-upload if needed.');
-      setProofModalTask(task);
-      setProofImage(existingSub.proofImage || '');
-      setProofNote(existingSub.proofNote || '');
+      Alert.alert(
+        'Pending Admin Approval',
+        `Your verification proof for "${task.title}" has been submitted and is currently waiting for admin approval. Once approved, your +${task.reward} GT reward will be automatically credited to your wallet.`
+      );
       return;
     }
 
@@ -749,7 +749,7 @@ export const TasksScreen: React.FC = () => {
                           activeOpacity={0.8}
                         >
                           <Clock size={11} color="#B45309" />
-                          <Text style={styles.pendingPillText}>Under Review</Text>
+                          <Text style={styles.pendingPillText}>Pending Approval</Text>
                         </TouchableOpacity>
                       ) : isRejected ? (
                         <TouchableOpacity
