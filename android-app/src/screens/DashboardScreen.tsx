@@ -566,7 +566,8 @@ export const DashboardScreen: React.FC = () => {
                 accessibilityLabel="Private Room Button"
               >
                 <View style={styles.beamCardInner}>
-                  <View style={[styles.statTopRow, { justifyContent: 'flex-end' }]}>
+                  <View style={styles.statTopRow}>
+                    <Text style={styles.statLabelText}>Private Network</Text>
                     <View style={styles.statIconBadge}>
                       <Users size={15} color="#16A34A" strokeWidth={2.2} />
                     </View>

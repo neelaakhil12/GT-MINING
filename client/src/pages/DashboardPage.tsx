@@ -215,7 +215,10 @@ export const DashboardPage: React.FC = () => {
           title="Open Private Room"
         >
           <div className="border-beam-inner p-4 sm:p-5 flex flex-col justify-between h-full space-y-1.5 sm:space-y-2 group-hover:bg-[#EAF8EE]/60 transition-colors">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-semibold text-[#0A341B]/70 tracking-tight truncate">
+                Private Network
+              </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-110 transition-transform">
                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
