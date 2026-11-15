@@ -24,19 +24,20 @@
       },
       "package": "com.gtnetwork.app",
       "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "VIBRATE"
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
       "@react-native-google-signin/google-signin",
       "expo-image-picker"
     ],
-    "owner": "neelaakhil12",
+    "owner": "student17",
     "extra": {
       "eas": {
-        "projectId": "b9282fb3-3e05-4484-9125-7ec714fcfd3f"
+        "projectId": "45ef27d9-a0f1-4ff6-a5b5-91f8b4ac81a5"
       }
     }
   }
