@@ -307,22 +307,6 @@ export const ProfilePage: React.FC = () => {
               <span className="truncate">{showAvatarPicker ? 'Hide Avatars' : 'Choose Avatar'}</span>
             </button>
           </div>
-
-          {/* Remove / Reset Custom Avatar if present */}
-          {(selectedAvatar || user?.avatar || user?.profileImage) && (
-            <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                disabled={savingAvatar}
-                onClick={handleRemoveAvatar}
-                className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Restore default letter initial"
-              >
-                <X className="w-3 h-3" />
-                <span>Reset to Default Initial</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* AVATAR PICKER (Matching Mobile App Inside Top Card) */}

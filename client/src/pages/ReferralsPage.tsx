@@ -41,7 +41,7 @@ export const ReferralsPage: React.FC = () => {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch {}
+    } catch { }
     return [];
   });
   const [activeSlide, setActiveSlide] = useState(0);
@@ -104,7 +104,7 @@ export const ReferralsPage: React.FC = () => {
             } else {
               localStorage.removeItem('gt_cached_referral_banners');
             }
-          } catch {}
+          } catch { }
         }
       } catch (err) {
         // network error fallback
@@ -239,14 +239,13 @@ export const ReferralsPage: React.FC = () => {
               return (
                 <div
                   key={slide.id || index}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                  }`}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                    }`}
                   style={
                     !slideImg
                       ? {
-                          background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
-                        }
+                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
+                      }
                       : undefined
                   }
                 >
@@ -286,11 +285,10 @@ export const ReferralsPage: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => setActiveSlide(idx)}
-                    className={`transition-all duration-300 rounded-full h-1.5 ${
-                      activeSlide === idx
-                        ? 'w-5 bg-[#4ADE80]'
-                        : 'w-1.5 bg-white/50 hover:bg-white/80'
-                    }`}
+                    className={`transition-all duration-300 rounded-full h-1.5 ${activeSlide === idx
+                      ? 'w-5 bg-[#4ADE80]'
+                      : 'w-1.5 bg-white/50 hover:bg-white/80'
+                      }`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
@@ -559,11 +557,10 @@ export const ReferralsPage: React.FC = () => {
               </span>
 
               {/* Claim Button with Rotating Line Animation */}
-              <div className={`relative p-[2px] rounded-full overflow-hidden inline-flex items-center justify-center shrink-0 transition-all ${
-                claimableAmount > 0
-                  ? 'shadow-lg shadow-[#22C55E]/30 scale-105'
-                  : 'shadow-none opacity-50'
-              }`}>
+              <div className={`relative p-[2px] rounded-full overflow-hidden inline-flex items-center justify-center shrink-0 transition-all ${claimableAmount > 0
+                ? 'shadow-lg shadow-[#22C55E]/30 scale-105'
+                : 'shadow-none opacity-50'
+                }`}>
                 {/* Rotating line / border beam when claimable */}
                 {claimableAmount > 0 && (
                   <>
@@ -586,11 +583,10 @@ export const ReferralsPage: React.FC = () => {
                 <button
                   onClick={handleClaimCommission}
                   disabled={isClaiming || claimableAmount <= 0}
-                  className={`relative z-10 px-4 py-2 rounded-full font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-inner ${
-                    claimableAmount > 0
-                      ? 'bg-gradient-to-r from-[#15803D] to-[#22C55E] hover:from-[#16A34A] hover:to-[#4ADE80] text-white cursor-pointer active:scale-95'
-                      : 'bg-[#0A341B]/80 text-neutral-400 cursor-not-allowed pointer-events-none'
-                  }`}
+                  className={`relative z-10 px-4 py-2 rounded-full font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-inner ${claimableAmount > 0
+                    ? 'bg-gradient-to-r from-[#15803D] to-[#22C55E] hover:from-[#16A34A] hover:to-[#4ADE80] text-white cursor-pointer active:scale-95'
+                    : 'bg-[#0A341B]/80 text-neutral-400 cursor-not-allowed pointer-events-none'
+                    }`}
                   aria-label="Claim commission"
                 >
                   {isClaiming ? (
@@ -692,22 +688,19 @@ export const ReferralsPage: React.FC = () => {
                   {/* Right Side: Amount + Status */}
                   <div className="text-right space-y-0.5">
                     <div
-                      className={`text-sm font-black font-mono ${
-                        isFriendActive ? 'text-[#0A341B]' : 'text-neutral-400'
-                      }`}
+                      className={`text-sm font-black font-mono ${isFriendActive ? 'text-[#0A341B]' : 'text-neutral-400'
+                        }`}
                     >
                       {friend.rewardAmount ? `+${Number(friend.rewardAmount).toFixed(2)} GT` : '0.00 GT'}
                     </div>
                     <div className="flex items-center justify-end gap-1.5">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          isFriendActive ? 'bg-[#22C55E]' : 'bg-neutral-300'
-                        }`}
+                        className={`w-1.5 h-1.5 rounded-full ${isFriendActive ? 'bg-[#22C55E]' : 'bg-neutral-300'
+                          }`}
                       />
                       <span
-                        className={`text-[10px] font-black tracking-wider uppercase ${
-                          isFriendActive ? 'text-[#15803D]' : 'text-neutral-400'
-                        }`}
+                        className={`text-[10px] font-black tracking-wider uppercase ${isFriendActive ? 'text-[#15803D]' : 'text-neutral-400'
+                          }`}
                       >
                         {friend.activityStatus || (isFriendActive ? 'ACTIVE' : 'INACTIVE')}
                       </span>
