@@ -481,8 +481,8 @@ export const MiningPage: React.FC = () => {
 
       {/* Target Completed Popup Modal */}
       {showTargetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-3xl bg-[#06180E] border border-[#F59E0B]/40 p-6 sm:p-7 shadow-[0_0_50px_rgba(245,158,11,0.25)] text-center space-y-5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-28 sm:pb-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md -translate-y-4 sm:translate-y-0 rounded-3xl bg-[#06180E] border border-[#F59E0B]/40 p-6 sm:p-7 shadow-[0_0_50px_rgba(245,158,11,0.25)] text-center space-y-5">
             {/* Close Button */}
             <button
               onClick={() => setShowTargetModal(false)}

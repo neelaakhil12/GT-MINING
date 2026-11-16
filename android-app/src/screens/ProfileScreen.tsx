@@ -38,7 +38,7 @@ import { BOY_AVATARS, GIRL_AVATARS, AvatarPreset } from '../constants/avatars';
 export const ProfileScreen: React.FC = () => {
   const { user, refreshUserData, logout, updateUserAvatar } = useAuth();
   const navigation = useNavigation();
-  const { top, stackContentPaddingBottom } = useAppSafeArea();
+  const { top, tabContentPaddingBottom } = useAppSafeArea();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [newEmail, setNewEmail] = useState('');
@@ -309,7 +309,7 @@ export const ProfileScreen: React.FC = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom + 32 }]}
         >
           {/* 1. Header Profile Summary Card */}
           <View style={styles.headerProfileCard}>
@@ -719,17 +719,11 @@ export const ProfileScreen: React.FC = () => {
             )}
           </View>
 
-          {/* 5. Logout Card */}
-          <View style={styles.logoutCard}>
-            <Text style={styles.logoutTitle}>Session Security</Text>
-            <Text style={styles.logoutSubtitle}>
-              Safely end your current session across this device.
-            </Text>
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-              <LogOut size={13} color="#DC2626" />
-              <Text style={styles.logoutBtnText}>Logout Account</Text>
-            </TouchableOpacity>
-          </View>
+          {/* 5. Logout Button */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+            <LogOut size={14} color="#DC2626" />
+            <Text style={styles.logoutBtnText}>Logout</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
     </View>
@@ -1152,14 +1146,15 @@ const styles = StyleSheet.create({
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
+    justifyContent: 'center',
+    width: '100%',
+    gap: 8,
     backgroundColor: '#FEE2E2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    marginTop: 4,
   },
   logoutBtnText: {
     fontSize: 11.5,

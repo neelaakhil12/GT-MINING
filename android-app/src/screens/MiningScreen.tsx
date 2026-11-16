@@ -1011,6 +1011,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    paddingBottom: 80,
   },
   smallRewardModalCard: {
     width: 250,

@@ -246,50 +246,48 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 w-full max-w-5xl mx-auto">
+    <div className="space-y-5 w-full max-w-xl mx-auto pb-32 sm:pb-36 px-2 sm:px-0">
       
       {/* Header Profile Summary matching Dashboard theme */}
-      <GlassCard glow className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-black/5 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-2xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden shrink-0 border-2 border-white">
-              {user?.avatar || user?.profileImage || user?.avatarUrl ? (
-                <img
-                  src={user.avatar || user.profileImage || user.avatarUrl}
-                  alt={user.fullName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                user?.fullName.charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="space-y-0.5">
-              <h1 className="text-xl sm:text-2xl font-black text-[#0A341B]">{user?.fullName}</h1>
-              <p className="text-xs font-semibold text-[#1E5E36]">{user?.email}</p>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30 mt-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
-                <span>Account Status: {user?.accountStatus || 'ACTIVE'}</span>
-              </div>
+      <GlassCard glow className="space-y-5">
+        <div className="flex items-center gap-4 border-b border-black/5 pb-5">
+          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-2xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden shrink-0 border-2 border-white">
+            {user?.avatar || user?.profileImage || user?.avatarUrl ? (
+              <img
+                src={user.avatar || user.profileImage || user.avatarUrl}
+                alt={user.fullName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              user?.fullName.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-black text-[#0A341B] truncate">{user?.fullName}</h1>
+            <p className="text-xs font-semibold text-[#1E5E36] truncate">{user?.email}</p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30 mt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
+              <span>Account Status: {user?.accountStatus || 'ACTIVE'}</span>
             </div>
           </div>
         </div>
 
-        {/* Account Details Metadata */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div className="p-4 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
-            <span className="text-[#1E5E36] font-bold block text-[11px] uppercase tracking-wider">Referral Code</span>
+        {/* Account Details Metadata (Matching App's 4-card grid) */}
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
+            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">Referral Code</span>
             <span className="font-mono font-black text-sm text-[#15803D]">{user?.referralCode}</span>
           </div>
-          <div className="p-4 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
-            <span className="text-[#1E5E36] font-bold block text-[11px] uppercase tracking-wider">Account Role</span>
+          <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
+            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">Account Role</span>
             <span className="font-black text-sm text-[#0A341B]">{user?.role}</span>
           </div>
-          <div className="p-4 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
-            <span className="text-[#1E5E36] font-bold block text-[11px] uppercase tracking-wider">Joined Date</span>
+          <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
+            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">Joined Date</span>
             <span className="font-semibold text-sm text-[#0A341B]">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</span>
           </div>
-          <div className="p-4 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
-            <span className="text-[#1E5E36] font-bold block text-[11px] uppercase tracking-wider">Email Verification</span>
+          <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
+            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">Email Verification</span>
             <span className="font-black text-sm text-[#15803D] flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Verified
@@ -298,27 +296,27 @@ export const ProfilePage: React.FC = () => {
         </div>
       </GlassCard>
 
-      {/* Profile Picture & Avatar Selection Card */}
-      <GlassCard className="space-y-6">
+      {/* Profile Picture Card */}
+      <GlassCard className="space-y-5">
         <div>
           <h2 className="text-base font-black text-[#0A341B] flex items-center gap-2">
             <Camera className="w-5 h-5 text-[#16A34A]" />
-            <span>Profile Photo & Avatar</span>
+            <span>Profile Photo</span>
           </h2>
           <p className="text-xs text-[#1E5E36] font-medium mt-1">
-            Upload your custom profile photo from device or select an exclusive Boy / Girl avatar.
+            Upload your custom profile photo from device.
           </p>
         </div>
 
-        {/* Live Preview & Two Main Buttons */}
-        <div className="p-5 rounded-3xl bg-white/80 border border-white/90 shadow-sm flex flex-col sm:flex-row items-center gap-6">
+        {/* Live Preview & Buttons */}
+        <div className="p-4 rounded-3xl bg-white/80 border border-white/90 shadow-sm flex flex-col sm:flex-row items-center gap-5">
           {/* Active Preview */}
           <div className="relative group shrink-0">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-3xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden border-2 border-white">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-2xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden border-2 border-white">
               {selectedAvatar ? (
                 <img
                   src={selectedAvatar}
-                  alt="Profile Avatar Preview"
+                  alt="Profile Preview"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -327,14 +325,14 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Action Details & The Two Main Buttons */}
-          <div className="space-y-3 text-center sm:text-left flex-1">
+          {/* Action Details & Buttons */}
+          <div className="space-y-2.5 text-center sm:text-left flex-1">
             <div>
               <span className="text-xs font-bold text-[#0A341B] block">Current Photo Status</span>
               <span className="text-[11px] text-[#1E5E36] font-semibold">
                 {selectedAvatar
                   ? selectedAvatar.includes('dicebear') || selectedAvatar.startsWith('data:image/svg+xml')
-                    ? 'Avatar Preset Selected'
+                    ? 'Preset Selected'
                     : 'Custom Image Uploaded'
                   : 'Using Default Letter Initial'}
               </span>
@@ -350,7 +348,7 @@ export const ProfilePage: React.FC = () => {
                 className="hidden"
               />
 
-              {/* BUTTON 1: Upload Profile Image */}
+              {/* Upload Profile Image */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -360,7 +358,7 @@ export const ProfilePage: React.FC = () => {
                 <span>Upload Profile Image</span>
               </button>
 
-              {/* BUTTON 2: Choose Avatar */}
+              {/* Choose Preset */}
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker(!showAvatarPicker)}
@@ -371,7 +369,7 @@ export const ProfilePage: React.FC = () => {
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{showAvatarPicker ? 'Hide Avatars' : 'Choose Avatar'}</span>
+                <span>{showAvatarPicker ? 'Hide Presets' : 'Choose Preset'}</span>
               </button>
 
               {/* Remove / Reset Button */}
@@ -619,27 +617,17 @@ export const ProfilePage: React.FC = () => {
         )}
       </div>
 
-      {/* Account Session Logout Section (At the end of Profile Page) */}
-      <div className="rounded-3xl border border-white/80 bg-white/70 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm backdrop-blur-xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[#0A341B]">
-            <LogOut className="w-5 h-5 text-[#DC2626]" />
-            <h3 className="text-sm font-black text-[#0A341B]">Session & Security</h3>
-          </div>
-          <p className="text-xs text-[#1E5E36] font-medium">
-            Safely log out of your active GT Pioneer session on this device.
-          </p>
-        </div>
-
+      {/* Logout Button */}
+      <div className="pt-2">
         <button
           onClick={() => {
             logout();
             navigate('/login');
           }}
-          className="px-6 py-3 rounded-2xl text-xs font-black text-[#DC2626] bg-[#FEE2E2]/90 border border-[#FCA5A5] hover:bg-[#FEE2E2] hover:shadow-md transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer self-start sm:self-auto"
+          className="w-full py-3.5 rounded-2xl text-xs font-black text-[#DC2626] bg-[#FEE2E2]/90 border border-[#FCA5A5] hover:bg-[#FEE2E2] hover:shadow-md transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
         >
-          <LogOut className="w-4 h-4" />
-          <span>Log Out of Account</span>
+          <LogOut className="w-4 h-4 text-[#DC2626]" />
+          <span>Logout</span>
         </button>
       </div>
     </div>
