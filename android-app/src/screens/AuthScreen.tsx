@@ -936,7 +936,7 @@ export const AuthScreen: React.FC = () => {
                       disabled={loading}
                     >
                       <Text style={styles.primaryBtnText}>
-                        {loading ? 'Signing In...' : 'Sign In to GT'}
+                        {loading ? 'Signing In...' : 'Sign In'}
                       </Text>
                       <ArrowRight size={16} color="#FFFFFF" />
                     </TouchableOpacity>
