@@ -268,29 +268,33 @@ export const DashboardScreen: React.FC = () => {
                 />
 
                 <View style={styles.carouselContent}>
-                  <View style={styles.carouselTagBadge}>
-                    <View
-                      style={[
-                        styles.carouselTagDot,
-                        { backgroundColor: activeSlide.accentColor },
-                      ]}
-                    />
-                    <Text style={styles.carouselTagText}>{activeSlide.tag}</Text>
-                  </View>
+                  {Boolean(activeSlide.tag) && (
+                    <View style={styles.carouselTagBadge}>
+                      <View
+                        style={[
+                          styles.carouselTagDot,
+                          { backgroundColor: activeSlide.accentColor },
+                        ]}
+                      />
+                      <Text style={styles.carouselTagText}>{activeSlide.tag}</Text>
+                    </View>
+                  )}
 
                   <Text style={styles.carouselTitle}>{activeSlide.title}</Text>
                   <Text style={styles.carouselDesc} numberOfLines={2}>
                     {activeSlide.description}
                   </Text>
 
-                  <TouchableOpacity
-                    onPress={() => handleBannerCta(activeSlide.targetRoute)}
-                    style={styles.bannerCtaBtn}
-                    activeOpacity={0.88}
-                  >
-                    <Text style={styles.bannerCtaText}>{activeSlide.ctaText}</Text>
-                    <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.5} />
-                  </TouchableOpacity>
+                  {Boolean(activeSlide.ctaText) && (
+                    <TouchableOpacity
+                      onPress={() => handleBannerCta(activeSlide.targetRoute)}
+                      style={styles.bannerCtaBtn}
+                      activeOpacity={0.88}
+                    >
+                      <Text style={styles.bannerCtaText}>{activeSlide.ctaText}</Text>
+                      <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Indicator Dots */}

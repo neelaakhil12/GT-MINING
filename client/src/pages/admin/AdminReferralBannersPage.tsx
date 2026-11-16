@@ -26,11 +26,11 @@ export const AdminReferralBannersPage: React.FC = () => {
   // Modal create/edit state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<any>(null);
-  const [tag, setTag] = useState('PROTOCOL DIVIDEND');
+  const [tag, setTag] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ctaText, setCtaText] = useState('Invite Miners');
-  const [targetRoute, setTargetRoute] = useState('/referrals');
+  const [ctaText, setCtaText] = useState('');
+  const [targetRoute, setTargetRoute] = useState('');
   const [accentColor, setAccentColor] = useState('#22C55E');
   const [gradientStart, setGradientStart] = useState('#064E3B');
   const [gradientEnd, setGradientEnd] = useState('#022C17');
@@ -82,11 +82,11 @@ export const AdminReferralBannersPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingBanner(null);
-    setTag('PROTOCOL DIVIDEND');
+    setTag('');
     setTitle('');
     setDescription('');
-    setCtaText('Invite Miners');
-    setTargetRoute('/referrals');
+    setCtaText('');
+    setTargetRoute('');
     setAccentColor('#22C55E');
     setGradientStart('#064E3B');
     setGradientEnd('#022C17');
@@ -98,11 +98,11 @@ export const AdminReferralBannersPage: React.FC = () => {
 
   const handleOpenEdit = (b: any) => {
     setEditingBanner(b);
-    setTag(b.tag || 'PROTOCOL DIVIDEND');
+    setTag(b.tag || '');
     setTitle(b.title || '');
     setDescription(b.description || '');
-    setCtaText(b.ctaText || 'Invite Miners');
-    setTargetRoute(b.targetRoute || '/referrals');
+    setCtaText(b.ctaText || '');
+    setTargetRoute(b.targetRoute || '');
     setAccentColor(b.accentColor || '#22C55E');
     setGradientStart(b.gradientStart || '#064E3B');
     setGradientEnd(b.gradientEnd || '#022C17');
@@ -269,10 +269,12 @@ export const AdminReferralBannersPage: React.FC = () => {
 
                 {/* Top Row: Pill Tag & Order */}
                 <div className="relative z-10 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-wider text-white">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
-                    {b.tag || 'PROTOCOL DIVIDEND'}
-                  </span>
+                  {b.tag ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-wider text-white">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+                      {b.tag}
+                    </span>
+                  ) : <span />}
                   <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] font-mono text-white/80">
                     Order #{b.order || 1}
                   </span>
@@ -347,11 +349,10 @@ export const AdminReferralBannersPage: React.FC = () => {
               {/* Tag Pill */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#A7C9B1] block">
-                  Slide Tag / Badge (Upper Pill)
+                  Slide Tag / Badge (Upper Pill - Optional)
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. PROTOCOL DIVIDEND, TIER MULTIPLIER, CONSENSUS BENEFIT"
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}

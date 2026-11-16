@@ -24,11 +24,11 @@ export const AdminHomeBannersPage: React.FC = () => {
   // Modal create/edit state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<any>(null);
-  const [tag, setTag] = useState('GT ECOSYSTEM');
+  const [tag, setTag] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ctaText, setCtaText] = useState('Explore Now');
-  const [targetRoute, setTargetRoute] = useState('/mining');
+  const [ctaText, setCtaText] = useState('');
+  const [targetRoute, setTargetRoute] = useState('');
   const [accentColor, setAccentColor] = useState('#22C55E');
   const [gradientStart, setGradientStart] = useState('#0A2A18');
   const [gradientEnd, setGradientEnd] = useState('#05180E');
@@ -73,10 +73,10 @@ export const AdminHomeBannersPage: React.FC = () => {
             .map((b: any) => ({
               id: b.id,
               image: b.imageUrl,
-              tag: b.tag || 'GT ECOSYSTEM',
+              tag: b.tag || '',
               title: b.title,
               description: b.description,
-              ctaText: b.ctaText || 'Explore Now',
+              ctaText: b.ctaText || '',
               ctaLink: b.targetRoute || '/mining',
               accentColor: b.accentColor || '#22C55E',
             }));
@@ -93,11 +93,11 @@ export const AdminHomeBannersPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingBanner(null);
-    setTag('GT ECOSYSTEM');
+    setTag('');
     setTitle('');
     setDescription('');
-    setCtaText('Explore Now');
-    setTargetRoute('/mining');
+    setCtaText('');
+    setTargetRoute('');
     setAccentColor('#22C55E');
     setGradientStart('#0A2A18');
     setGradientEnd('#05180E');
@@ -109,11 +109,11 @@ export const AdminHomeBannersPage: React.FC = () => {
 
   const handleOpenEdit = (banner: any) => {
     setEditingBanner(banner);
-    setTag(banner.tag || 'GT ECOSYSTEM');
+    setTag(banner.tag || '');
     setTitle(banner.title);
     setDescription(banner.description);
-    setCtaText(banner.ctaText || 'Explore Now');
-    setTargetRoute(banner.targetRoute || '/mining');
+    setCtaText(banner.ctaText || '');
+    setTargetRoute(banner.targetRoute || '');
     setAccentColor(banner.accentColor || '#22C55E');
     setGradientStart(banner.gradientStart || '#0A2A18');
     setGradientEnd(banner.gradientEnd || '#05180E');
@@ -267,13 +267,15 @@ export const AdminHomeBannersPage: React.FC = () => {
 
                 <div className="relative z-10 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[9px] font-black tracking-wider text-white">
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: b.accentColor || '#22C55E' }}
-                      />
-                      <span>{b.tag}</span>
-                    </div>
+                    {b.tag ? (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[9px] font-black tracking-wider text-white">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: b.accentColor || '#22C55E' }}
+                        />
+                        <span>{b.tag}</span>
+                      </div>
+                    ) : <span />}
                     <span className="text-[10px] text-white/90 font-mono bg-black/50 px-2 py-0.5 rounded-full">
                       Order #{b.order || idx + 1}
                     </span>

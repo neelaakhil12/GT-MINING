@@ -43,8 +43,8 @@ export const AdminSlidersPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ctaText, setCtaText] = useState('Explore Now');
-  const [targetRoute, setTargetRoute] = useState('/mining');
+  const [ctaText, setCtaText] = useState('');
+  const [targetRoute, setTargetRoute] = useState('');
   const [accentColor, setAccentColor] = useState('#22C55E');
   const [gradientStart, setGradientStart] = useState('#064E3B');
   const [gradientEnd, setGradientEnd] = useState('#022C17');
@@ -106,36 +106,24 @@ export const AdminSlidersPage: React.FC = () => {
     setEditingItem(null);
     setImageUrl('');
     setIsActive(true);
+    setTag('');
+    setTitle('');
+    setSubtitle('');
+    setDescription('');
+    setCtaText('');
+    setTargetRoute('');
 
     if (activeTab === 'home') {
-      setTag('GT ECOSYSTEM');
-      setTitle('');
-      setSubtitle('');
-      setDescription('');
-      setCtaText('Explore Now');
-      setTargetRoute('/mining');
       setAccentColor('#22C55E');
       setGradientStart('#0A2A18');
       setGradientEnd('#05180E');
       setOrder(homeBanners.length + 1);
     } else if (activeTab === 'onboarding') {
-      setTag('STEP ' + (onboardingBanners.length + 1));
-      setTitle('');
-      setSubtitle('Zero hardware wear, zero battery drain');
-      setDescription('');
-      setCtaText('Next Step →');
-      setTargetRoute('/tour');
       setAccentColor('#22C55E');
       setGradientStart('#0B2516');
       setGradientEnd('#04160E');
       setOrder(onboardingBanners.length + 1);
     } else {
-      setTag('PROTOCOL DIVIDEND');
-      setTitle('');
-      setSubtitle('');
-      setDescription('');
-      setCtaText('Invite Miners');
-      setTargetRoute('/referrals');
       setAccentColor('#22C55E');
       setGradientStart('#064E3B');
       setGradientEnd('#022C17');
@@ -148,12 +136,12 @@ export const AdminSlidersPage: React.FC = () => {
   // Open Edit Modal
   const handleOpenEdit = (item: any) => {
     setEditingItem(item);
-    setTag(item.tag || item.badgeText || (activeTab === 'referrals' ? 'PROTOCOL DIVIDEND' : 'GT ECOSYSTEM'));
+    setTag(item.tag || item.badgeText || '');
     setTitle(item.title || '');
     setSubtitle(item.subtitle || '');
     setDescription(item.description || '');
-    setCtaText(item.ctaText || (activeTab === 'referrals' ? 'Invite Miners' : 'Explore Now'));
-    setTargetRoute(item.targetRoute || item.ctaLink || '/mining');
+    setCtaText(item.ctaText || '');
+    setTargetRoute(item.targetRoute || item.ctaLink || '');
     setAccentColor(item.accentColor || '#22C55E');
     setGradientStart(item.gradientStart || '#064E3B');
     setGradientEnd(item.gradientEnd || '#022C17');
@@ -234,7 +222,7 @@ export const AdminSlidersPage: React.FC = () => {
       if (activeTab === 'onboarding') {
         payload.subtitle = subtitle.trim();
         payload.stepNumber = Number(order) || 1;
-        payload.badgeText = tag.trim() || 'STEP';
+        payload.badgeText = tag.trim();
         payload.ctaLink = targetRoute.trim();
       } else {
         payload.tag = tag.trim();
@@ -407,10 +395,12 @@ export const AdminSlidersPage: React.FC = () => {
 
                 {/* Top Badge & Order */}
                 <div className="relative z-10 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-wider text-white">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
-                    {item.tag || item.badgeText || (activeTab === 'referrals' ? 'PROTOCOL DIVIDEND' : 'GT ECOSYSTEM')}
-                  </span>
+                  {(item.tag || item.badgeText) ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-wider text-white">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+                      {item.tag || item.badgeText}
+                    </span>
+                  ) : <span />}
                   <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] font-mono text-white/80">
                     Order #{item.order || item.stepNumber || 1}
                   </span>
@@ -485,11 +475,10 @@ export const AdminSlidersPage: React.FC = () => {
               {/* Tag / Badge */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-[#A7C9B1] block">
-                  Slide Tag / Badge
+                  Slide Tag / Badge (Optional)
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. PROTOCOL DIVIDEND, GT ECOSYSTEM, STEP 1"
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}

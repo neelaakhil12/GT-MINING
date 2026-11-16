@@ -36,8 +36,8 @@ export const AdminCommunityPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [authorName, setAuthorName] = useState('GT Foundation');
-  const [authorRole, setAuthorRole] = useState('Verified Publisher');
+  const [authorName, setAuthorName] = useState('');
+  const [authorRole, setAuthorRole] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [viewsCount, setViewsCount] = useState<number | string>(0);
   const [likesCount, setLikesCount] = useState<number | string>(0);
@@ -95,8 +95,8 @@ export const AdminCommunityPage: React.FC = () => {
     setTitle('');
     setContent('');
     setImageUrl('');
-    setAuthorName('GT Foundation');
-    setAuthorRole('Verified Publisher');
+    setAuthorName('');
+    setAuthorRole('');
     setIsPinned(false);
     setViewsCount(0);
     setLikesCount(0);
@@ -108,8 +108,8 @@ export const AdminCommunityPage: React.FC = () => {
     setTitle(post.title);
     setContent(post.content);
     setImageUrl(post.imageUrl || '');
-    setAuthorName(post.authorName || 'GT Foundation');
-    setAuthorRole(post.authorRole || 'Verified Publisher');
+    setAuthorName(post.authorName || '');
+    setAuthorRole(post.authorRole || '');
     setIsPinned(Boolean(post.isPinned));
     setViewsCount(post.viewsCount !== undefined ? post.viewsCount : 0);
     setLikesCount(post.likesCount !== undefined ? post.likesCount : 0);

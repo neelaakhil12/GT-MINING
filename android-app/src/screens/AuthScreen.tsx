@@ -960,18 +960,6 @@ export const AuthScreen: React.FC = () => {
                       </View>
                       <Text style={styles.googleBtnText}>Continue with Google</Text>
                     </TouchableOpacity>
-
-                    {/* Try Demo Login Button */}
-                    <TouchableOpacity
-                      onPress={handleDemoLogin}
-                      style={[styles.googleBtn, { backgroundColor: '#EAF8EE', borderColor: '#22C55E', marginTop: 10 }]}
-                      activeOpacity={0.85}
-                      disabled={loading}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: '900', color: '#15803D' }}>
-                        ⚡ Try Demo Login (Instant Access)
-                      </Text>
-                    </TouchableOpacity>
                   </>
                 )
               )}

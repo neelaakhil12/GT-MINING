@@ -385,12 +385,14 @@ export const ReferralsScreen: React.FC = () => {
               />
 
               <View style={styles.carouselHeaderRow}>
-                <View style={styles.dividendTagPill}>
-                  <View style={styles.pulsingGreenDot} />
-                  <Text style={styles.dividendTagText}>
-                    {currentSlideData.tag || 'PROTOCOL DIVIDEND'}
-                  </Text>
-                </View>
+                {Boolean(currentSlideData.tag) ? (
+                  <View style={styles.dividendTagPill}>
+                    <View style={styles.pulsingGreenDot} />
+                    <Text style={styles.dividendTagText}>
+                      {currentSlideData.tag}
+                    </Text>
+                  </View>
+                ) : <View />}
 
                 <View style={styles.dotsRow}>
                   {slides.map((_, idx) => (

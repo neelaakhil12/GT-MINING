@@ -92,10 +92,10 @@ export function fetchAndCacheHomeBanners(timeoutMs = 4500): Promise<HomeBannerSl
 
         const mapped: HomeBannerSlide[] = active.map((b: any, idx: number) => ({
           id: b.id || b.order || idx + 1,
-          tag: b.tag || 'GT ECOSYSTEM',
+          tag: b.tag || '',
           title: b.title || '',
           description: b.description || '',
-          ctaText: b.ctaText || 'Explore Now',
+          ctaText: b.ctaText || '',
           targetRoute: (b.targetRoute === '/referrals'
             ? 'Referrals'
             : b.targetRoute === '/wallet'

@@ -68,10 +68,10 @@ export const HomeBanners: React.FC = () => {
           .map((b: any) => ({
             id: b.id,
             image: b.imageUrl,
-            tag: b.tag || 'GT ECOSYSTEM',
+            tag: b.tag || '',
             title: b.title,
             description: b.description,
-            ctaText: b.ctaText || 'Explore Now',
+            ctaText: b.ctaText || '',
             ctaLink: b.targetRoute || '/mining',
             accentColor: b.accentColor || '#22C55E',
           }));
@@ -224,10 +224,12 @@ export const HomeBanners: React.FC = () => {
 
                   {/* Slide Foreground Content */}
                   <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2.5 z-20">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
-                      <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
-                      <span>{slide.tag}</span>
-                    </div>
+                    {slide.tag ? (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                        <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
+                        <span>{slide.tag}</span>
+                      </div>
+                    ) : null}
 
                     <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
                       {slide.title}
@@ -237,15 +239,17 @@ export const HomeBanners: React.FC = () => {
                       {slide.description}
                     </p>
 
-                    <div className="pt-1">
-                      <Link
-                        to={slide.ctaLink}
-                        className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs sm:text-sm shadow-[0_6px_16px_rgba(34,197,94,0.4)] hover:shadow-[0_10px_24px_rgba(34,197,94,0.6)] transition-all transform active:scale-95"
-                      >
-                        <span>{slide.ctaText}</span>
-                        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      </Link>
-                    </div>
+                    {slide.ctaText ? (
+                      <div className="pt-1">
+                        <Link
+                          to={slide.ctaLink || '/mining'}
+                          className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs sm:text-sm shadow-[0_6px_16px_rgba(34,197,94,0.4)] hover:shadow-[0_10px_24px_rgba(34,197,94,0.6)] transition-all transform active:scale-95"
+                        >
+                          <span>{slide.ctaText}</span>
+                          <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        </Link>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               );

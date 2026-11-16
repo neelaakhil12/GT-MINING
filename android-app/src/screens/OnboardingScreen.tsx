@@ -23,7 +23,8 @@ import {
 
 export const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, demoLogin } = useAuth();
+  const [loadingDemo, setLoadingDemo] = useState(false);
 
   // Instant 0ms render from memory cache or bundled default slides
   const [slides, setSlides] = useState<Slide[]>(() => {
@@ -130,6 +131,19 @@ export const OnboardingScreen: React.FC = () => {
     proceedToNext();
   };
 
+  const handleDemoLogin = async () => {
+    if (loadingDemo) return;
+    setLoadingDemo(true);
+    try {
+      await demoLogin();
+      navigation.replace('MainTabs');
+    } catch {
+      proceedToNext();
+    } finally {
+      setLoadingDemo(false);
+    }
+  };
+
   const activeSlide = slides[currentIdx] || slides[0];
 
   return (
@@ -176,6 +190,19 @@ export const OnboardingScreen: React.FC = () => {
           })}
         </View>
 
+        {/* Top Header Row with Skip Button on Top-Right */}
+        <View style={styles.topBarRow}>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            onPress={handleSkip}
+            style={styles.skipTopBtn}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Text style={styles.skipTopBtnText}>Skip</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Tap area left/right for stories navigation */}
         <View style={styles.tapGestureArea}>
           <TouchableWithoutFeedback
@@ -211,13 +238,16 @@ export const OnboardingScreen: React.FC = () => {
             <Text style={styles.continueBtnText}>Continue</Text>
           </TouchableOpacity>
 
-          {/* Skip Button */}
+          {/* Try Demo Login Button */}
           <TouchableOpacity
-            onPress={handleSkip}
-            style={styles.skipBtn}
-            activeOpacity={0.7}
+            onPress={handleDemoLogin}
+            style={styles.demoLoginBtn}
+            activeOpacity={0.88}
+            disabled={loadingDemo}
           >
-            <Text style={styles.skipBtnText}>Skip</Text>
+            <Text style={styles.demoLoginBtnText}>
+              {loadingDemo ? 'Logging in...' : 'Try Demo Login'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -243,6 +273,30 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     justifyContent: 'space-between',
+  },
+
+  /* Top Bar Row */
+  topBarRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    zIndex: 30,
+  },
+  skipTopBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  skipTopBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 
   /* Story Bars Row */
@@ -327,14 +381,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  skipBtn: {
+  demoLoginBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 26,
+    backgroundColor: '#EAF8EE',
+    borderWidth: 1.5,
+    borderColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  skipBtnText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.75)',
+  demoLoginBtnText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#15803D',
+    letterSpacing: 0.2,
   },
 });

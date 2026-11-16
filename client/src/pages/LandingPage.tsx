@@ -42,7 +42,8 @@ const getInitialSlides = (): OnboardingSlide[] => {
 };
 
 export const LandingPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, demoLogin } = useAuth();
+  const [loadingDemo, setLoadingDemo] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -75,6 +76,19 @@ export const LandingPage: React.FC = () => {
 
   const handleProceedToLogin = () => {
     navigate('/login', { replace: true });
+  };
+
+  const handleDemoLogin = async () => {
+    if (loadingDemo) return;
+    setLoadingDemo(true);
+    try {
+      await demoLogin();
+      navigate('/mining', { replace: true });
+    } catch {
+      navigate('/login', { replace: true });
+    } finally {
+      setLoadingDemo(false);
+    }
   };
 
   const handleProceedFromSplash = () => {
@@ -414,7 +428,7 @@ export const LandingPage: React.FC = () => {
         {/* Spacer */}
         <div className="flex-1 pointer-events-none" />
 
-        {/* Bottom Action Area: Continue / Get Started & Skip */}
+        {/* Bottom Action Area: Continue / Get Started & Try Demo Login */}
         <div className="relative z-20 px-6 pb-8 pt-4 flex flex-col items-center gap-3 shrink-0">
           <button
             type="button"
@@ -424,12 +438,14 @@ export const LandingPage: React.FC = () => {
             {currentSlide === slides.length - 1 ? 'Get Started & Mine Now 🚀' : 'Continue'}
           </button>
 
+          {/* Try Demo Login Button */}
           <button
             type="button"
-            onClick={handleProceedToLogin}
-            className="text-sm font-semibold py-1 text-neutral-300 hover:text-white transition-colors cursor-pointer"
+            onClick={handleDemoLogin}
+            disabled={loadingDemo}
+            className="w-full py-3.5 rounded-full border border-[#22C55E]/40 bg-[#EAF8EE] hover:bg-[#DCFCE7] text-sm font-black text-[#15803D] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
           >
-            Skip to Sign In
+            <span>{loadingDemo ? 'Logging in...' : 'Try Demo Login'}</span>
           </button>
         </div>
       </div>

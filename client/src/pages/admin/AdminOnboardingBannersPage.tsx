@@ -20,68 +20,7 @@ import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
 
-const DEFAULT_ONBOARDING_SLIDES = [
-  {
-    id: 'ob_001',
-    stepNumber: 1,
-    title: 'Automated 4-Hour Mining Engine',
-    subtitle: 'Zero hardware wear, zero battery drain',
-    description: 'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device or web browser.',
-    imageUrl: '/onboarding/story_1.jpg',
-    ctaText: 'Next Step →',
-    ctaLink: '/tour',
-    badgeText: 'DECENTRALIZED VIRTUAL MINING',
-    isActive: true,
-  },
-  {
-    id: 'ob_002',
-    stepNumber: 2,
-    title: "Recognized by the world's largest stock exchange",
-    subtitle: 'The only blockchain company invited by the NYSE',
-    description: 'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
-    imageUrl: '/onboarding/story_2.jpg',
-    ctaText: 'Next Step →',
-    ctaLink: '/tour',
-    badgeText: 'INSTITUTIONAL TRUST',
-    isActive: true,
-  },
-  {
-    id: 'ob_003',
-    stepNumber: 3,
-    title: 'Autonomous 10% Yield Accrual',
-    subtitle: 'Protocol dividend distribution',
-    description: 'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
-    imageUrl: '/onboarding/story_3.jpg',
-    ctaText: 'Next Step →',
-    ctaLink: '/tour',
-    badgeText: '10% LIFETIME REWARD',
-    isActive: true,
-  },
-  {
-    id: 'ob_004',
-    stepNumber: 4,
-    title: 'Powered by Visa & Mastercard',
-    subtitle: 'Accepted in 150+ countries worldwide',
-    description: 'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
-    imageUrl: '/onboarding/story_4.png',
-    ctaText: 'Next Step →',
-    ctaLink: '/tour',
-    badgeText: 'GLOBAL CARD ACCESS',
-    isActive: true,
-  },
-  {
-    id: 'ob_005',
-    stepNumber: 5,
-    title: 'Instant Direct Wallet Claims',
-    subtitle: 'Zero gas fees, direct ledger deposits',
-    description: 'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
-    imageUrl: '/onboarding/story_5.jpg',
-    ctaText: 'Get Started Now 🚀',
-    ctaLink: '/signup',
-    badgeText: 'ZERO GAS VAULT',
-    isActive: true,
-  },
-];
+const DEFAULT_ONBOARDING_SLIDES: any[] = [];
 
 export const AdminOnboardingBannersPage: React.FC = () => {
   const { showToast } = useToast();
@@ -98,7 +37,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [badgeText, setBadgeText] = useState('GT PROTOCOL');
+  const [badgeText, setBadgeText] = useState('');
   const [stepNumber, setStepNumber] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -114,13 +53,13 @@ export const AdminOnboardingBannersPage: React.FC = () => {
   const fetchBanners = async () => {
     try {
       const res = await api.getAdminOnboardingBanners();
-      if (res.success && Array.isArray(res.banners) && res.banners.length > 0) {
+      if (res.success && Array.isArray(res.banners)) {
         setBanners(res.banners);
       } else {
-        setBanners(DEFAULT_ONBOARDING_SLIDES);
+        setBanners([]);
       }
     } catch (err: any) {
-      setBanners(DEFAULT_ONBOARDING_SLIDES);
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -149,7 +88,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     setSubtitle('');
     setDescription('');
     setImageUrl('');
-    setBadgeText('GT PROTOCOL');
+    setBadgeText('');
     setStepNumber(banners.length + 1);
     setIsActive(true);
     setModalOpen(true);
@@ -161,7 +100,7 @@ export const AdminOnboardingBannersPage: React.FC = () => {
     setSubtitle(banner.subtitle || '');
     setDescription(banner.description);
     setImageUrl(banner.imageUrl);
-    setBadgeText(banner.badgeText || 'GT PROTOCOL');
+    setBadgeText(banner.badgeText || '');
     setStepNumber(banner.stepNumber || 1);
     setIsActive(banner.isActive !== false);
     setModalOpen(true);

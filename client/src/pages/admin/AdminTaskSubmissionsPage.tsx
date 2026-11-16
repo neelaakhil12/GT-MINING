@@ -54,7 +54,7 @@ export const AdminTaskSubmissionsPage: React.FC = () => {
 
   // Rejection Dialog State
   const [rejectingSub, setRejectingSub] = useState<TaskSubmission | null>(null);
-  const [rejectReason, setRejectReason] = useState('Screenshot proof could not be verified or was invalid.');
+  const [rejectReason, setRejectReason] = useState('');
 
   const fetchSubmissions = async () => {
     try {

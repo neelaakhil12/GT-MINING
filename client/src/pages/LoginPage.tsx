@@ -240,16 +240,6 @@ export const LoginPage: React.FC = () => {
               </svg>
               <span>Continue with Google</span>
             </button>
-
-            {/* Try Demo Login Button */}
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full py-2.5 rounded-2xl border border-[#22C55E]/40 bg-[#EAF8EE] hover:bg-[#DCFCE7] text-xs font-black text-[#15803D] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <span>⚡ Try Demo Login (Instant Access)</span>
-            </button>
           </div>
         </GlassCard>
 
