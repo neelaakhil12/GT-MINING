@@ -67,10 +67,13 @@ export const SplashScreen: React.FC = () => {
       if (active) setBannersReady(true);
     });
 
-    // Safety fallback so Splash never blocks longer than 5s if completely offline
+    // Safety fallback: splash never blocks longer than 2.5s under any condition
     const fallbackTimer = setTimeout(() => {
-      if (active) setBannersReady(true);
-    }, 5000);
+      if (active) {
+        setBannersReady(true);
+        proceedNavigation();
+      }
+    }, 2500);
 
     return () => {
       active = false;
@@ -114,26 +117,16 @@ export const SplashScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (progress >= 100 && bannersReady && isSessionLoaded) {
+    if (progress >= 100) {
       const t = setTimeout(() => {
         proceedNavigation();
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [progress, bannersReady, isSessionLoaded, isAuthenticated, navigation]);
+  }, [progress]);
 
   const handleSkip = () => {
-    if (bannersReady || isAuthenticated) {
-      proceedNavigation();
-    } else {
-      // Finish live fetch quickly before showing Onboarding so hardcoded slides never flash
-      Promise.race([
-        fetchAndCacheOnboardingBanners(2500),
-        new Promise((resolve) => setTimeout(resolve, 2500)),
-      ]).finally(() => {
-        proceedNavigation();
-      });
-    }
+    proceedNavigation();
   };
 
   return (

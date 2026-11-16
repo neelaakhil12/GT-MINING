@@ -92,7 +92,8 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleProceedFromSplash = () => {
-    if (isAuthenticated && !isTourRequested) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('gt_token') : null;
+    if ((isAuthenticated || token) && !isTourRequested) {
       navigate('/dashboard', { replace: true });
     } else if (slides.length > 0) {
       setStage('onboarding');
@@ -182,7 +183,8 @@ export const LandingPage: React.FC = () => {
     const maxWait = setTimeout(() => {
       setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
       setBannersReady(true);
-    }, 4000);
+      handleProceedFromSplash();
+    }, 2500);
 
     return () => {
       clearInterval(interval);
@@ -190,11 +192,20 @@ export const LandingPage: React.FC = () => {
     };
   }, [stage, isAuthenticated, isTourRequested, navigate]);
 
+  // Hard safety timeout: unconditionally dismiss splash after 2.5s
   useEffect(() => {
-    if (stage === 'splash' && splashProgress >= 100 && (bannersReady || slides.length > 0)) {
+    if (stage !== 'splash') return;
+    const safetyTimer = setTimeout(() => {
+      handleProceedFromSplash();
+    }, 2500);
+    return () => clearTimeout(safetyTimer);
+  }, [stage, isAuthenticated, isTourRequested, slides.length]);
+
+  useEffect(() => {
+    if (stage === 'splash' && splashProgress >= 100) {
       handleProceedFromSplash();
     }
-  }, [stage, splashProgress, bannersReady, slides.length]);
+  }, [stage, splashProgress]);
 
   // Handle slide transitions & auto-advance timer
   const handleNextSlide = () => {
