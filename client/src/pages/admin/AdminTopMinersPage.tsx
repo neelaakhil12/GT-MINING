@@ -61,9 +61,26 @@ export const AdminTopMinersPage: React.FC = () => {
     try {
       const res = await api.getAdminTopMiners();
       if (res && res.success && Array.isArray(res.topMiners)) {
-        setMiners(res.topMiners);
-        setTotalMiners(res.totalMiners || res.topMiners.length);
-        setTotalCirculation(res.totalCoinsInCirculation || 0);
+        const nonAdminMiners = res.topMiners
+          .filter((m: any) => {
+            const email = (m.email || '').toLowerCase();
+            const name = (m.fullName || '').toLowerCase();
+            const role = ((m.role || '') as string).toUpperCase();
+            const isAdmin =
+              role === 'ADMIN' ||
+              email === 'gtmining2026@gmail.com' ||
+              email.includes('admin') ||
+              name.includes('administrator');
+            return !isAdmin;
+          })
+          .map((m: any, idx: number) => ({ ...m, rank: idx + 1 }));
+
+        setMiners(nonAdminMiners);
+        setTotalMiners(nonAdminMiners.length);
+        const circulation = Number(
+          nonAdminMiners.reduce((acc: number, m: any) => acc + (Number(m.gtWalletCoins) || 0), 0).toFixed(4)
+        );
+        setTotalCirculation(circulation);
       } else {
         setMiners([]);
       }

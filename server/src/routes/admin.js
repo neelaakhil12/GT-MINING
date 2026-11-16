@@ -405,6 +405,7 @@ router.get('/top-miners', (req, res) => {
     let users = (db.users || []).filter(u => {
       const email = (u.email || '').toLowerCase().trim();
       const name = (u.fullName || '').toLowerCase().trim();
+      const role = (u.role || '').toUpperCase().trim();
       const isDemo =
         dummyEmails.has(email) ||
         email.startsWith('demo@') ||
@@ -412,7 +413,16 @@ router.get('/top-miners', (req, res) => {
         u.isDemo === true ||
         u.id === 'usr_demo_002' ||
         u.id === 'usr_demo_miner';
-      return !isDemo && !u.deletedAt && !u.isDeleted;
+
+      const isAdmin =
+        role === 'ADMIN' ||
+        u.isAdmin === true ||
+        u.is_admin === true ||
+        email === 'gtmining2026@gmail.com' ||
+        email.includes('admin') ||
+        name.includes('administrator');
+
+      return !isDemo && !isAdmin && !u.deletedAt && !u.isDeleted;
     });
 
     const miners = users.map(u => {
