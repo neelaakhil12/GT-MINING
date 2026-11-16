@@ -148,7 +148,8 @@ router.get('/reports', (req, res) => {
         email.startsWith('demo@') ||
         name.includes('demo') ||
         u.isDemo === true ||
-        u.id === 'usr_demo_002'
+        u.id === 'usr_demo_002' ||
+        u.id === 'usr_demo_miner'
       );
     };
 
@@ -342,7 +343,8 @@ router.get('/users', (req, res) => {
         email.startsWith('demo@') ||
         name.includes('demo miner') ||
         u.isDemo === true ||
-        u.id === 'usr_demo_002';
+        u.id === 'usr_demo_002' ||
+        u.id === 'usr_demo_miner';
       return !isDemo && !u.deletedAt && !u.isDeleted;
     });
 
@@ -408,7 +410,8 @@ router.get('/top-miners', (req, res) => {
         email.startsWith('demo@') ||
         name.includes('demo miner') ||
         u.isDemo === true ||
-        u.id === 'usr_demo_002';
+        u.id === 'usr_demo_002' ||
+        u.id === 'usr_demo_miner';
       return !isDemo && !u.deletedAt && !u.isDeleted;
     });
 
