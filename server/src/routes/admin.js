@@ -125,6 +125,9 @@ router.get('/reports', (req, res) => {
 
     const fakeEmails = new Set([
       'demo@gtmining.com',
+      'demo@gtnetwork.io',
+      'user@gtmining.com',
+      'test@gtmining.com',
       'rahul.varma@gmail.com',
       'priya.sharma@yahoo.com',
       'arjun.reddy@outlook.com',
@@ -137,21 +140,35 @@ router.get('/reports', (req, res) => {
       'chloe.dubois@paris.fr'
     ]);
 
+    const isDemoUser = (u) => {
+      const email = (u.email || '').toLowerCase().trim();
+      const name = (u.fullName || '').toLowerCase().trim();
+      return (
+        fakeEmails.has(email) ||
+        email.startsWith('demo@') ||
+        name.includes('demo') ||
+        u.isDemo === true ||
+        u.id === 'usr_demo_002'
+      );
+    };
+
     const users = (db.users || []).filter(u =>
       !u.isDeleted &&
-      !fakeEmails.has((u.email || '').toLowerCase()) &&
-      u.id !== 'usr_demo_002'
+      !u.deletedAt &&
+      !isDemoUser(u)
     );
     const userIds = new Set(users.map(u => u.id));
 
     const miningClaims = (db.miningClaims || []).filter(c => userIds.has(c.userId));
     const transactions = (db.walletTransactions || []).filter(tx => userIds.has(tx.userId));
 
+    const getClaimAmount = (c) => Number(c.rewardAmount !== undefined ? c.rewardAmount : (c.amount || 0));
+
     // 1. Lifetime Totals
     const totalUsers = users.length;
     let totalMiningDone = 0;
     miningClaims.forEach(c => {
-      totalMiningDone += Number(c.amount || 0);
+      totalMiningDone += getClaimAmount(c);
     });
     totalMiningDone = Number(totalMiningDone.toFixed(4));
 
@@ -179,7 +196,7 @@ router.get('/reports', (req, res) => {
     miningClaims.forEach(c => {
       const cTime = new Date(c.claimedAt).getTime();
       if (cTime >= startOfTodayMs || (nowMs - cTime) <= oneDayMs) {
-        dailyMiningToday += Number(c.amount || 0);
+        dailyMiningToday += getClaimAmount(c);
         dailyMiningClaimsToday++;
       }
     });
@@ -214,7 +231,7 @@ router.get('/reports', (req, res) => {
     const fourteenDaysAgoMs = nowMs - (14 * oneDayMs);
     miningClaims.forEach(c => {
       if (new Date(c.claimedAt).getTime() < fourteenDaysAgoMs) {
-        runningCumulativeMining += Number(c.amount || 0);
+        runningCumulativeMining += getClaimAmount(c);
       }
     });
 
@@ -236,7 +253,7 @@ router.get('/reports', (req, res) => {
       miningClaims.forEach(c => {
         const cTime = new Date(c.claimedAt).getTime();
         if (cTime >= startMs && cTime <= endMs) {
-          dayMining += Number(c.amount || 0);
+          dayMining += getClaimAmount(c);
           dayClaims++;
         }
       });
@@ -829,15 +846,17 @@ router.patch('/community/posts/:id', (req, res) => {
 
 router.delete('/community/posts/:id', (req, res) => {
   const db = readDB();
+  if (!Array.isArray(db.communityPosts)) db.communityPosts = [];
   const index = db.communityPosts.findIndex(p => p.id === req.params.id);
 
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: 'Post not found.' });
+  if (index !== -1) {
+    const deleted = db.communityPosts.splice(index, 1)[0];
+    if (Array.isArray(db.communityComments)) {
+      db.communityComments = db.communityComments.filter(c => c.postId !== req.params.id);
+    }
+    createAuditLog(db, req.user?.id || 'usr_admin_001', 'DELETE_COMMUNITY_POST', 'COMMUNITY_POST', deleted.id, `Deleted post "${deleted.title}"`);
+    writeDB(db);
   }
-
-  const deleted = db.communityPosts.splice(index, 1)[0];
-  createAuditLog(db, req.user.id, 'DELETE_COMMUNITY_POST', 'COMMUNITY_POST', deleted.id, `Deleted post "${deleted.title}"`);
-  writeDB(db);
 
   return res.json({
     success: true,

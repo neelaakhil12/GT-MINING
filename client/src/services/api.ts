@@ -166,12 +166,7 @@ export const api = {
   getAdminPosts: () => request<any>('/admin/community/posts'),
   createAdminPost: (body: any) => request<any>('/admin/community/posts', { method: 'POST', body: JSON.stringify(body) }),
   updateAdminPost: (id: string, body: any) => request<any>(`/admin/community/posts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  deleteAdminPost: async (id: string) => {
-    try {
-      await request<any>(`/community/posts/${id}`, { method: 'DELETE' });
-    } catch {}
-    return request<any>(`/admin/community/posts/${id}`, { method: 'DELETE' });
-  },
+  deleteAdminPost: (id: string) => request<any>(`/admin/community/posts/${id}`, { method: 'DELETE' }),
 
   // Pre-Opening / Onboarding Sliders Banners
   getAdminOnboardingBanners: () => request<any>('/admin/onboarding-banners'),

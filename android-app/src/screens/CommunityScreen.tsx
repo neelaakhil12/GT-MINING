@@ -108,7 +108,14 @@ export const CommunityScreen: React.FC = () => {
         try {
           const res = await fetch(url);
           const data = await res.json();
-          if (data && data.success && Array.isArray(data.posts) && data.posts.length > 0) {
+          if (data && data.success && Array.isArray(data.posts)) {
+            if (data.posts.length === 0) {
+              setPosts([]);
+              appStorage.removeItem('@gt_cached_community_posts').catch(() => {});
+              setLikesCount({});
+              setLikedPosts({});
+              break;
+            }
             const mapped: PostItem[] = data.posts.map((p: any) => ({
               id: p.id,
               title: p.title,
@@ -339,124 +346,134 @@ export const CommunityScreen: React.FC = () => {
 
           {/* 3. Community Feed Posts matching video */}
           <View style={styles.postsList}>
-            {displayedPosts.map((post) => {
-              const isLiked = !!likedPosts[post.id];
-              const count = likesCount[post.id] !== undefined ? likesCount[post.id] : Number(post.likes ?? 0);
+            {displayedPosts.length === 0 ? (
+              <View style={styles.emptyFeedCard}>
+                <MessageSquare size={36} color="#22C55E" />
+                <Text style={styles.emptyFeedTitle}>No Announcements Found</Text>
+                <Text style={styles.emptyFeedSubtitle}>
+                  Updates and node news posted by administrators will appear here.
+                </Text>
+              </View>
+            ) : (
+              displayedPosts.map((post) => {
+                const isLiked = !!likedPosts[post.id];
+                const count = likesCount[post.id] !== undefined ? likesCount[post.id] : Number(post.likes ?? 0);
 
-              return (
-                <View
-                  key={post.id}
-                  style={[
-                    styles.postCard,
-                    post.isPinned && styles.pinnedBorderGlow,
-                  ]}
-                >
-                  {/* Post Top Header */}
-                  <View style={styles.postHeader}>
-                    <View style={styles.authorRow}>
-                      <View style={styles.authorAvatar}>
-                        <Text style={styles.authorInitial}>
-                          {post.author.charAt(0)}
+                return (
+                  <View
+                    key={post.id}
+                    style={[
+                      styles.postCard,
+                      post.isPinned && styles.pinnedBorderGlow,
+                    ]}
+                  >
+                    {/* Post Top Header */}
+                    <View style={styles.postHeader}>
+                      <View style={styles.authorRow}>
+                        <View style={styles.authorAvatar}>
+                          <Text style={styles.authorInitial}>
+                            {post.author.charAt(0)}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.authorName}>{post.author}</Text>
+                          <Text style={styles.verifiedText}>Verified Publisher</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.headerBadgesRight}>
+                        {post.isPinned && (
+                          <View style={styles.pinnedPill}>
+                            <Pin size={10} color="#B45309" />
+                            <Text style={styles.pinnedPillText}>Pinned</Text>
+                          </View>
+                        )}
+                        {isWithin24Hours(post.createdAt || post.dateStr) ? (
+                          <View style={styles.latestPill}>
+                            <Sparkles size={9} color="#15803D" />
+                            <Text style={styles.latestPillText}>LATEST (24H)</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.nodePill}>
+                            <Text style={styles.nodePillText}>NODE POST</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Post Title */}
+                    <Text style={styles.postTitle}>{post.title}</Text>
+
+                    {/* Post Image matching video */}
+                    {post.imageUrl && (
+                      <View style={styles.postImgWrapper}>
+                        <Image
+                          source={{ uri: post.imageUrl }}
+                          style={styles.postImg}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    )}
+
+                    {/* Post Body */}
+                    <Text style={styles.postBody}>{cleanListSpacing(post.content)}</Text>
+
+                    {/* Action Bar */}
+                    <View style={styles.postActionsBar}>
+                      <View style={styles.actionBtn}>
+                        <Eye size={15} color="#15803D" />
+                        <Text style={[styles.actionBtnText, { color: '#15803D', fontWeight: '700' }]}>
+                          {Number(post.views ?? 0).toLocaleString()}
                         </Text>
                       </View>
-                      <View>
-                        <Text style={styles.authorName}>{post.author}</Text>
-                        <Text style={styles.verifiedText}>Verified Publisher</Text>
-                      </View>
-                    </View>
 
-                    <View style={styles.headerBadgesRight}>
-                      {post.isPinned && (
-                        <View style={styles.pinnedPill}>
-                          <Pin size={10} color="#B45309" />
-                          <Text style={styles.pinnedPillText}>Pinned</Text>
-                        </View>
-                      )}
-                      {isWithin24Hours(post.createdAt || post.dateStr) ? (
-                        <View style={styles.latestPill}>
-                          <Sparkles size={9} color="#15803D" />
-                          <Text style={styles.latestPillText}>LATEST (24H)</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.nodePill}>
-                          <Text style={styles.nodePillText}>NODE POST</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Post Title */}
-                  <Text style={styles.postTitle}>{post.title}</Text>
-
-                  {/* Post Image matching video */}
-                  {post.imageUrl && (
-                    <View style={styles.postImgWrapper}>
-                      <Image
-                        source={{ uri: post.imageUrl }}
-                        style={styles.postImg}
-                        resizeMode="cover"
-                      />
-                    </View>
-                  )}
-
-                  {/* Post Body */}
-                  <Text style={styles.postBody}>{cleanListSpacing(post.content)}</Text>
-
-                  {/* Action Bar */}
-                  <View style={styles.postActionsBar}>
-                    <View style={styles.actionBtn}>
-                      <Eye size={15} color="#15803D" />
-                      <Text style={[styles.actionBtnText, { color: '#15803D', fontWeight: '700' }]}>
-                        {Number(post.views ?? 0).toLocaleString()}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() => toggleLike(post.id)}
-                      style={styles.actionBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Heart
-                        size={15}
-                        color={isLiked ? '#EF4444' : '#1E5E36'}
-                        fill={isLiked ? '#EF4444' : 'transparent'}
-                      />
-                      <Text
-                        style={[
-                          styles.actionBtnText,
-                          isLiked && { color: '#EF4444', fontWeight: '800' },
-                        ]}
+                      <TouchableOpacity
+                        onPress={() => toggleLike(post.id)}
+                        style={styles.actionBtn}
+                        activeOpacity={0.7}
                       >
-                        {count}
-                      </Text>
-                    </TouchableOpacity>
+                        <Heart
+                          size={15}
+                          color={isLiked ? '#EF4444' : '#1E5E36'}
+                          fill={isLiked ? '#EF4444' : 'transparent'}
+                        />
+                        <Text
+                          style={[
+                            styles.actionBtnText,
+                            isLiked && { color: '#EF4444', fontWeight: '800' },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => openComments(post)}
-                      style={styles.actionBtn}
-                      activeOpacity={0.7}
-                    >
-                      <MessageSquare size={15} color="#1E5E36" />
-                      <Text style={styles.actionBtnText}>{post.comments}</Text>
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => openComments(post)}
+                        style={styles.actionBtn}
+                        activeOpacity={0.7}
+                      >
+                        <MessageSquare size={15} color="#1E5E36" />
+                        <Text style={styles.actionBtnText}>{post.comments}</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => handleShare(post.title)}
-                      style={styles.actionBtn}
-                      activeOpacity={0.7}
-                    >
-                      <Share2 size={15} color="#1E5E36" />
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleShare(post.title)}
+                        style={styles.actionBtn}
+                        activeOpacity={0.7}
+                      >
+                        <Share2 size={15} color="#1E5E36" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Footer Row matching video */}
+                    <View style={styles.postFooterRow}>
+                      <Text style={styles.dateText}>{post.dateStr}</Text>
+                      <Text style={styles.protocolText}>GT Official Protocol</Text>
+                    </View>
                   </View>
-
-                  {/* Footer Row matching video */}
-                  <View style={styles.postFooterRow}>
-                    <Text style={styles.dateText}>{post.dateStr}</Text>
-                    <Text style={styles.protocolText}>GT Official Protocol</Text>
-                  </View>
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         </ScrollView>
       </View>
@@ -942,5 +959,29 @@ const styles = StyleSheet.create({
   sendBtnDisabled: {
     backgroundColor: '#94A3B8',
     opacity: 0.6,
+  },
+  emptyFeedCard: {
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  emptyFeedTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0A341B',
+    marginTop: 10,
+  },
+  emptyFeedSubtitle: {
+    fontSize: 12,
+    color: '#1E5E36',
+    textAlign: 'center',
+    marginTop: 4,
+    maxWidth: 260,
   },
 });

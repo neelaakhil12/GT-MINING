@@ -62,6 +62,13 @@ export const LandingPage: React.FC = () => {
   const [splashProgress, setSplashProgress] = useState(0);
   const [statusText, setStatusText] = useState('INITIALIZING NODE...');
 
+  // If onboarding is active but no slides exist in DB, immediately redirect to login
+  useEffect(() => {
+    if (stage === 'onboarding' && bannersReady && slides.length === 0) {
+      navigate('/login', { replace: true });
+    }
+  }, [stage, bannersReady, slides.length, navigate]);
+
   // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
   const [slideProgress, setSlideProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);

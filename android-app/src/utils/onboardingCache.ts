@@ -37,7 +37,7 @@ const BUNDLED_STORY_IMAGES: Record<string, any> = {
 };
 
 function mapBannerToSlide(b: any, idx: number): OnboardingSlide {
-  let image: any = DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image;
+  let image: any = null;
   if (b.imageUrl && typeof b.imageUrl === 'string') {
     const trimmed = b.imageUrl.trim();
     if (BUNDLED_STORY_IMAGES[trimmed]) {
