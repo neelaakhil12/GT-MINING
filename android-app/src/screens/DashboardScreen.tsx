@@ -76,7 +76,7 @@ export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [bannerSlides, setBannerSlides] = useState<HomeBannerSlide[]>(
-    () => getMemoryHomeBanners() || DEFAULT_BANNER_SLIDES
+    () => getMemoryHomeBanners() || []
   );
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -165,16 +165,16 @@ export const DashboardScreen: React.FC = () => {
     let isMounted = true;
 
     const syncHomeBanners = async () => {
-      if (!getMemoryHomeBanners()) {
-        const cached = await getCachedHomeBannersFromStorage();
-        if (isMounted && cached && cached.length > 0) {
-          setBannerSlides(cached);
-        }
+      const cached = await getCachedHomeBannersFromStorage();
+      if (isMounted && cached !== null) {
+        setBannerSlides(cached);
       }
       const live = await fetchAndCacheHomeBanners(4500);
-      if (isMounted && live && live.length > 0) {
+      if (isMounted && live !== null) {
         setBannerSlides(live);
-        prefetchHomeBannerImages(live, 2500).catch(() => {});
+        if (live.length > 0) {
+          prefetchHomeBannerImages(live, 2500).catch(() => {});
+        }
       }
     };
 
@@ -204,7 +204,7 @@ export const DashboardScreen: React.FC = () => {
     return 'Good Evening';
   };
 
-  const activeSlide = bannerSlides[currentSlide] || bannerSlides[0] || DEFAULT_BANNER_SLIDES[0];
+  const activeSlide = bannerSlides.length > 0 ? (bannerSlides[currentSlide] || bannerSlides[0]) : null;
 
   const handleBannerCta = (route: string) => {
     if (route === 'Mine') (navigation as any).navigate('MainTabs', { screen: 'Mine' });
@@ -235,79 +235,81 @@ export const DashboardScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* 2. Interactive Slides Carousel Banner matching website HomeBanners */}
-          <View style={styles.carouselWrapper}>
-            <View style={styles.carouselCard}>
-              {/* Always-rendered gradient underlay + pre-mounted image stack so transitions never flash black */}
-              <LinearGradient
-                colors={activeSlide.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-              />
-              {bannerSlides.map((slide, idx) =>
-                slide.imageUrl ? (
-                  <Image
-                    key={`hb_${slide.id || idx}`}
-                    source={{ uri: slide.imageUrl }}
-                    fadeDuration={0}
-                    style={[
-                      StyleSheet.absoluteFillObject,
-                      { opacity: idx === currentSlide ? 1 : 0 },
-                    ]}
-                    resizeMode="cover"
-                  />
-                ) : null
-              )}
+          {/* 2. Interactive Slides Carousel Banner matching website HomeBanners (Shown ONLY when banners exist) */}
+          {bannerSlides.length > 0 && activeSlide && (
+            <View style={styles.carouselWrapper}>
+              <View style={styles.carouselCard}>
+                {/* Always-rendered gradient underlay + pre-mounted image stack so transitions never flash black */}
+                <LinearGradient
+                  colors={activeSlide.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                {bannerSlides.map((slide, idx) =>
+                  slide.imageUrl ? (
+                    <Image
+                      key={`hb_${slide.id || idx}`}
+                      source={{ uri: slide.imageUrl }}
+                      fadeDuration={0}
+                      style={[
+                        StyleSheet.absoluteFillObject,
+                        { opacity: idx === currentSlide ? 1 : 0 },
+                      ]}
+                      resizeMode="cover"
+                    />
+                  ) : null
+                )}
 
-              {/* Gentle bottom scrim for text readability */}
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.7)']}
-                style={StyleSheet.absoluteFillObject}
-              />
+                {/* Gentle bottom scrim for text readability */}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.7)']}
+                  style={StyleSheet.absoluteFillObject}
+                />
 
-              <View style={styles.carouselContent}>
-                <View style={styles.carouselTagBadge}>
-                  <View
-                    style={[
-                      styles.carouselTagDot,
-                      { backgroundColor: activeSlide.accentColor },
-                    ]}
-                  />
-                  <Text style={styles.carouselTagText}>{activeSlide.tag}</Text>
+                <View style={styles.carouselContent}>
+                  <View style={styles.carouselTagBadge}>
+                    <View
+                      style={[
+                        styles.carouselTagDot,
+                        { backgroundColor: activeSlide.accentColor },
+                      ]}
+                    />
+                    <Text style={styles.carouselTagText}>{activeSlide.tag}</Text>
+                  </View>
+
+                  <Text style={styles.carouselTitle}>{activeSlide.title}</Text>
+                  <Text style={styles.carouselDesc} numberOfLines={2}>
+                    {activeSlide.description}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => handleBannerCta(activeSlide.targetRoute)}
+                    style={styles.bannerCtaBtn}
+                    activeOpacity={0.88}
+                  >
+                    <Text style={styles.bannerCtaText}>{activeSlide.ctaText}</Text>
+                    <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.5} />
+                  </TouchableOpacity>
                 </View>
 
-                <Text style={styles.carouselTitle}>{activeSlide.title}</Text>
-                <Text style={styles.carouselDesc} numberOfLines={2}>
-                  {activeSlide.description}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() => handleBannerCta(activeSlide.targetRoute)}
-                  style={styles.bannerCtaBtn}
-                  activeOpacity={0.88}
-                >
-                  <Text style={styles.bannerCtaText}>{activeSlide.ctaText}</Text>
-                  <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Indicator Dots */}
-              <View style={styles.dotsRow}>
-                {bannerSlides.map((_, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => setCurrentSlide(idx)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.dot,
-                      idx === currentSlide ? styles.dotActive : styles.dotInactive,
-                    ]}
-                  />
-                ))}
+                {/* Indicator Dots */}
+                <View style={styles.dotsRow}>
+                  {bannerSlides.map((_, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => setCurrentSlide(idx)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.dot,
+                        idx === currentSlide ? styles.dotActive : styles.dotInactive,
+                      ]}
+                    />
+                  ))}
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* 3. MARKET OVERVIEW Header */}
           <View style={styles.sectionHeaderRow}>

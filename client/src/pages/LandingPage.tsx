@@ -12,64 +12,11 @@ interface OnboardingSlide {
   theme: 'dark' | 'light';
 }
 
-const onboardingSlides: OnboardingSlide[] = [
-  {
-    id: 1,
-    title: 'Automated 4-Hour Mining Engine',
-    subtitle: 'Zero hardware wear, zero battery drain',
-    description:
-      'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device.',
-    image: '/onboarding/story_1.jpg',
-    theme: 'dark',
-  },
-  {
-    id: 2,
-    title: "Recognized by the world's largest stock exchange",
-    subtitle: 'The only blockchain company invited by the NYSE',
-    description:
-      'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
-    image: '/onboarding/story_2.jpg',
-    theme: 'dark',
-  },
-  {
-    id: 3,
-    title: 'Autonomous 10% Yield Accrual',
-    subtitle: 'Protocol dividend distribution',
-    description:
-      'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
-    image: '/onboarding/story_3.jpg',
-    theme: 'dark',
-  },
-  {
-    id: 4,
-    title: 'Powered by Visa & Mastercard',
-    subtitle: 'Global payment cards',
-    description:
-      'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
-    image: '/onboarding/story_4.png',
-    theme: 'light',
-  },
-  {
-    id: 5,
-    title: 'Instant Direct Wallet Claims',
-    subtitle: 'Non-custodial cryptographic access',
-    description:
-      'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
-    image: '/onboarding/story_5.jpg',
-    theme: 'dark',
-  },
-];
+const onboardingSlides: OnboardingSlide[] = [];
 
 // Instant module-level image cache priming for 0ms transitions
 if (typeof window !== 'undefined') {
-  [
-    '/gt-header-logo.png',
-    '/onboarding/story_1.jpg',
-    '/onboarding/story_2.jpg',
-    '/onboarding/story_3.jpg',
-    '/onboarding/story_4.png',
-    '/onboarding/story_5.jpg',
-  ].forEach((src) => {
+  ['/gt-header-logo.png'].forEach((src) => {
     const img = new Image();
     img.src = src;
   });
@@ -126,15 +73,17 @@ export const LandingPage: React.FC = () => {
   const handleProceedFromSplash = () => {
     if (isAuthenticated && !isTourRequested) {
       navigate('/dashboard', { replace: true });
-    } else {
+    } else if (slides.length > 0) {
       setStage('onboarding');
+    } else {
+      navigate('/login', { replace: true });
     }
   };
 
   const loadOnboardingBanners = async () => {
     try {
       const res = await api.getPublicOnboardingBanners();
-      if (res.success && res.banners && res.banners.length > 0) {
+      if (res.success && Array.isArray(res.banners)) {
         const sorted = res.banners
           .filter((b: any) => b.isActive !== false)
           .sort((a: any, b: any) => {
@@ -147,28 +96,24 @@ export const LandingPage: React.FC = () => {
           title: b.title,
           subtitle: b.subtitle || '',
           description: b.description,
-          image: b.imageUrl || '/onboarding/story_1.jpg',
+          image: b.imageUrl,
           theme: 'dark' as const,
           order: Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || (idx + 1),
         }));
-        if (mapped.length > 0) {
-          setSlides(mapped);
-          try {
+        setSlides(mapped);
+        try {
+          if (mapped.length > 0) {
             localStorage.setItem('gt_cached_onboarding_banners', JSON.stringify(mapped));
-          } catch { }
-          mapped.forEach((m: any) => {
-            if (m.image) {
-              const img = new Image();
-              img.src = m.image;
-            }
-          });
-          setBannersReady(true);
-          return;
-        }
+          } else {
+            localStorage.removeItem('gt_cached_onboarding_banners');
+          }
+        } catch { }
+        setBannersReady(true);
+        return;
       }
-      setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
+      setSlides([]);
     } catch {
-      setSlides((prev) => (prev.length > 0 ? prev : onboardingSlides));
+      setSlides([]);
     } finally {
       setBannersReady(true);
     }
@@ -353,11 +298,8 @@ export const LandingPage: React.FC = () => {
   // 2. ONBOARDING SLIDES (STAGE === 'onboarding')
   // ==========================================
   if (slides.length === 0) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04110A]">
-        <div className="w-10 h-10 rounded-full border-2 border-[#22C55E] border-t-transparent animate-spin" />
-      </div>
-    );
+    handleProceedToLogin();
+    return null;
   }
 
   const slide = slides[currentSlide] || slides[0];

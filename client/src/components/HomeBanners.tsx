@@ -75,12 +75,14 @@ export const HomeBanners: React.FC = () => {
             ctaLink: b.targetRoute || '/mining',
             accentColor: b.accentColor || '#22C55E',
           }));
-        if (mapped.length > 0) {
-          setSlides(mapped);
-          try {
+        setSlides(mapped);
+        try {
+          if (mapped.length > 0) {
             localStorage.setItem('gt_cached_home_banners', JSON.stringify(mapped));
-          } catch {}
-        }
+          } else {
+            localStorage.removeItem('gt_cached_home_banners');
+          }
+        } catch {}
       }
     } catch {}
   };
@@ -190,91 +192,81 @@ export const HomeBanners: React.FC = () => {
     };
   }, []);
 
-  if (slides.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="relative rounded-3xl overflow-hidden h-[165px] sm:h-[210px] md:h-[260px] w-full bg-[#071F14] border-2 border-white/40 shadow-[0_14px_35px_rgba(0,0,0,0.12)] animate-pulse flex items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
-            <img src="/gt-header-logo.png" alt="Loading" className="w-8 h-8 object-contain opacity-50" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       
-      {/* 1. Header Hero Image Slides Carousel (compact size matching client reference) */}
-      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
-        
-        {/* Slides Track - Reduced size on mobile and desktop views */}
-        <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
-          {slides.map((slide, index) => {
-            const isActive = index === currentSlide;
+      {/* 1. Header Hero Image Slides Carousel (Shown ONLY when banners exist) */}
+      {slides.length > 0 && (
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
+          
+          {/* Slides Track - Reduced size on mobile and desktop views */}
+          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
+            {slides.map((slide, index) => {
+              const isActive = index === currentSlide;
 
-            return (
-              <div
-                key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                }`}
-              >
-                {/* Clear Background Image without green overlay */}
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 hover:scale-105"
-                  loading="eager"
-                />
+              return (
+                <div
+                  key={slide.id}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
+                >
+                  {/* Clear Background Image without green overlay */}
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 hover:scale-105"
+                    loading="eager"
+                  />
 
-                {/* Gentle bottom scrim so title & button are crisp without obscuring the image */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+                  {/* Gentle bottom scrim so title & button are crisp without obscuring the image */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
 
-                {/* Slide Foreground Content */}
-                <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2.5 z-20">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
-                    <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
-                    <span>{slide.tag}</span>
-                  </div>
+                  {/* Slide Foreground Content */}
+                  <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2.5 z-20">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
+                      <span>{slide.tag}</span>
+                    </div>
 
-                  <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
-                    {slide.title}
-                  </h2>
+                    <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                      {slide.title}
+                    </h2>
 
-                  <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
-                    {slide.description}
-                  </p>
+                    <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
+                      {slide.description}
+                    </p>
 
-                  <div className="pt-1">
-                    <Link
-                      to={slide.ctaLink}
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs sm:text-sm shadow-[0_6px_16px_rgba(34,197,94,0.4)] hover:shadow-[0_10px_24px_rgba(34,197,94,0.6)] transition-all transform active:scale-95"
-                    >
-                      <span>{slide.ctaText}</span>
-                      <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    </Link>
+                    <div className="pt-1">
+                      <Link
+                        to={slide.ctaLink}
+                        className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs sm:text-sm shadow-[0_6px_16px_rgba(34,197,94,0.4)] hover:shadow-[0_10px_24px_rgba(34,197,94,0.6)] transition-all transform active:scale-95"
+                      >
+                        <span>{slide.ctaText}</span>
+                        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Indicator Dots */}
-        <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                currentSlide === i ? 'w-6 bg-[#22C55E] shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/80'
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
+          {/* Indicator Dots */}
+          <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  currentSlide === i ? 'w-6 bg-[#22C55E] shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2. Horizontal Crypto Asset Rates Track matching user reference image */}
       <div className="space-y-2">

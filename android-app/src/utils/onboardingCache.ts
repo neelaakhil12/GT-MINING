@@ -11,43 +11,8 @@ export interface OnboardingSlide {
 
 export const CACHE_KEY = '@gt_cached_onboarding_banners';
 
-export const DEFAULT_SLIDES: OnboardingSlide[] = [
-  {
-    id: 1,
-    title: 'Automated 4-Hour Mining Engine',
-    description:
-      'Activate your mining node with 1 tap. Mine virtual GT coins effortlessly on your mobile device or web browser.',
-    image: require('../../assets/onboarding/story_1.jpg'),
-  },
-  {
-    id: 2,
-    title: "Recognized by the world's largest stock exchange",
-    description:
-      'The modern blockchain protocol built for institutional transparency and verifiable distributed ledgers.',
-    image: require('../../assets/onboarding/story_2.jpg'),
-  },
-  {
-    id: 3,
-    title: 'Autonomous 10% Yield Accrual',
-    description:
-      'Receive instant lifetime mining commissions whenever your peer network and invited nodes finalize cycles.',
-    image: require('../../assets/onboarding/story_3.jpg'),
-  },
-  {
-    id: 4,
-    title: 'Powered by Visa & Mastercard',
-    description:
-      'Global payment cards accepted in more than 150 countries for seamless everyday crypto liquidity.',
-    image: require('../../assets/onboarding/story_4.png'),
-  },
-  {
-    id: 5,
-    title: 'Instant Direct Wallet Claims',
-    description:
-      'Accumulate GT coin yields and claim your rewards directly to your personal wallet vault with zero gas fees.',
-    image: require('../../assets/onboarding/story_5.jpg'),
-  },
-];
+// Only pre-opening banners uploaded by Admin are shown. No hardcoded fallback slides.
+export const DEFAULT_SLIDES: OnboardingSlide[] = [];
 
 let memorySlides: OnboardingSlide[] | null = null;
 let inFlightPromise: Promise<OnboardingSlide[] | null> | null = null;
@@ -148,22 +113,22 @@ export function fetchAndCacheOnboardingBanners(timeoutMs = 5000): Promise<Onboar
       if (timer) clearTimeout(timer);
 
       const data = await res.json();
-      if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+      if (data && data.success && Array.isArray(data.banners)) {
         const sorted = sortBanners(data.banners);
+        const mapped = sorted.map(mapBannerToSlide);
+        memorySlides = mapped;
         if (sorted.length > 0) {
-          const mapped = sorted.map(mapBannerToSlide);
-          memorySlides = mapped;
           appStorage.setItem(CACHE_KEY, JSON.stringify(sorted)).catch(() => {});
-
-          // Pre-warm all remote slide images into native Image cache before leaving Splash
           await prefetchOnboardingImages(mapped, 3000);
-          return mapped;
+        } else {
+          appStorage.removeItem(CACHE_KEY).catch(() => {});
         }
+        return mapped;
       }
-      return null;
+      return [];
     } catch {
       if (timer) clearTimeout(timer);
-      return null;
+      return memorySlides || [];
     } finally {
       inFlightPromise = null;
     }

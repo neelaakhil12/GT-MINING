@@ -16,41 +16,8 @@ export interface HomeBannerSlide {
 
 export const HOME_BANNERS_CACHE_KEY = 'gt_cached_mobile_home_banners';
 
-export const DEFAULT_HOME_BANNERS: HomeBannerSlide[] = [
-  {
-    id: 1,
-    tag: 'MINING ENGINE',
-    title: 'Automated GT Cloud Node',
-    description: 'Mine GT Coins automatically every mining cycle directly to your vault.',
-    ctaText: 'Go to Mine Node',
-    targetRoute: 'Mine',
-    gradient: ['#0A2A18', '#05180E'] as const,
-    accentColor: '#22C55E',
-    imageUrl: '',
-  },
-  {
-    id: 2,
-    tag: 'CIRCLE REWARDS',
-    title: '10% Team Referral Bonus',
-    description: 'Invite friends with your GT Code & earn 10% instant lifetime mining yield.',
-    ctaText: 'Invite & Earn',
-    targetRoute: 'Referrals',
-    gradient: ['#0F291A', '#04140A'] as const,
-    accentColor: '#4ADE80',
-    imageUrl: '',
-  },
-  {
-    id: 3,
-    tag: 'DIRECT LEDGER',
-    title: 'Zero Gas Vault Settlement',
-    description: 'Guaranteed ledger settlements directly inside your personal wallet ledger.',
-    ctaText: 'Open Wallet',
-    targetRoute: 'Wallet',
-    gradient: ['#052110', '#020F07'] as const,
-    accentColor: '#10B981',
-    imageUrl: '',
-  },
-];
+// Only banners uploaded in Admin Panel are displayed. No hardcoded fallback banners.
+export const DEFAULT_HOME_BANNERS: HomeBannerSlide[] = [];
 
 let memoryHomeBanners: HomeBannerSlide[] | null = null;
 let inFlightHomePromise: Promise<HomeBannerSlide[] | null> | null = null;
@@ -87,15 +54,15 @@ export async function getCachedHomeBannersFromStorage(): Promise<HomeBannerSlide
     const cached = await appStorage.getItem(HOME_BANNERS_CACHE_KEY);
     if (!cached) return null;
     const parsed = JSON.parse(cached);
-    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    if (!Array.isArray(parsed)) return null;
     const normalized: HomeBannerSlide[] = parsed.map((b: any) => ({
       ...b,
       imageUrl: resolveRemoteImageUrl(b?.imageUrl),
     }));
-    if (!memoryHomeBanners) {
-      memoryHomeBanners = normalized;
+    memoryHomeBanners = normalized;
+    if (normalized.length > 0) {
+      prefetchHomeBannerImages(normalized, 1200).catch(() => {});
     }
-    prefetchHomeBannerImages(normalized, 1200).catch(() => {});
     return normalized;
   } catch {
     return null;
@@ -117,39 +84,39 @@ export function fetchAndCacheHomeBanners(timeoutMs = 4500): Promise<HomeBannerSl
       if (timer) clearTimeout(timer);
 
       const data = await res.json();
-      if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+      if (data && data.success && Array.isArray(data.banners)) {
         const active = data.banners
           .filter((b: any) => b && b.isActive !== false)
           .slice()
           .sort((a: any, b: any) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-        if (active.length > 0) {
-          const mapped: HomeBannerSlide[] = active.map((b: any, idx: number) => ({
-            id: b.id || b.order || idx + 1,
-            tag: b.tag || 'GT ECOSYSTEM',
-            title: b.title || '',
-            description: b.description || '',
-            ctaText: b.ctaText || 'Explore Now',
-            targetRoute: (b.targetRoute === '/referrals'
-              ? 'Referrals'
-              : b.targetRoute === '/wallet'
-                ? 'Wallet'
-                : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
-            gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
-            accentColor: b.accentColor || '#22C55E',
-            imageUrl: resolveRemoteImageUrl(b.imageUrl),
-          }));
+        const mapped: HomeBannerSlide[] = active.map((b: any, idx: number) => ({
+          id: b.id || b.order || idx + 1,
+          tag: b.tag || 'GT ECOSYSTEM',
+          title: b.title || '',
+          description: b.description || '',
+          ctaText: b.ctaText || 'Explore Now',
+          targetRoute: (b.targetRoute === '/referrals'
+            ? 'Referrals'
+            : b.targetRoute === '/wallet'
+              ? 'Wallet'
+              : 'Mine') as 'Referrals' | 'Wallet' | 'Mine',
+          gradient: [b.gradientStart || '#0A2A18', b.gradientEnd || '#05180E'] as const,
+          accentColor: b.accentColor || '#22C55E',
+          imageUrl: resolveRemoteImageUrl(b.imageUrl),
+        }));
 
-          memoryHomeBanners = mapped;
-          appStorage.setItem(HOME_BANNERS_CACHE_KEY, JSON.stringify(mapped)).catch(() => {});
+        memoryHomeBanners = mapped;
+        appStorage.setItem(HOME_BANNERS_CACHE_KEY, JSON.stringify(mapped)).catch(() => {});
+        if (mapped.length > 0) {
           await prefetchHomeBannerImages(mapped, 2500);
-          return mapped;
         }
+        return mapped;
       }
-      return null;
+      return [];
     } catch {
       if (timer) clearTimeout(timer);
-      return null;
+      return memoryHomeBanners || [];
     } finally {
       inFlightHomePromise = null;
     }

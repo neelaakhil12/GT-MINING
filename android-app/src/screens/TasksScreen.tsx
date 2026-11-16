@@ -111,86 +111,8 @@ interface TaskItem {
   iconType: 'x' | 'instagram' | 'youtube' | 'telegram' | 'facebook' | 'tiktok' | 'video';
 }
 
-const DEFAULT_TASKS_DATA: TaskItem[] = [
-  {
-    id: 'task_x',
-    category: 'social',
-    title: 'Follow us on X',
-    description: 'Follow the official GT protocol account for instant announcements',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow on X',
-    url: 'https://x.com',
-    iconType: 'x',
-  },
-  {
-    id: 'task_instagram',
-    category: 'social',
-    title: 'Follow on Instagram',
-    description: 'Join our official global community',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Follow',
-    url: 'https://instagram.com',
-    iconType: 'instagram',
-  },
-  {
-    id: 'task_youtube',
-    category: 'social',
-    title: 'Subscribe on YouTube',
-    description: 'Subscribe to the GT channel for node guides',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Subscribe',
-    url: 'https://youtube.com',
-    iconType: 'youtube',
-  },
-  {
-    id: 'task_telegram',
-    category: 'social',
-    title: 'Join Telegram',
-    description: 'Join the official GT announcements channel',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Join',
-    url: 'https://t.me',
-    iconType: 'telegram',
-  },
-  {
-    id: 'task_facebook',
-    category: 'social',
-    title: 'Follow on Facebook',
-    description: 'Stay updated with GT ecosystem news',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://facebook.com',
-    iconType: 'facebook',
-  },
-  {
-    id: 'task_tiktok',
-    category: 'social',
-    title: 'Follow on TikTok',
-    description: 'Discover GT short updates and viral reels',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://tiktok.com',
-    iconType: 'tiktok',
-  },
-  {
-    id: 'task_video',
-    category: 'video',
-    title: 'Watch GT introduction',
-    description: 'Watch the assigned video (15 seconds)',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Watch video',
-    url: '#',
-    duration: 15,
-    iconType: 'video',
-  },
-];
+// Only tasks created in Admin Panel are displayed. No hardcoded dummy tasks.
+const DEFAULT_TASKS_DATA: TaskItem[] = [];
 
 const TASK_SLIDES = [
   {
@@ -262,7 +184,7 @@ export const TasksScreen: React.FC = () => {
       try {
         const tasksRes = await fetch(`${API_BASE_URL}/tasks`);
         const tasksData = await tasksRes.json();
-        if (tasksData && tasksData.success && Array.isArray(tasksData.tasks) && tasksData.tasks.length > 0) {
+        if (tasksData && tasksData.success && Array.isArray(tasksData.tasks)) {
           setTasksList(tasksData.tasks);
         }
       } catch {}
@@ -692,7 +614,16 @@ export const TasksScreen: React.FC = () => {
 
             {/* 4. Tasks List */}
             <View style={styles.tasksList}>
-              {filteredTasks.map((task) => {
+              {filteredTasks.length === 0 ? (
+                <View style={styles.emptyTasksCard}>
+                  <CheckCircle2 size={36} color="#16A34A" />
+                  <Text style={styles.emptyTasksTitle}>No Tasks Available</Text>
+                  <Text style={styles.emptyTasksSubtitle}>
+                    There are no active tasks in this section. Tasks added by admin will appear here!
+                  </Text>
+                </View>
+              ) : (
+                filteredTasks.map((task) => {
                 const sub = submissions.find((s) => s.taskId === task.id);
                 const isApproved = sub?.status === 'APPROVED';
                 const isPending = sub?.status === 'PENDING';
@@ -784,7 +715,7 @@ export const TasksScreen: React.FC = () => {
                     </View>
                   </View>
                 );
-              })}
+              }))}
             </View>
           </View>
 
@@ -2129,5 +2060,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  emptyTasksCard: {
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  emptyTasksTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0A341B',
+    marginTop: 10,
+  },
+  emptyTasksSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#166534',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 17,
+    maxWidth: 260,
   },
 });

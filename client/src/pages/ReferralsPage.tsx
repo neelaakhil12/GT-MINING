@@ -28,26 +28,7 @@ interface ReferralFriendRecord {
   isActive: boolean;
 }
 
-const defaultDividendSlides = [
-  {
-    tag: 'PROTOCOL DIVIDEND',
-    title: 'Autonomous 10% Yield Accrual',
-    desc: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
-    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    tag: 'TIER MULTIPLIER',
-    title: 'Secondary Node Expansion',
-    desc: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    tag: 'CONSENSUS BENEFIT',
-    title: 'Zero Latency Distribution',
-    desc: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
-    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
-  },
-];
+const defaultDividendSlides: any[] = [];
 
 export const ReferralsPage: React.FC = () => {
   const { user, updateWalletBalance } = useAuth();
@@ -61,7 +42,7 @@ export const ReferralsPage: React.FC = () => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return defaultDividendSlides;
+    return [];
   });
   const [activeSlide, setActiveSlide] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -115,14 +96,18 @@ export const ReferralsPage: React.FC = () => {
     const fetchSlides = async () => {
       try {
         const res = await api.getPublicReferralBanners();
-        if (res && res.success && Array.isArray(res.banners) && res.banners.length > 0) {
+        if (res && res.success && Array.isArray(res.banners)) {
           setSlides(res.banners);
           try {
-            localStorage.setItem('gt_cached_referral_banners', JSON.stringify(res.banners));
+            if (res.banners.length > 0) {
+              localStorage.setItem('gt_cached_referral_banners', JSON.stringify(res.banners));
+            } else {
+              localStorage.removeItem('gt_cached_referral_banners');
+            }
           } catch {}
         }
       } catch (err) {
-        // Fallback to cached/default slides
+        // network error fallback
       }
     };
     fetchSlides();
@@ -232,74 +217,76 @@ export const ReferralsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-xl mx-auto px-1 sm:px-0">
 
-      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER (matches HomeBanners: clear image, zero green overlay) */}
-      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
-        <div className="relative h-[165px] sm:h-[210px] md:h-[250px] w-full overflow-hidden">
-          {slides.map((slide, index) => {
-            const isActive = index === activeSlide;
-            const slideImg = slide.imageUrl || slide.image;
-            return (
-              <div
-                key={slide.id || index}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                }`}
-                style={
-                  !slideImg
-                    ? {
-                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
-                      }
-                    : undefined
-                }
-              >
-                {slideImg && (
-                  <img
-                    src={slideImg}
-                    alt={slide.title}
-                    className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 group-hover:scale-105"
-                    loading="eager"
-                  />
-                )}
-
-                {/* Gentle bottom scrim only so title & tag stay crisp without tinting or obscuring image */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
-
-                <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2 z-20">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-ping" />
-                    <span>{slide.tag || 'PROTOCOL DIVIDEND'}</span>
-                  </div>
-
-                  <h2 className="text-base sm:text-2xl font-black text-white tracking-tight drop-shadow-md leading-tight">
-                    {slide.title}
-                  </h2>
-                  <p className="text-[11px] sm:text-xs text-white/85 line-clamp-2 font-medium max-w-md drop-shadow">
-                    {slide.description || slide.desc}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Dots Indicator */}
-          {slides.length > 1 && (
-            <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-1.5 z-30">
-              {slides.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveSlide(idx)}
-                  className={`transition-all duration-300 rounded-full h-1.5 ${
-                    activeSlide === idx
-                      ? 'w-5 bg-[#4ADE80]'
-                      : 'w-1.5 bg-white/50 hover:bg-white/80'
+      {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER (Shown ONLY when banners exist) */}
+      {slides.length > 0 && (
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
+          <div className="relative h-[165px] sm:h-[210px] md:h-[250px] w-full overflow-hidden">
+            {slides.map((slide, index) => {
+              const isActive = index === activeSlide;
+              const slideImg = slide.imageUrl || slide.image;
+              return (
+                <div
+                  key={slide.id || index}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                   }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          )}
+                  style={
+                    !slideImg
+                      ? {
+                          background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
+                        }
+                      : undefined
+                  }
+                >
+                  {slideImg && (
+                    <img
+                      src={slideImg}
+                      alt={slide.title}
+                      className="w-full h-full object-cover object-center transition-transform duration-1000 scale-100 group-hover:scale-105"
+                      loading="eager"
+                    />
+                  )}
+
+                  {/* Gentle bottom scrim only so title & tag stay crisp without tinting or obscuring image */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+
+                  <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-end text-white max-w-xl space-y-1.5 sm:space-y-2 z-20">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-ping" />
+                      <span>{slide.tag || 'PROTOCOL DIVIDEND'}</span>
+                    </div>
+
+                    <h2 className="text-base sm:text-2xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                      {slide.title}
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-white/85 line-clamp-2 font-medium max-w-md drop-shadow">
+                      {slide.description || slide.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Dots Indicator */}
+            {slides.length > 1 && (
+              <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-1.5 z-30">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveSlide(idx)}
+                    className={`transition-all duration-300 rounded-full h-1.5 ${
+                      activeSlide === idx
+                        ? 'w-5 bg-[#4ADE80]'
+                        : 'w-1.5 bg-white/50 hover:bg-white/80'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2. GROW YOUR NETWORK & 2x2 STATS GRID */}
       <div className="space-y-3">

@@ -37,80 +37,7 @@ export interface AdminTaskItem {
   createdAt?: string;
 }
 
-const DEFAULT_TASKS: AdminTaskItem[] = [
-  {
-    id: 'task_x',
-    category: 'social',
-    title: 'Follow us on X',
-    description: 'Follow the official GT protocol account for instant announcements',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Follow on X',
-    url: 'https://x.com',
-    iconType: 'x',
-    isActive: true,
-  },
-  {
-    id: 'task_instagram',
-    category: 'social',
-    title: 'Follow on Instagram',
-    description: 'Join our official global community',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Follow',
-    url: 'https://instagram.com',
-    iconType: 'instagram',
-    isActive: true,
-  },
-  {
-    id: 'task_youtube',
-    category: 'social',
-    title: 'Subscribe on YouTube',
-    description: 'Subscribe to the GT channel for node guides',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Subscribe',
-    url: 'https://youtube.com',
-    iconType: 'youtube',
-    isActive: true,
-  },
-  {
-    id: 'task_telegram',
-    category: 'social',
-    title: 'Join Telegram',
-    description: 'Join the official GT announcements channel',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Join',
-    url: 'https://t.me',
-    iconType: 'telegram',
-    isActive: true,
-  },
-  {
-    id: 'task_facebook',
-    category: 'social',
-    title: 'Follow on Facebook',
-    description: 'Stay updated with GT ecosystem news',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://facebook.com',
-    iconType: 'facebook',
-    isActive: true,
-  },
-  {
-    id: 'task_tiktok',
-    category: 'social',
-    title: 'Follow on TikTok',
-    description: 'Discover GT short updates and viral reels',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://tiktok.com',
-    iconType: 'tiktok',
-    isActive: true,
-  },
-];
+const DEFAULT_TASKS: AdminTaskItem[] = [];
 
 const PLATFORM_PRESETS = [
   { iconType: 'video', label: 'Custom Video / YouTube Player', category: 'video', defaultBtn: 'Watch video' },
@@ -180,13 +107,13 @@ export const AdminTasksPage: React.FC = () => {
   const fetchTasks = async () => {
     try {
       const res = await api.getAdminTasks();
-      if (res.success && Array.isArray(res.tasks) && res.tasks.length > 0) {
+      if (res.success && Array.isArray(res.tasks)) {
         setTasks(res.tasks);
       } else {
-        setTasks(DEFAULT_TASKS);
+        setTasks([]);
       }
     } catch {
-      setTasks(DEFAULT_TASKS);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -594,37 +521,44 @@ export const AdminTasksPage: React.FC = () => {
 
                 {/* Tasks Cards Preview list */}
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                  {tasks.slice(0, 4).map((t) => (
-                    <div
-                      key={t.id}
-                      className="p-2.5 rounded-2xl bg-white border border-[#22C55E]/20 shadow-sm flex items-center justify-between gap-2"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 ${
-                            t.category === 'video' ? 'bg-[#EF4444]' : 'bg-[#0A341B]'
-                          }`}
-                        >
-                          {t.category === 'video' ? (
-                            <Play className="w-4 h-4 fill-current text-white translate-x-0.5" />
-                          ) : (
-                            <span className="text-[10px] font-bold uppercase">{t.iconType.charAt(0)}</span>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-[#0A341B] truncate">{t.title}</p>
-                          <p className="text-[9px] text-[#1E5E36] truncate">{t.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] font-black text-[#15803D] block">{t.rewardLabel}</span>
-                        <span className="px-2 py-0.5 rounded-lg bg-[#0A341B] text-white text-[8px] font-bold inline-block">
-                          {t.buttonLabel}
-                        </span>
-                      </div>
+                  {tasks.length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-white/70 border border-[#22C55E]/20 text-center flex flex-col items-center justify-center my-2">
+                      <p className="text-[11px] font-bold text-[#0A341B]">No Tasks Active</p>
+                      <p className="text-[9px] text-[#1E5E36]/80 mt-0.5">Tasks created above will appear here</p>
                     </div>
-                  ))}
+                  ) : (
+                    tasks.slice(0, 4).map((t) => (
+                      <div
+                        key={t.id}
+                        className="p-2.5 rounded-2xl bg-white border border-[#22C55E]/20 shadow-sm flex items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 ${
+                              t.category === 'video' ? 'bg-[#EF4444]' : 'bg-[#0A341B]'
+                            }`}
+                          >
+                            {t.category === 'video' ? (
+                              <Play className="w-4 h-4 fill-current text-white translate-x-0.5" />
+                            ) : (
+                              <span className="text-[10px] font-bold uppercase">{t.iconType.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-[#0A341B] truncate">{t.title}</p>
+                            <p className="text-[9px] text-[#1E5E36] truncate">{t.description}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-black text-[#15803D] block">{t.rewardLabel}</span>
+                          <span className="px-2 py-0.5 rounded-lg bg-[#0A341B] text-white text-[8px] font-bold inline-block">
+                            {t.buttonLabel}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

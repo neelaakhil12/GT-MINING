@@ -317,10 +317,17 @@ router.get('/users', (req, res) => {
       'chloe.dubois@paris.fr'
     ]);
 
-    let users = (db.users || []).filter(u =>
-      !fakeEmails.has((u.email || '').toLowerCase()) &&
-      u.id !== 'usr_demo_002'
-    );
+    let users = (db.users || []).filter(u => {
+      const email = (u.email || '').toLowerCase().trim();
+      const name = (u.fullName || '').toLowerCase().trim();
+      const isDemo =
+        fakeEmails.has(email) ||
+        email.startsWith('demo@') ||
+        name.includes('demo miner') ||
+        u.isDemo === true ||
+        u.id === 'usr_demo_002';
+      return !isDemo && !u.deletedAt && !u.isDeleted;
+    });
 
     if (status) {
       users = users.filter(u => u.accountStatus === status);
@@ -368,33 +375,47 @@ router.get('/users', (req, res) => {
 router.get('/top-miners', (req, res) => {
   try {
     const db = readDB();
-    const fakeEmails = new Set([
-      'harishneela71@gmail.com',
-      'harishneela3@gmail.com',
-      'harishneela14@gmail.com',
+    const dummyEmails = new Set([
       'demo@gtmining.com',
+      'demo@gtnetwork.io',
       'user@gtmining.com',
       'test@gtmining.com',
       'testuser@gtmining.com'
     ]);
 
-    let users = (db.users || []).filter(u =>
-      !fakeEmails.has((u.email || '').toLowerCase()) &&
-      u.id !== 'usr_demo_002' &&
-      u.role !== 'ADMIN'
-    );
+    let users = (db.users || []).filter(u => {
+      const email = (u.email || '').toLowerCase().trim();
+      const name = (u.fullName || '').toLowerCase().trim();
+      const isDemo =
+        dummyEmails.has(email) ||
+        email.startsWith('demo@') ||
+        name.includes('demo miner') ||
+        u.isDemo === true ||
+        u.id === 'usr_demo_002';
+      return !isDemo && !u.deletedAt && !u.isDeleted;
+    });
 
     const miners = users.map(u => {
       const wallet = (db.wallets || []).find(w => w.userId === u.id) || { availableBalance: 0, lifetimeEarned: 0 };
       const claims = (db.miningClaims || []).filter(c => c.userId === u.id);
-      const totalMined = claims.reduce((acc, c) => acc + Number(c.amount || 0), 0);
+      const totalMinedFromClaims = claims.reduce((acc, c) => acc + Number(c.rewardAmount || c.amount || 0), 0);
+      const miningTxTotal = (db.walletTransactions || [])
+        .filter(tx => tx.userId === u.id && tx.type === 'MINING_REWARD')
+        .reduce((acc, tx) => acc + Number(tx.amount || 0), 0);
+      const walletLifetime = Number(wallet.lifetimeEarned || 0);
+      const totalMined = Math.max(totalMinedFromClaims, miningTxTotal, walletLifetime);
+
       const referralCount = (db.referrals || []).filter(r => r.referrerUserId === u.id).length;
       const referralEarnings = (db.walletTransactions || [])
         .filter(tx => tx.userId === u.id && (tx.type === 'REFERRAL' || tx.type === 'DIVIDEND' || tx.type === 'COMMISSION'))
         .reduce((acc, tx) => acc + Number(tx.amount || 0), 0);
 
-      const gtWalletCoins = Number((Number(wallet.availableBalance) || 0).toFixed(4));
-      const lifetimeEarned = Number((Number(wallet.lifetimeEarned) || 0).toFixed(4));
+      const gtWalletCoins = Number((Number(wallet.availableBalance) || totalMined || 0).toFixed(4));
+      const lifetimeEarned = Number(Math.max(walletLifetime, totalMined).toFixed(4));
+      const completedCycles = Math.max(
+        claims.length,
+        (db.walletTransactions || []).filter(tx => tx.userId === u.id && tx.type === 'MINING_REWARD').length
+      );
 
       return {
         id: u.id,
@@ -407,9 +428,9 @@ router.get('/top-miners', (req, res) => {
         totalMined: Number(totalMined.toFixed(4)),
         lifetimeEarned,
         referralEarnings: Number(referralEarnings.toFixed(4)),
-        completedCycles: claims.length,
+        completedCycles,
         referralCount,
-        lastMiningAt: u.lastMiningAt || null,
+        lastMiningAt: u.lastMiningAt || (claims.length > 0 ? claims[claims.length - 1].claimedAt : null),
         createdAt: u.createdAt
       };
     });

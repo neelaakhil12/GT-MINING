@@ -31,85 +31,7 @@ interface TaskItem {
   iconType: 'x' | 'instagram' | 'youtube' | 'telegram' | 'facebook' | 'tiktok' | 'video';
 }
 
-const TASKS_DATA: TaskItem[] = [
-  {
-    id: 'task_x',
-    category: 'social',
-    title: 'Follow us on X',
-    description: 'Follow the official GT account',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Follow on X',
-    url: 'https://x.com',
-    iconType: 'x',
-  },
-  {
-    id: 'task_instagram',
-    category: 'social',
-    title: 'Follow on Instagram',
-    description: 'Join our official community',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Follow',
-    url: 'https://instagram.com',
-    iconType: 'instagram',
-  },
-  {
-    id: 'task_youtube',
-    category: 'social',
-    title: 'Subscribe on YouTube',
-    description: 'Subscribe to the GT channel',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Subscribe',
-    url: 'https://youtube.com',
-    iconType: 'youtube',
-  },
-  {
-    id: 'task_telegram',
-    category: 'social',
-    title: 'Join Telegram',
-    description: 'Join the official GT channel',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Join',
-    url: 'https://t.me',
-    iconType: 'telegram',
-  },
-  {
-    id: 'task_facebook',
-    category: 'social',
-    title: 'Follow on Facebook',
-    description: 'Stay updated with GT news',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://facebook.com',
-    iconType: 'facebook',
-  },
-  {
-    id: 'task_tiktok',
-    category: 'social',
-    title: 'Follow on TikTok',
-    description: 'Discover GT short videos',
-    reward: 1,
-    rewardLabel: '+1 GT',
-    buttonLabel: 'Follow',
-    url: 'https://tiktok.com',
-    iconType: 'tiktok',
-  },
-  {
-    id: 'task_video',
-    category: 'video',
-    title: 'Watch GT introduction',
-    description: 'Watch the assigned video (demo: 10 seconds)',
-    reward: 2,
-    rewardLabel: '+2 GT',
-    buttonLabel: 'Watch video',
-    url: '#',
-    iconType: 'video',
-  },
-];
+const TASKS_DATA: TaskItem[] = [];
 
 // YouTube Embed URL helper
 const getYouTubeEmbedUrl = (rawUrl: string): string | null => {
@@ -254,7 +176,7 @@ export const TasksPage: React.FC = () => {
         api.getMyTaskSubmissions(),
       ]);
 
-      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success && Array.isArray(tasksRes.value.tasks) && tasksRes.value.tasks.length > 0) {
+      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success && Array.isArray(tasksRes.value.tasks)) {
         setTasksList(tasksRes.value.tasks);
       }
 
@@ -624,108 +546,118 @@ export const TasksPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Tasks List matching Screenshot 1 - Compact horizontal row on all viewports */}
-        <div className="space-y-3">
-          {filteredTasks.map((task) => {
-            const sub = submissions.find((s) => s.taskId === task.id);
-            const isApproved = sub?.status === 'APPROVED';
-            const isPending = sub?.status === 'PENDING';
-            const isRejected = sub?.status === 'REJECTED';
-            const isVideoWatching = activeVideoTask?.id === task.id && videoTimer !== null;
+        {/* Tasks List */}
+        {filteredTasks.length === 0 ? (
+          <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-100 text-center flex flex-col items-center justify-center my-4 shadow-sm">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-2 stroke-[2.2]" />
+            <h4 className="text-base font-extrabold text-[#0A341B]">No Tasks Available</h4>
+            <p className="text-xs text-emerald-800/70 mt-1 max-w-sm">
+              There are no active tasks in this section right now. Tasks added by admin will appear here!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTasks.map((task) => {
+              const sub = submissions.find((s) => s.taskId === task.id);
+              const isApproved = sub?.status === 'APPROVED';
+              const isPending = sub?.status === 'PENDING';
+              const isRejected = sub?.status === 'REJECTED';
+              const isVideoWatching = activeVideoTask?.id === task.id && videoTimer !== null;
 
-            return (
-              <div
-                key={task.id}
-                className="p-3.5 sm:p-4 rounded-[22px] sm:rounded-3xl bg-white border border-white shadow-[0_4px_20px_rgba(22,101,52,0.04)] flex items-center justify-between gap-3 sm:gap-4 transition-all hover:shadow-[0_8px_25px_rgba(22,101,52,0.08)]"
-              >
-                {/* Left Side: Brand Icon and Task Info */}
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                  <TaskIcon type={task.iconType} />
+              return (
+                <div
+                  key={task.id}
+                  className="p-3.5 sm:p-4 rounded-[22px] sm:rounded-3xl bg-white border border-white shadow-[0_4px_20px_rgba(22,101,52,0.04)] flex items-center justify-between gap-3 sm:gap-4 transition-all hover:shadow-[0_8px_25px_rgba(22,101,52,0.08)]"
+                >
+                  {/* Left Side: Brand Icon and Task Info */}
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <TaskIcon type={task.iconType} />
 
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight truncate">
-                        {task.title}
-                      </h3>
-                      {isPending && (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#F59E0B]/30">
-                          <Clock className="w-3 h-3 text-[#D97706]" />
-                          <span>Verification in progress</span>
-                        </span>
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-black text-[#0A341B] tracking-tight truncate">
+                          {task.title}
+                        </h3>
+                        {isPending && (
+                          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#F59E0B]/30">
+                            <Clock className="w-3 h-3 text-[#D97706]" />
+                            <span>Verification in progress</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-[#1E5E36]/80 font-medium truncate">
+                        {task.description}
+                      </p>
+
+                      {/* Video Progress Bar */}
+                      {task.category === 'video' && (
+                        <div className="pt-1.5 w-full max-w-[200px]">
+                          <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#22C55E] transition-all duration-300"
+                              style={{
+                                width: isApproved ? '100%' : `${activeVideoTask?.id === task.id ? videoProgress : 0}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <p className="text-[11px] sm:text-xs text-[#1E5E36]/80 font-medium truncate">
-                      {task.description}
-                    </p>
+                  </div>
 
-                    {/* Video Progress Bar */}
-                    {task.category === 'video' && (
-                      <div className="pt-1.5 w-full max-w-[200px]">
-                        <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#22C55E] transition-all duration-300"
-                            style={{
-                              width: isApproved ? '100%' : `${activeVideoTask?.id === task.id ? videoProgress : 0}%`,
-                            }}
-                          />
-                        </div>
+                  {/* Right Side: Reward Points on Top, Action Button Below */}
+                  <div className="flex flex-col items-end justify-center shrink-0 gap-1.5">
+                    <span className="text-xs sm:text-sm font-black text-[#0A341B] tracking-tight">
+                      {task.rewardLabel}
+                    </span>
+
+                    {isApproved ? (
+                      <div className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#DCFCE7] text-[#15803D] font-black text-[11px] sm:text-xs border border-[#22C55E]/30 shrink-0">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Completed</span>
                       </div>
+                    ) : isPending ? (
+                      <button
+                        onClick={() => handleTaskAction(task)}
+                        className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FEF3C7] text-[#92400E] font-black text-[11px] sm:text-xs border border-[#F59E0B]/40 shrink-0 cursor-pointer shadow-2xs hover:bg-[#FDE68A] transition-all"
+                        title="Proof submitted. Tap to review or re-upload if needed."
+                      >
+                        <Clock className="w-3.5 h-3.5 text-[#D97706]" />
+                        <span>Pending Approval</span>
+                      </button>
+                    ) : isRejected ? (
+                      <button
+                        onClick={() => handleTaskAction(task)}
+                        className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700 font-black text-[11px] sm:text-xs border border-red-300 shrink-0 transition-all cursor-pointer"
+                        title={sub?.adminComment || 'Proof was rejected. Tap to resubmit.'}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Resubmit Proof ↗</span>
+                      </button>
+                    ) : isVideoWatching ? (
+                      <button
+                        onClick={() => setWatchingVideoModalTask(task)}
+                        className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FBBF24]/20 hover:bg-[#FBBF24]/30 text-[#B45309] font-black text-[11px] sm:text-xs border border-[#FBBF24]/30 shrink-0 cursor-pointer transition-all"
+                        title="Click to view video"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-ping" />
+                        <span>{videoTimer === 0 ? 'Done! Tap' : `${videoTimer}s...`}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleTaskAction(task)}
+                        className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer"
+                      >
+                        <span>{task.buttonLabel}</span>
+                        <span className="text-xs">↗</span>
+                      </button>
                     )}
                   </div>
                 </div>
-
-                {/* Right Side: Reward Points on Top, Action Button Below */}
-                <div className="flex flex-col items-end justify-center shrink-0 gap-1.5">
-                  <span className="text-xs sm:text-sm font-black text-[#0A341B] tracking-tight">
-                    {task.rewardLabel}
-                  </span>
-
-                  {isApproved ? (
-                    <div className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#DCFCE7] text-[#15803D] font-black text-[11px] sm:text-xs border border-[#22C55E]/30 shrink-0">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Completed</span>
-                    </div>
-                  ) : isPending ? (
-                    <button
-                      onClick={() => handleTaskAction(task)}
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FEF3C7] text-[#92400E] font-black text-[11px] sm:text-xs border border-[#F59E0B]/40 shrink-0 cursor-pointer shadow-2xs hover:bg-[#FDE68A] transition-all"
-                      title="Proof submitted. Tap to review or re-upload if needed."
-                    >
-                      <Clock className="w-3.5 h-3.5 text-[#D97706]" />
-                      <span>Pending Approval</span>
-                    </button>
-                  ) : isRejected ? (
-                    <button
-                      onClick={() => handleTaskAction(task)}
-                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-red-100 hover:bg-red-200 text-red-700 font-black text-[11px] sm:text-xs border border-red-300 shrink-0 transition-all cursor-pointer"
-                      title={sub?.adminComment || 'Proof was rejected. Tap to resubmit.'}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>Resubmit Proof ↗</span>
-                    </button>
-                  ) : isVideoWatching ? (
-                    <button
-                      onClick={() => setWatchingVideoModalTask(task)}
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FBBF24]/20 hover:bg-[#FBBF24]/30 text-[#B45309] font-black text-[11px] sm:text-xs border border-[#FBBF24]/30 shrink-0 cursor-pointer transition-all"
-                      title="Click to view video"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-ping" />
-                      <span>{videoTimer === 0 ? 'Done! Tap' : `${videoTimer}s...`}</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleTaskAction(task)}
-                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#14532D] hover:bg-[#0D381E] text-white font-black text-[11px] sm:text-xs shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer"
-                    >
-                      <span>{task.buttonLabel}</span>
-                      <span className="text-xs">↗</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Video Watch & Quest Modal */}

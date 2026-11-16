@@ -28,7 +28,7 @@ export const OnboardingScreen: React.FC = () => {
   // Instant 0ms render from memory cache or bundled default slides
   const [slides, setSlides] = useState<Slide[]>(() => {
     const mem = getMemoryOnboardingSlides();
-    if (mem && mem.length > 0) return mem;
+    if (mem) return mem;
     return DEFAULT_SLIDES;
   });
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -42,13 +42,13 @@ export const OnboardingScreen: React.FC = () => {
     const syncBanners = async () => {
       // 1. Fast local storage cache check
       const cached = await getCachedOnboardingSlidesFromStorage();
-      if (isMounted && cached && cached.length > 0) {
+      if (isMounted && cached !== null) {
         setSlides(cached);
       }
 
       // 2. Background live network fetch
       const live = await fetchAndCacheOnboardingBanners(3000);
-      if (isMounted && live && live.length > 0) {
+      if (isMounted && live !== null) {
         setSlides(live);
       }
     };
@@ -68,12 +68,14 @@ export const OnboardingScreen: React.FC = () => {
     });
   }, [slides]);
 
-  // If user is already authenticated, bypass onboarding and go directly to main app
+  // If user is already authenticated or if no onboarding slides exist, bypass onboarding
   useEffect(() => {
     if (isAuthenticated) {
       navigation.replace('MainTabs');
+    } else if (slides.length === 0) {
+      navigation.replace('Auth');
     }
-  }, [isAuthenticated, navigation]);
+  }, [isAuthenticated, slides.length, navigation]);
 
   const proceedToNext = () => {
     if (isAuthenticated) {

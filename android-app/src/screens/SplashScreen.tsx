@@ -85,8 +85,13 @@ export const SplashScreen: React.FC = () => {
       // User is already logged in -> go straight to main app dashboard
       navigation.replace('MainTabs');
     } else {
-      // User is not logged in -> show onboarding tour slides
-      navigation.replace('Onboarding');
+      // If admin uploaded onboarding slides, show them; otherwise go directly to Auth
+      const slides = getMemoryOnboardingSlides();
+      if (slides && slides.length > 0) {
+        navigation.replace('Onboarding');
+      } else {
+        navigation.replace('Auth');
+      }
     }
   };
 

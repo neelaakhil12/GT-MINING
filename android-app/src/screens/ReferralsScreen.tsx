@@ -37,26 +37,7 @@ import { useAppSafeArea } from '../utils/safeArea';
 
 const { width } = Dimensions.get('window');
 
-const defaultDividendSlides = [
-  {
-    tag: 'PROTOCOL DIVIDEND',
-    title: 'Autonomous 10% Yield Accrual',
-    desc: 'Instant smart ledger execution with zero platform transaction fees on peer cycles.',
-    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    tag: 'TIER MULTIPLIER',
-    title: 'Secondary Node Expansion',
-    desc: 'Deep multi-tier connectivity distributing block rewards continuously as friends activate.',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    tag: 'CONSENSUS BENEFIT',
-    title: 'Zero Latency Distribution',
-    desc: 'Earn pro-rata commissions each time peer nodes finalize 4-hour mining cycles.',
-    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=crop',
-  },
-];
+const defaultDividendSlides: any[] = [];
 
 export const ReferralsScreen: React.FC = () => {
   const { user, refreshUserData } = useAuth();
@@ -176,11 +157,15 @@ export const ReferralsScreen: React.FC = () => {
           try {
             const res = await fetch(`${base}/referral-banners`);
             const data = await res.json();
-            if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+            if (data && data.success && Array.isArray(data.banners)) {
               const normalized = normalizeReferralSlides(data.banners);
               setSlides(normalized);
-              prefetchSlides(normalized);
-              appStorage.setItem('gt_cached_referral_banners', JSON.stringify(normalized)).catch(() => {});
+              if (normalized.length > 0) {
+                prefetchSlides(normalized);
+                appStorage.setItem('gt_cached_referral_banners', JSON.stringify(normalized)).catch(() => {});
+              } else {
+                appStorage.removeItem('gt_cached_referral_banners').catch(() => {});
+              }
               break;
             }
           } catch {}
@@ -354,7 +339,7 @@ export const ReferralsScreen: React.FC = () => {
     } catch (e) {}
   };
 
-  const currentSlideData = slides[activeSlide] || slides[0] || defaultDividendSlides[0];
+  const currentSlideData = slides.length > 0 ? (slides[activeSlide] || slides[0]) : null;
 
   return (
     <View style={styles.container}>
@@ -368,68 +353,70 @@ export const ReferralsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
-          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL (matches Home Page Banners: clear image, zero green overlay) */}
-          <View style={styles.carouselBannerCard}>
-            {/* Gradient underlay prevents any black flash before images paint */}
-            <LinearGradient
-              colors={['#0A2A18', '#05180E']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-            {slides.map((slide, idx) =>
-              slide.imageUrl ? (
-                <Image
-                  key={`rb_${slide.id || idx}`}
-                  source={{ uri: slide.imageUrl }}
-                  fadeDuration={0}
-                  style={[
-                    StyleSheet.absoluteFillObject,
-                    { opacity: idx === activeSlide ? 1 : 0 },
-                  ]}
-                  resizeMode="cover"
-                />
-              ) : null
-            )}
+          {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL (Shown ONLY when banners exist) */}
+          {slides.length > 0 && currentSlideData && (
+            <View style={styles.carouselBannerCard}>
+              {/* Gradient underlay prevents any black flash before images paint */}
+              <LinearGradient
+                colors={['#0A2A18', '#05180E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              {slides.map((slide, idx) =>
+                slide.imageUrl ? (
+                  <Image
+                    key={`rb_${slide.id || idx}`}
+                    source={{ uri: slide.imageUrl }}
+                    fadeDuration={0}
+                    style={[
+                      StyleSheet.absoluteFillObject,
+                      { opacity: idx === activeSlide ? 1 : 0 },
+                    ]}
+                    resizeMode="cover"
+                  />
+                ) : null
+              )}
 
-            {/* Gentle bottom scrim only for text contrast — matches Home Banner */}
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.7)']}
-              style={StyleSheet.absoluteFillObject}
-            />
+              {/* Gentle bottom scrim only for text contrast — matches Home Banner */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.7)']}
+                style={StyleSheet.absoluteFillObject}
+              />
 
-            <View style={styles.carouselHeaderRow}>
-              <View style={styles.dividendTagPill}>
-                <View style={styles.pulsingGreenDot} />
-                <Text style={styles.dividendTagText}>
-                  {currentSlideData.tag || 'PROTOCOL DIVIDEND'}
+              <View style={styles.carouselHeaderRow}>
+                <View style={styles.dividendTagPill}>
+                  <View style={styles.pulsingGreenDot} />
+                  <Text style={styles.dividendTagText}>
+                    {currentSlideData.tag || 'PROTOCOL DIVIDEND'}
+                  </Text>
+                </View>
+
+                <View style={styles.dotsRow}>
+                  {slides.map((_, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => setActiveSlide(idx)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.dot,
+                        activeSlide === idx ? styles.dotActive : styles.dotInactive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.carouselTextFooter}>
+                <Text style={styles.carouselTitle}>
+                  {currentSlideData.title}
+                </Text>
+                <Text style={styles.carouselDesc} numberOfLines={2}>
+                  {currentSlideData.description || currentSlideData.desc}
                 </Text>
               </View>
-
-              <View style={styles.dotsRow}>
-                {slides.map((_, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => setActiveSlide(idx)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.dot,
-                      activeSlide === idx ? styles.dotActive : styles.dotInactive,
-                    ]}
-                  />
-                ))}
-              </View>
             </View>
-
-            <View style={styles.carouselTextFooter}>
-              <Text style={styles.carouselTitle}>
-                {currentSlideData.title}
-              </Text>
-              <Text style={styles.carouselDesc} numberOfLines={2}>
-                {currentSlideData.description || currentSlideData.desc}
-              </Text>
-            </View>
-          </View>
+          )}
 
           {/* 2. GROW YOUR NETWORK & 2x2 STATS GRID matching website */}
           <View style={styles.growSection}>
