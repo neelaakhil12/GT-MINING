@@ -91,7 +91,7 @@ export async function getCachedOnboardingSlidesFromStorage(): Promise<Onboarding
     if (!memorySlides) {
       memorySlides = mapped;
     }
-    prefetchOnboardingImages(mapped, 1500).catch(() => {});
+    prefetchOnboardingImages(mapped, 1500).catch(() => { });
     return mapped;
   } catch {
     return null;
@@ -118,10 +118,10 @@ export function fetchAndCacheOnboardingBanners(timeoutMs = 5000): Promise<Onboar
         const mapped = sorted.map(mapBannerToSlide);
         memorySlides = mapped;
         if (sorted.length > 0) {
-          appStorage.setItem(CACHE_KEY, JSON.stringify(sorted)).catch(() => {});
+          appStorage.setItem(CACHE_KEY, JSON.stringify(sorted)).catch(() => { });
           await prefetchOnboardingImages(mapped, 3000);
         } else {
-          appStorage.removeItem(CACHE_KEY).catch(() => {});
+          appStorage.removeItem(CACHE_KEY).catch(() => { });
         }
         return mapped;
       }

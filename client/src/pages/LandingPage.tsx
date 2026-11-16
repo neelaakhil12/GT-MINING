@@ -21,6 +21,7 @@ if (typeof window !== 'undefined') {
     img.src = src;
   });
 }
+}
 
 const getInitialSlides = (): OnboardingSlide[] => {
   if (typeof window !== 'undefined') {
@@ -334,19 +335,17 @@ export const LandingPage: React.FC = () => {
                   (e.target as HTMLImageElement).src = fallbackImg;
                 }
               }}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${
-                idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
-              }`}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+                }`}
             />
           ))}
 
           {/* Vignette Overlay for Crisp Contrast */}
           <div
-            className={`absolute inset-0 pointer-events-none transition-colors duration-300 ${
-              slide.theme === 'light'
-                ? 'bg-gradient-to-t from-black/80 via-black/25 to-black/70'
-                : 'bg-gradient-to-t from-black/95 via-black/40 to-black/80'
-            }`}
+            className={`absolute inset-0 pointer-events-none transition-colors duration-300 ${slide.theme === 'light'
+              ? 'bg-gradient-to-t from-black/80 via-black/25 to-black/70'
+              : 'bg-gradient-to-t from-black/95 via-black/40 to-black/80'
+              }`}
           />
         </div>
 
@@ -390,8 +389,8 @@ export const LandingPage: React.FC = () => {
                     idx < currentSlide
                       ? '100%'
                       : idx === currentSlide
-                      ? `${slideProgress}%`
-                      : '0%',
+                        ? `${slideProgress}%`
+                        : '0%',
                 }}
               />
             </div>
