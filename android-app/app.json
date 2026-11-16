@@ -34,10 +34,10 @@
       "@react-native-google-signin/google-signin",
       "expo-image-picker"
     ],
-    "owner": "student17",
+    "owner": "student16s-team",
     "extra": {
       "eas": {
-        "projectId": "45ef27d9-a0f1-4ff6-a5b5-91f8b4ac81a5"
+        "projectId": "358c92fa-74c4-47d8-b8b3-d7983ffd4d48"
       }
     }
   }
