@@ -263,8 +263,6 @@ export const WalletScreen: React.FC = () => {
               </View>
             )}
           </View>
-
-          <View style={styles.bottomSpacer} />
         </ScrollView>
 
         {/* Floating Bottom Navigation Bar (matching all 4 screenshots) */}
@@ -285,7 +283,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 120, // generous bottom padding so floating nav doesn't cover content
+    paddingBottom: 20,
     gap: 14,
   },
   heroCard: {

@@ -403,11 +403,11 @@ export const HomeBanners: React.FC = () => {
       {/* 3. Action Cards Row matching video */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        {/* Mine $GT Action Card */}
+        {/* Mine GT Action Card */}
         <div className="p-6 rounded-3xl bg-white/85 border border-white shadow-sm flex items-center justify-between gap-4 relative overflow-hidden group">
           <div className="space-y-2 relative z-10 max-w-[240px]">
             <h3 className="text-xl sm:text-2xl font-black text-[#0A341B]">
-              Mine $GT
+              Mine GT
             </h3>
             <p className="text-xs text-[#1E5E36] font-medium">
               Build the Human Network
@@ -417,7 +417,7 @@ export const HomeBanners: React.FC = () => {
                 to="/mining"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-black text-xs shadow-[0_8px_20px_rgba(34,197,94,0.35)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.5)] transition-all transform active:scale-95"
               >
-                <span>Mine $GT</span>
+                <span>Mine GT</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>

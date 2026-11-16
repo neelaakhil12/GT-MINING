@@ -530,8 +530,6 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.logoutBtnText}>Logout Account</Text>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.bottomSpacer} />
         </ScrollView>
       </View>
     </View>

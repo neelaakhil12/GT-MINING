@@ -113,6 +113,7 @@ export const LandingPage: React.FC = () => {
   const [bannersReady, setBannersReady] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [splashProgress, setSplashProgress] = useState(0);
+  const [statusText, setStatusText] = useState('INITIALIZING NODE...');
 
   // Story status progress (0 to 100% per slide, auto-advances like WhatsApp status)
   const [slideProgress, setSlideProgress] = useState(0);
@@ -204,7 +205,11 @@ export const LandingPage: React.FC = () => {
           clearInterval(interval);
           return 100;
         }
-        return Math.min(100, prev + 25);
+        const next = prev + 3;
+        if (next > 30 && next < 60) setStatusText('CONNECTING NODES & PEERS...');
+        else if (next >= 60 && next < 85) setStatusText('SYNCING 4H EPOCH LEDGER...');
+        else if (next >= 85) setStatusText('PROTOCOL ACTIVE & READY');
+        return next > 100 ? 100 : next;
       });
     }, 45);
 
@@ -277,67 +282,66 @@ export const LandingPage: React.FC = () => {
     return (
       <div
         onClick={handleProceedFromSplash}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 bg-gradient-to-b from-[#051B0D] via-[#0A2E18] to-[#04160A] text-white cursor-pointer select-none overflow-hidden"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 text-[#0A341B] cursor-pointer select-none overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #E6F8EB 0%, #D8F5E0 50%, #ECFBF1 100%)' }}
       >
-        {/* Ambient Glows */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#22C55E]/20 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#16A34A]/15 rounded-full blur-[100px] pointer-events-none" />
+        {/* Soft Ambient Corner Glows (Clean website aesthetic - no concentric rings) */}
+        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-emerald-400/25 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-emerald-400/30 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-emerald-300/20 blur-3xl pointer-events-none" />
 
-        {/* Top brand row (Skip button on right) */}
+        {/* Top Header Row (Frosted Glass Skip Button) */}
         <div className="w-full flex justify-end items-center z-10 pt-4">
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleProceedToLogin();
             }}
-            className="text-xs font-bold text-neutral-400 hover:text-white px-3 py-1.5 rounded-full bg-white/5 border border-white/10 transition-colors"
+            className="text-xs font-extrabold text-[#065F46] hover:text-[#0A341B] px-4 py-1.5 rounded-full bg-white/75 backdrop-blur-md border border-white/95 shadow-sm transition-all hover:bg-white"
           >
             Skip ›
           </button>
         </div>
 
-        {/* Center: 3D Animated Logo & Title */}
+        {/* Center: Glowing 3D Crystal Logo & GT NETWORK Title */}
         <div className="flex flex-col items-center text-center space-y-6 z-10 my-auto">
-          {/* Animated 3D Logo with Glowing Rings */}
+          {/* Animated 3D Logo with Ambient Glow */}
           <div className="relative flex items-center justify-center">
-            {/* Pulsing Aura Rings */}
-            <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-[#22C55E]/30 animate-ping opacity-60 pointer-events-none" />
-            <div className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#22C55E]/20 blur-xl animate-pulse" />
-
-            {/* Core Crystal Logo */}
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-2xl scale-125 pointer-events-none" />
+            <div className="relative w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center">
               <img
                 src="/gt-header-logo.png"
-                alt="GT Mining Logo"
-                className="w-full h-full object-contain filter drop-shadow-[0_10px_35px_rgba(34,197,94,0.7)] animate-bounce"
-                style={{ animationDuration: '2.5s' }}
+                alt="GT Network Logo"
+                className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(10,52,27,0.18)] animate-pulse"
+                style={{ animationDuration: '3s' }}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-md">
-              GT MINING <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#22C55E] to-[#4ADE80]">NETWORK</span>
+          {/* Clean Brand Title: GT NETWORK */}
+          <div className="space-y-1">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#0A341B] drop-shadow-sm flex items-center justify-center gap-3">
+              GT <span className="text-[#16A34A] tracking-wider">NETWORK</span>
             </h1>
-            <p className="text-xs sm:text-sm font-medium text-[#86EFAC] tracking-wider uppercase font-mono">
-              Autonomous Decentralized Cloud Protocol
-            </p>
           </div>
         </div>
 
-        {/* Bottom Loading Progress Indicator */}
-        <div className="w-full max-w-xs space-y-2 z-10 pb-4">
-          <div className="flex justify-between text-[11px] font-mono text-neutral-400">
-            <span>INITIALIZING NODE...</span>
-            <span className="text-[#22C55E] font-bold">{splashProgress}%</span>
+        {/* Bottom Loading Progress Indicator (Frosted Glass Website Aesthetic) */}
+        <div className="w-full max-w-xs space-y-2.5 z-10 pb-6">
+          <div className="flex justify-between items-center text-[10.5px] font-black text-[#0A341B] uppercase tracking-wide">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
+              <span>{statusText}</span>
+            </div>
+            <span className="text-[#16A34A] font-extrabold">{splashProgress}%</span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-white/80 backdrop-blur-sm border border-emerald-900/10 overflow-hidden p-0.5 shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-[#16A34A] to-[#22C55E] transition-all duration-150 rounded-full shadow-[0_0_12px_#22C55E]"
+              className="h-full bg-gradient-to-r from-[#16A34A] to-[#22C55E] transition-all duration-100 rounded-full shadow-sm"
               style={{ width: `${splashProgress}%` }}
             />
           </div>
-          <p className="text-[10px] text-center text-neutral-400/80 pt-1">
+          <p className="text-[11px] text-center text-[#1E5E36]/80 font-bold pt-1">
             Tap anywhere to continue
           </p>
         </div>

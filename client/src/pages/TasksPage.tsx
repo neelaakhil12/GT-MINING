@@ -575,12 +575,12 @@ export const TasksPage: React.FC = () => {
       <div className="space-y-4">
         
         {/* Section Title & Done Pill */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div>
+        <div className="flex items-start justify-between gap-3 px-1">
+          <div className="min-w-0 flex-1">
             <h2 className="text-base sm:text-lg font-black text-[#0A341B] tracking-tight uppercase">
               DAILY & SOCIAL TASKS
             </h2>
-            <p className="text-xs text-[#1E5E36] font-medium">
+            <p className="text-xs text-[#1E5E36] font-medium leading-relaxed">
               Complete tasks and upload screenshot proof to collect wallet rewards
             </p>
           </div>
@@ -830,7 +830,7 @@ export const TasksPage: React.FC = () => {
                       Close / Back to Tasks
                     </button>
                   ) : (
-                    <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-semibold text-neutral-400">
+                    <div className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[11px] font-semibold text-neutral-400 text-center">
                       🔒 Watch {videoTimer}s to unlock exit
                     </div>
                   )}
@@ -954,11 +954,13 @@ export const TasksPage: React.FC = () => {
                 </div>
 
                 {/* User Handle / Profile Link (Optional) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#0A341B] flex justify-between">
-                    <span>Your Social Handle / Username (Optional)</span>
-                    <span className="text-[10px] text-neutral-400">for faster verification</span>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#0A341B] block">
+                    Your Social Handle / Username <span className="font-normal text-neutral-500">(Optional)</span>
                   </label>
+                  <p className="text-[10.5px] text-[#1E5E36]/80 font-medium">
+                    Provide your username or profile link for faster verification
+                  </p>
                   <input
                     type="text"
                     value={proofNote}

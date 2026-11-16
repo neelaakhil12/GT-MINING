@@ -649,7 +649,7 @@ export const TasksScreen: React.FC = () => {
           {/* 3. Daily & Social Tasks Section */}
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
-              <View style={{ gap: 2 }}>
+              <View style={styles.sectionTitleCol}>
                 <Text style={styles.sectionTitle}>DAILY & SOCIAL TASKS</Text>
                 <Text style={styles.sectionSubtitle}>
                   Complete tasks and upload screenshot proof to collect wallet rewards
@@ -795,8 +795,6 @@ export const TasksScreen: React.FC = () => {
               Tasks are verified by administrators via uploaded screenshot proof. Once approved, the reward amount is credited automatically into your wallet balance and lifetime earnings.
             </Text>
           </View>
-
-          <View style={styles.bottomSpacer} />
         </ScrollView>
       </View>
 
@@ -883,11 +881,13 @@ export const TasksScreen: React.FC = () => {
                   </TouchableOpacity>
 
                   {/* Username / Handle (Optional) */}
-                  <View style={{ gap: 6 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.inputLabel}>Your Social Handle / Username (Optional)</Text>
-                      <Text style={styles.inputSubLabel}>for faster verification</Text>
-                    </View>
+                  <View style={{ gap: 4 }}>
+                    <Text style={styles.inputLabel}>
+                      Your Social Handle / Username <Text style={styles.inputOptionalText}>(Optional)</Text>
+                    </Text>
+                    <Text style={styles.inputSubLabel}>
+                      Provide your username or profile link for faster verification
+                    </Text>
                     <TextInput
                       value={proofNote}
                       onChangeText={setProofNote}
@@ -1092,7 +1092,6 @@ export const TasksScreen: React.FC = () => {
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.lockedExitBar}>
-                    <Clock size={13} color="#FBBF24" />
                     <Text style={styles.lockedExitText}>
                       🔒 Watch {videoTimer}s to unlock exit & reward
                     </Text>
@@ -1348,9 +1347,14 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
+    gap: 8,
+  },
+  sectionTitleCol: {
+    flex: 1,
+    gap: 2,
   },
   sectionTitle: {
     fontSize: 14,
@@ -1362,19 +1366,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#1E5E36',
     fontWeight: '500',
+    lineHeight: 15,
   },
   doneBadge: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(22, 101, 52, 0.15)',
+    flexShrink: 0,
+    alignSelf: 'flex-start',
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   doneBadgeText: {
     fontSize: 10,
     fontWeight: '900',
     color: '#0A341B',
+    letterSpacing: 0.2,
   },
   tabsRow: {
     flexDirection: 'row',
@@ -1635,6 +1648,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(34, 197, 94, 0.3)',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   modalRewardLabel: {
     fontSize: 11.5,
@@ -1702,13 +1717,20 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
   inputLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#0A341B',
   },
+  inputOptionalText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
   inputSubLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 10.5,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 2,
   },
   textInput: {
     backgroundColor: '#F9FAFB',
@@ -2095,17 +2117,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 14,
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   lockedExitText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
     color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

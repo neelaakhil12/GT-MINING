@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,6 +61,9 @@ export const MiningScreen: React.FC = () => {
     title: string;
     message: string;
   } | null>(null);
+
+  // Compact mining reward dialog (with OK button)
+  const [rewardModal, setRewardModal] = useState<{ reward: number } | null>(null);
 
   // Fetch authoritative mining status and config from server
   const fetchStatus = useCallback(async () => {
@@ -211,7 +215,7 @@ export const MiningScreen: React.FC = () => {
   const isTargetCompleted = userTotalMined >= userMiningTarget;
 
   const handleClaimOrMine = async () => {
-    if (claiming) return;
+    if (claiming || !isEligible || countdownSec > 0 || isTargetCompleted) return;
 
     if (isTargetCompleted) {
       setToastMessage({
@@ -221,20 +225,18 @@ export const MiningScreen: React.FC = () => {
       return;
     }
 
-    if (!isEligible || countdownSec > 0) {
-      setToastMessage({
-        title: 'Mining Cooldown Active',
-        message: `Session currently active. Next claim in ${formatCountdown(countdownSec)}.`,
-      });
-      return;
-    }
+    // 1. Instantly lock and disable the button with 0ms delay (optimistic transition)
+    const cycleSec = cooldownSec || 7200;
+    const instantNextTime = new Date(Date.now() + cycleSec * 1000).toISOString();
+    setIsEligible(false);
+    setCountdownSec(cycleSec);
+    setNextEligibleAt(instantNextTime);
+    setLastMiningAt(new Date().toISOString());
+    appStorage.setItem('gt_next_eligible_at', instantNextTime).catch(() => {});
 
-    // Smoothly scroll to the top where the 3D globe animation is located
+    // 2. Smoothly scroll to the top where the 3D spinning globe is located
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     setIsFastSpinning(true);
-    setTimeout(() => {
-      setIsFastSpinning(false);
-    }, 3200);
 
     try {
       if (Platform.OS !== 'web') {
@@ -243,59 +245,46 @@ export const MiningScreen: React.FC = () => {
     } catch (e) {}
 
     setClaiming(true);
+
+    let earnedAmount = rewardAmount;
+
     try {
       const token = await appStorage.getItem('gt_mobile_token');
-      if (!token) {
-        // Guest / demo claim fallback
-        setIsEligible(false);
-        setCountdownSec(cooldownSec);
-        setToastMessage({
-          title: 'Mining Block Verified!',
-          message: `+${rewardAmount.toFixed(2)} GT added to your balance.`,
+      if (token) {
+        const res = await fetch(`${API_BASE_URL}/mining/claim`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         });
-        return;
-      }
 
-      const res = await fetch(`${API_BASE_URL}/mining/claim`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (res.ok && data && data.success) {
-        setIsEligible(false);
-        const rem = data.miningState?.remainingSeconds || cooldownSec;
-        setCountdownSec(rem);
-        if (data.miningState?.nextEligibleAt) {
-          setNextEligibleAt(data.miningState.nextEligibleAt);
-          appStorage.setItem('gt_next_eligible_at', data.miningState.nextEligibleAt).catch(() => {});
+        const data = await res.json();
+        if (res.ok && data && data.success) {
+          earnedAmount = Number(data.claimedAmount || rewardAmount);
+          const rem = data.miningState?.remainingSeconds || cycleSec;
+          setCountdownSec(rem);
+          if (data.miningState?.nextEligibleAt) {
+            setNextEligibleAt(data.miningState.nextEligibleAt);
+            appStorage.setItem('gt_next_eligible_at', data.miningState.nextEligibleAt).catch(() => {});
+          }
+          setLastMiningAt(new Date().toISOString());
+          refreshUserData();
+        } else if (data && !data.success) {
+          if (data?.message?.toLowerCase().includes('target')) {
+            setUserMiningTarget(userTotalMined);
+          }
         }
-        setLastMiningAt(new Date().toISOString());
-
-        // Sleek non-intrusive floating toast notification without blocking the globe!
-        setToastMessage({
-          title: 'Mining Block Verified!',
-          message: `+${(data.claimedAmount || rewardAmount).toFixed(2)} GT added to your balance.`,
-        });
-
-        // Refresh user wallet data from server
-        refreshUserData();
-      } else {
-        setToastMessage({
-          title: 'Claim Notice',
-          message: data?.message || 'Cooldown is active. Please wait for cycle to finish.',
-        });
       }
     } catch (err: any) {
-      setToastMessage({
-        title: 'Connection Error',
-        message: 'Could not sync claim with server. Please check internet connection.',
-      });
+      console.warn('Network sync error during claim:', err);
     } finally {
-      setClaiming(false);
+      // 3. Complete globe spinning sequence (2.8s) before revealing the small compact reward modal
+      setTimeout(() => {
+        setIsFastSpinning(false);
+        setClaiming(false);
+        setRewardModal({ reward: earnedAmount });
+      }, 2800);
     }
   };
 
@@ -333,7 +322,7 @@ export const MiningScreen: React.FC = () => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom + 65 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
         >
           {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 matching website */}
           <View style={styles.networkSubHeader}>
@@ -475,11 +464,11 @@ export const MiningScreen: React.FC = () => {
           <View style={styles.actionBtnSection}>
             <TouchableOpacity
               onPress={handleClaimOrMine}
-              disabled={false}
+              disabled={!isEligible || claiming || countdownSec > 0 || isTargetCompleted}
               activeOpacity={0.88}
               style={[
                 styles.mainMiningActionBtn,
-                !isEligible && !isTargetCompleted && { opacity: 0.75 }
+                (!isEligible || countdownSec > 0 || isTargetCompleted) && { opacity: 0.72 }
               ]}
             >
               <LinearGradient
@@ -505,7 +494,7 @@ export const MiningScreen: React.FC = () => {
                   style={[
                     styles.mainMiningBtnText,
                     isTargetCompleted && { color: '#FEF3C7' },
-                    !isEligible && !isTargetCompleted && { color: '#E5E7EB' }
+                    (!isEligible || countdownSec > 0) && !isTargetCompleted && { color: '#E5E7EB' }
                   ]}
                 >
                   {isTargetCompleted
@@ -525,6 +514,42 @@ export const MiningScreen: React.FC = () => {
             </Text>
           </View>
         </ScrollView>
+
+        {/* Compact Mining Reward Popup Modal (Small, Clean & Elegant) */}
+        <Modal
+          visible={!!rewardModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setRewardModal(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.smallRewardModalCard}>
+              <View style={styles.modalIconWrap}>
+                <CheckCircle2 size={20} color="#16A34A" />
+              </View>
+
+              <Text style={styles.modalTitleText}>Mining Successful!</Text>
+
+              <View style={styles.modalRewardBadge}>
+                <Text style={styles.modalRewardText}>
+                  +{rewardModal?.reward?.toFixed(2) || '1.00'} GT
+                </Text>
+              </View>
+
+              <Text style={styles.modalDescText}>
+                Reward credited directly to your wallet balance.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.modalOkBtn}
+                activeOpacity={0.85}
+                onPress={() => setRewardModal(null)}
+              >
+                <Text style={styles.modalOkBtnText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Non-intrusive Floating Toast Notification (never blocks or covers the 3D globe!) */}
         {toastMessage && (
@@ -553,7 +578,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 110,
+    paddingBottom: 20,
   },
   networkSubHeader: {
     flexDirection: 'row',
@@ -979,5 +1004,81 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#166534',
     marginTop: 1,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 46, 22, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  smallRewardModalCard: {
+    width: 250,
+    maxWidth: '82%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#DCFCE7',
+    shadowColor: '#052E16',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitleText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0A341B',
+    marginTop: 8,
+    letterSpacing: -0.2,
+  },
+  modalRewardBadge: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginTop: 6,
+  },
+  modalRewardText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#16A34A',
+  },
+  modalDescText: {
+    fontSize: 10.5,
+    fontWeight: '500',
+    color: '#4B5563',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 14,
+    paddingHorizontal: 4,
+  },
+  modalOkBtn: {
+    backgroundColor: '#16A34A',
+    borderRadius: 10,
+    height: 34,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  modalOkBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
 });

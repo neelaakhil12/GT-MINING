@@ -399,18 +399,18 @@ export const DashboardScreen: React.FC = () => {
             </View>
           </ScrollView>
 
-          {/* 4. Action Card: MINE $GT (EXACTLY matching video) */}
+          {/* 4. Action Card: MINE GT (EXACTLY matching video) */}
           <View style={styles.actionCardWrapper}>
             <View style={styles.mineGtCard}>
               <View style={styles.mineGtLeft}>
-                <Text style={styles.mineGtTitle}>Mine $GT</Text>
+                <Text style={styles.mineGtTitle}>Mine GT</Text>
                 <Text style={styles.mineGtDesc}>Build the Human Network</Text>
                 <TouchableOpacity
                   onPress={() => (navigation as any).navigate('MainTabs', { screen: 'Mine' })}
                   style={styles.mineGtBtn}
                   activeOpacity={0.88}
                 >
-                  <Text style={styles.mineGtBtnText}>Mine $GT</Text>
+                  <Text style={styles.mineGtBtnText}>Mine GT</Text>
                   <ArrowUpRight size={14} color="#FFFFFF" strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
@@ -607,8 +607,6 @@ export const DashboardScreen: React.FC = () => {
               </View>
             </View>
           </View>
-
-          <View style={styles.bottomSpacer} />
         </ScrollView>
       </View>
     </View>
@@ -626,7 +624,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 110,
+    paddingBottom: 20,
     gap: 16,
   },
   greetingHeader: {

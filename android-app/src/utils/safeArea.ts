@@ -27,15 +27,16 @@ export function useAppSafeArea() {
   const bottomNavMargin = bottom + (Platform.OS === 'ios' ? 8 : 6);
 
   // 4. ScrollView padding bottom for screens WITH FloatingBottomNav (Dashboard, Mine, Node, Referrals, Wallet)
-  // Floating pill height is 62dp (with -12dp active icon peak).
-  // Content needs clearance so user can scroll completely above the floating pill.
-  const tabContentPaddingBottom = bottom + 115;
+  // Floating pill is at bottom + 6dp, height 62dp (top edge at bottom + 68dp).
+  // Leaves a comfortable, clean two-finger gap (~20dp) above the floating bottom nav bar pill.
+  const tabContentPaddingBottom = bottom + (Platform.OS === 'ios' ? 90 : 86);
 
   // 5. ScrollView padding bottom for screens WITHOUT FloatingBottomNav (Tasks, Profile, Notifications, etc.)
-  const stackContentPaddingBottom = bottom + 35;
+  // Clean two-finger gap (~20dp) from screen bottom edge.
+  const stackContentPaddingBottom = bottom + 20;
 
   // 6. Modal bottom padding for dialogs and full-screen sheets
-  const modalPaddingBottom = bottom + 24;
+  const modalPaddingBottom = bottom + 16;
 
   return {
     insets,

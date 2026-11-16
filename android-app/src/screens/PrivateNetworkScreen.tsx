@@ -1032,7 +1032,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                           </Text>
                           <Text style={styles.dotDivider}>•</Text>
                           <View style={styles.streakRow}>
-                            <Flame size={12} color="#F97316" />
+                            <Flame size={11} color="#F97316" />
                             <Text style={styles.streakText}>
                               {member.streakDays}d streak
                             </Text>
@@ -1045,7 +1045,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                         {member.isMiningActive ? (
                           <View style={styles.minedBadgeCol}>
                             <View style={styles.minedBadge}>
-                              <CheckCircle2 size={12} color="#16A34A" />
+                              <CheckCircle2 size={11} color="#16A34A" />
                               <Text style={styles.minedBadgeText}>Mined ⚡</Text>
                             </View>
                             <Text style={styles.cooldownText}>Cooldown active</Text>
@@ -1056,7 +1056,7 @@ export const PrivateNetworkScreen: React.FC = () => {
                             style={styles.pingBtn}
                             activeOpacity={0.85}
                           >
-                            <Bell size={12} color="#FFFFFF" />
+                            <Bell size={10} color="#FFFFFF" />
                             <Text style={styles.pingBtnText}>Ping to Mine</Text>
                           </TouchableOpacity>
                         )}
@@ -1933,7 +1933,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -1942,7 +1943,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
-    gap: 10,
+    gap: 8,
   },
   minerItemCardIdle: {
     backgroundColor: '#FFFBEB',
@@ -1980,6 +1981,7 @@ const styles = StyleSheet.create({
   minerInfoCol: {
     flex: 1,
     gap: 2,
+    marginRight: 6,
   },
   minerNameText: {
     fontSize: 12.5,
@@ -1989,15 +1991,15 @@ const styles = StyleSheet.create({
   minerMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3.5,
   },
   minerMaskedCode: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: '#6B7280',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   dotDivider: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#9CA3AF',
   },
   streakRow: {
@@ -2006,12 +2008,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   streakText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#15803D',
   },
   minerActionCol: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   minedBadgeCol: {
     alignItems: 'flex-end',
@@ -2022,37 +2025,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     backgroundColor: 'rgba(34, 197, 94, 0.18)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
     borderRadius: 6,
   },
   minedBadgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '900',
     color: '#15803D',
   },
   cooldownText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '600',
     color: '#1E5E36',
   },
   pingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3.5,
     backgroundColor: '#F59E0B',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 8,
     shadowColor: '#F59E0B',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   pingBtnText: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
 
   /* 6. Quick Replies Sheet */

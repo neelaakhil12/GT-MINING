@@ -36,15 +36,14 @@ export const SplashScreen: React.FC = () => {
   const [bannersReady, setBannersReady] = useState<boolean>(() => Boolean(getMemoryOnboardingSlides()?.length));
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
   const navigatedRef = useRef(false);
 
-  // Pulse & slow rotation animation + preload live onboarding banners
+  // Pulse floating animation + preload live onboarding banners
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.08,
+          toValue: 1.05,
           duration: 1800,
           useNativeDriver: true,
         }),
@@ -54,14 +53,6 @@ export const SplashScreen: React.FC = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
-
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 25000,
-        useNativeDriver: true,
-      })
     ).start();
 
     let active = true;
@@ -140,19 +131,18 @@ export const SplashScreen: React.FC = () => {
     }
   };
 
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <TouchableOpacity
       activeOpacity={1}
       onPress={handleSkip}
       style={styles.container}
     >
+      {/* Website Mint Ambient Corner Glows (Clean aesthetic - no circular radar lines) */}
+      <View style={styles.ambientTopGlow} pointerEvents="none" />
+      <View style={styles.ambientBottomGlow} pointerEvents="none" />
+
       <View style={[styles.safeArea, { paddingTop: top, paddingBottom: bottom + 16 }]}>
-        {/* Top Header Row (Skip Button on top right, V2.6 protocol removed) */}
+        {/* Top Header Row (Frosted Glass Skip Button) */}
         <View style={styles.topRow}>
           <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} activeOpacity={0.75}>
@@ -160,15 +150,10 @@ export const SplashScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Center: Glowing 3D Crystal Logo with Holographic Radar Rings */}
+        {/* Center: Glowing 3D Crystal Logo with GT NETWORK Branding */}
         <View style={styles.centerContainer}>
           {/* Subtle Ambient Radial Glow */}
-          <View style={styles.ambientGlow} />
-
-          {/* Holographic Radar Concentric Rings */}
-          <Animated.View style={[styles.radarRingOuter, { transform: [{ rotate: spin }] }]} />
-          <View style={styles.radarRingMid} />
-          <View style={styles.radarRingInner} />
+          <View style={styles.ambientLogoGlow} />
 
           {/* Central Animated Crystal Logo */}
           <Animated.View style={[styles.logoWrapper, { transform: [{ scale: pulseAnim }] }]}>
@@ -179,20 +164,22 @@ export const SplashScreen: React.FC = () => {
             />
           </Animated.View>
 
-          {/* Main Titles */}
+          {/* Main Title: GT NETWORK (Clean brand title matching website) */}
           <View style={styles.titleWrapper}>
-            <Text style={styles.titleWhite}>GT MINING</Text>
-            <Text style={styles.titleGreen}>NETWORK</Text>
-            <Text style={styles.tagline}>
-              AUTONOMOUS DECENTRALIZED CLOUD PROTOCOL
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.titleDark}>GT </Text>
+              <Text style={styles.titleGreen}>NETWORK</Text>
+            </View>
           </View>
         </View>
 
-        {/* Bottom Loading Progress Bar */}
+        {/* Bottom Loading Progress Bar (Frosted Glass Website Aesthetic) */}
         <View style={styles.bottomContainer}>
           <View style={styles.progressLabelRow}>
-            <Text style={styles.statusText}>{statusText}</Text>
+            <View style={styles.statusRow}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>{statusText}</Text>
+            </View>
             <Text style={styles.percentText}>{progress}%</Text>
           </View>
 
@@ -210,13 +197,34 @@ export const SplashScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#021308',
+    backgroundColor: '#EAF8EE',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  ambientTopGlow: {
+    position: 'absolute',
+    top: -80,
+    left: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(74, 222, 128, 0.28)',
+  },
+  ambientBottomGlow: {
+    position: 'absolute',
+    bottom: -80,
+    right: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(134, 239, 172, 0.32)',
   },
   safeArea: {
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingVertical: 14,
+    zIndex: 1,
   },
 
   /* Top Row */
@@ -228,15 +236,23 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   skipBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#005232',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
   },
   skipBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#86EFAC',
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#065F46',
+    letterSpacing: 0.5,
   },
 
   /* Center */
@@ -246,44 +262,23 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginVertical: 'auto',
   },
-  ambientGlow: {
+  ambientLogoGlow: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-  },
-  radarRingOuter: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.15)',
-    borderStyle: 'dashed',
-  },
-  radarRingMid: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.20)',
-  },
-  radarRingInner: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.25)',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(34, 197, 94, 0.16)',
   },
   logoWrapper: {
-    width: 110,
-    height: 110,
+    width: 115,
+    height: 115,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    shadowColor: '#0A341B',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
   },
   crystalLogo: {
     width: '100%',
@@ -291,30 +286,25 @@ const styles = StyleSheet.create({
   },
   titleWrapper: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 22,
     zIndex: 10,
   },
-  titleWhite: {
-    fontSize: 26,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleDark: {
+    fontSize: 27,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#0A341B',
     letterSpacing: 2,
-    lineHeight: 32,
   },
   titleGreen: {
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: '900',
-    color: '#22C55E',
-    letterSpacing: 3,
-    lineHeight: 36,
-  },
-  tagline: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#86EFAC',
-    letterSpacing: 1.2,
-    marginTop: 8,
-    textAlign: 'center',
+    color: '#16A34A',
+    letterSpacing: 2.5,
   },
 
   /* Bottom Container */
@@ -326,37 +316,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 9,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16A34A',
   },
   statusText: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#86EFAC',
-    letterSpacing: 1,
+    color: '#0A341B',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   percentText: {
     fontSize: 11.5,
     fontWeight: '900',
-    color: '#4ADE80',
+    color: '#16A34A',
   },
   progressBarTrack: {
-    height: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 3,
+    height: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(22, 101, 52, 0.12)',
+    padding: 1,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#22C55E',
+    backgroundColor: '#16A34A',
     borderRadius: 3,
   },
   tapPrompt: {
-    fontSize: 11,
-    color: '#4ADE80',
-    opacity: 0.65,
+    fontSize: 11.5,
+    color: '#1E5E36',
+    opacity: 0.75,
     textAlign: 'center',
     marginTop: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

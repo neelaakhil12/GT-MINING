@@ -11,6 +11,7 @@ import {
   X,
   UserPlus,
   Target,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -46,6 +47,7 @@ export const MiningPage: React.FC = () => {
   const [claiming, setClaiming] = useState(false);
   const [countdown, setCountdown] = useState<string>('00:00:00');
   const [showTargetModal, setShowTargetModal] = useState<boolean>(false);
+  const [rewardModal, setRewardModal] = useState<{ reward: number } | null>(null);
   const [isEligible, setIsEligible] = useState<boolean>(() => {
     try {
       const cached = localStorage.getItem('gt_cached_mining_status');
@@ -156,6 +158,10 @@ export const MiningPage: React.FC = () => {
       return;
     }
 
+    // Instantly lock and disable the button with 0ms delay
+    setIsEligible(false);
+    setClaiming(true);
+
     // Smoothly scroll to top so the 3D spinning globe is prominently displayed
     if (globeRef.current) {
       globeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -164,7 +170,6 @@ export const MiningPage: React.FC = () => {
     }
 
     setIsFastSpinning(true);
-    setClaiming(true);
 
     try {
       // 1. Authoritative API claim call
@@ -190,11 +195,12 @@ export const MiningPage: React.FC = () => {
         colors: ['#22C55E', '#86EFAC', '#4ADE80', '#16A34A', '#FFFFFF'],
       });
 
-      showToast(`+${rewardAmount} GT mined successfully!`, 'success');
+      // Show compact reward modal with OK button
+      setRewardModal({ reward: rewardAmount });
 
       updateWalletBalance(newBal, newLife);
       const targetReachedNow = Boolean(res.isTargetReached || res.targetReached || newLife >= userMiningTarget);
-      setIsEligible(targetReachedNow ? false : false);
+      setIsEligible(false);
       if (targetReachedNow) {
         setShowTargetModal(true);
       }
@@ -448,6 +454,30 @@ export const MiningPage: React.FC = () => {
             : `Mining session in progress. Next claim unlock in ${countdown}`}
         </p>
       </div>
+
+      {/* Small Compact Reward Popup Modal */}
+      {rewardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-[260px] max-w-[85%] bg-white rounded-2xl p-4 text-center shadow-2xl border border-emerald-100 flex flex-col items-center">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-2">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-extrabold text-[#0A341B]">Mining Successful!</h3>
+            <div className="inline-block bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg text-emerald-600 font-black text-xs my-1.5">
+              +{rewardModal.reward.toFixed(2)} GT
+            </div>
+            <p className="text-[11px] text-gray-500 font-medium leading-tight mb-3">
+              Credited directly to your wallet.
+            </p>
+            <button
+              onClick={() => setRewardModal(null)}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Target Completed Popup Modal */}
       {showTargetModal && (

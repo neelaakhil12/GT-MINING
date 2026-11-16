@@ -785,8 +785,6 @@ export const ReferralsScreen: React.FC = () => {
               </View>
             )}
           </View>
-
-          <View style={styles.bottomSpacer} />
         </ScrollView>
       </View>
     </View>
@@ -804,7 +802,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 110,
+    paddingBottom: 20,
     gap: 16,
   },
   carouselBannerCard: {

@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/gt-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#051B0D" />
-    <meta name="description" content="GT Mining — Mine virtual GT coins every 4 hours, build your referral network, track your wallet, and explore community updates on a modern Web3 platform." />
-    <title>GT Mining — Virtual Coin & Referral Network</title>
+    <meta name="theme-color" content="#EAF8EE" />
+    <meta name="description" content="GT Network — Mine virtual GT coins every 4 hours, build your referral network, track your wallet, and explore community updates on a modern Web3 platform." />
+    <title>GT Network — Virtual Coin & Referral Network</title>
     
     <!-- Instant Asset Preloading for 0ms Zero-Delay Display -->
     <link rel="preload" as="image" href="/gt-header-logo.png" fetchpriority="high" />
@@ -25,12 +25,8 @@
         font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       }
       @keyframes floatLogo {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
-      }
-      @keyframes pulseRing {
-        0% { transform: scale(0.9); opacity: 0.8; }
-        100% { transform: scale(1.35); opacity: 0; }
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-6px) scale(1.03); }
       }
       @keyframes initProgress {
         0% { width: 0%; }
@@ -38,37 +34,41 @@
       }
     </style>
   </head>
-  <body class="bg-[#051B0D] text-[#0A341B] antialiased min-h-screen m-0 p-0">
+  <body class="bg-[#EAF8EE] text-[#0A341B] antialiased min-h-screen m-0 p-0">
     <div id="root">
       <!-- Instant 0ms First-Paint Splash Screen (Replaced automatically by React on mount) -->
-      <div id="initial-splash" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:24px;background:radial-gradient(circle at 50% 30%, #0A2E18 0%, #051B0D 60%, #04160A 100%);color:#fff;user-select:none;">
-        <div style="width:100%;display:flex;justify-content:flex-end;padding-top:16px;">
-          <span style="font-size:12px;font-weight:700;color:#a3a3a3;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">Skip ›</span>
+      <div id="initial-splash" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:24px;background:linear-gradient(135deg, #E6F8EB 0%, #D8F5E0 50%, #ECFBF1 100%);color:#0A341B;user-select:none;overflow:hidden;">
+        <!-- Soft Ambient Corner Glows -->
+        <div style="position:absolute;top:-80px;left:-80px;width:260px;height:260px;border-radius:50%;background:rgba(74,222,128,0.28);filter:blur(60px);pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:rgba(134,239,172,0.32);filter:blur(60px);pointer-events:none;"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:240px;height:240px;border-radius:50%;background:rgba(34,197,94,0.16);filter:blur(50px);pointer-events:none;"></div>
+
+        <div style="width:100%;display:flex;justify-content:flex-end;padding-top:14px;position:relative;z-index:1;">
+          <span style="font-size:12.5px;font-weight:800;color:#065F46;padding:7px 16px;border-radius:999px;background:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.95);box-shadow:0 2px 6px rgba(0,82,50,0.06);letter-spacing:0.5px;">Skip ›</span>
         </div>
         
-        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin:auto 0;">
-          <div style="position:relative;width:110px;height:110px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-            <div style="position:absolute;width:130px;height:130px;border-radius:50%;border:1px solid rgba(34,197,94,0.3);animation:pulseRing 2s infinite ease-out;"></div>
-            <img src="/gt-header-logo.png" alt="GT Mining Logo" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 10px 30px rgba(34,197,94,0.6));animation:floatLogo 2.5s infinite ease-in-out;" />
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin:auto 0;position:relative;z-index:1;">
+          <div style="position:relative;width:115px;height:115px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+            <img src="/gt-header-logo.png" alt="GT Network Logo" style="width:105px;height:105px;object-fit:contain;filter:drop-shadow(0 12px 24px rgba(10,52,27,0.18));animation:floatLogo 2.5s infinite ease-in-out;" />
           </div>
           
-          <h1 style="font-size:28px;font-weight:900;letter-spacing:-0.5px;color:#ffffff;margin:0 0 8px 0;">
-            GT MINING <span style="color:#22C55E;">NETWORK</span>
+          <h1 style="font-size:30px;font-weight:900;letter-spacing:1.5px;color:#0A341B;margin:0;">
+            GT <span style="color:#16A34A;letter-spacing:2.5px;">NETWORK</span>
           </h1>
-          <p style="font-size:11px;font-weight:600;color:#86EFAC;letter-spacing:1.5px;text-transform:uppercase;margin:0;font-family:monospace;">
-            Autonomous Decentralized Cloud Protocol
-          </p>
         </div>
 
-        <div style="width:100%;max-width:280px;padding-bottom:24px;">
-          <div style="display:flex;justify-content:space-between;font-size:11px;font-family:monospace;color:#a3a3a3;margin-bottom:8px;">
-            <span>INITIALIZING NODE...</span>
-            <span style="color:#22C55E;font-weight:700;">ACTIVE</span>
+        <div style="width:100%;max-width:280px;padding-bottom:24px;position:relative;z-index:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#16A34A;"></div>
+              <span style="font-size:10.5px;font-weight:800;color:#0A341B;letter-spacing:0.8px;text-transform:uppercase;">INITIALIZING NODE...</span>
+            </div>
+            <span style="font-size:11.5px;font-weight:900;color:#16A34A;">ACTIVE</span>
           </div>
-          <div style="width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,0.1);overflow:hidden;">
-            <div style="width:100%;height:100%;border-radius:999px;background:linear-gradient(90deg, #16A34A, #22C55E);box-shadow:0 0 12px #22C55E;animation:initProgress 0.8s ease-out forwards;"></div>
+          <div style="width:100%;height:7px;border-radius:999px;background:rgba(255,255,255,0.85);border:1px solid rgba(22,101,52,0.12);overflow:hidden;padding:1px;">
+            <div style="width:100%;height:100%;border-radius:999px;background:linear-gradient(90deg, #16A34A, #22C55E);animation:initProgress 0.8s ease-out forwards;"></div>
           </div>
-          <p style="font-size:10px;text-align:center;color:rgba(163,163,163,0.8);margin-top:10px;">
+          <p style="font-size:11.5px;text-align:center;color:#1E5E36;opacity:0.75;margin-top:14px;font-weight:700;">
             Tap anywhere to continue
           </p>
         </div>
