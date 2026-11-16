@@ -23,6 +23,14 @@ import {
   fetchAndCacheHomeBanners,
   getCachedHomeBannersFromStorage,
 } from '../utils/homeBannerCache';
+import {
+  fetchAndCacheTaskBanners,
+  getCachedTaskBannersFromStorage,
+} from '../utils/taskBannerCache';
+import {
+  fetchAndCacheReferralBanners,
+  getCachedReferralBannersFromStorage,
+} from '../utils/referralBannerCache';
 
 const { width } = Dimensions.get('window');
 
@@ -56,13 +64,17 @@ export const SplashScreen: React.FC = () => {
     ).start();
 
     let active = true;
-    // Prime both onboarding sliders & home carousel banners + prefetch their images during Splash
+    // Prime onboarding, home, task, and referral sliders + prefetch their images during Splash
     getCachedOnboardingSlidesFromStorage().catch(() => null);
     getCachedHomeBannersFromStorage().catch(() => null);
+    getCachedTaskBannersFromStorage().catch(() => null);
+    getCachedReferralBannersFromStorage().catch(() => null);
 
     Promise.allSettled([
       fetchAndCacheOnboardingBanners(4500),
       fetchAndCacheHomeBanners(4500),
+      fetchAndCacheTaskBanners(4500),
+      fetchAndCacheReferralBanners(4500),
     ]).finally(() => {
       if (active) setBannersReady(true);
     });

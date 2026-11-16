@@ -161,6 +161,17 @@ export const TasksPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [taskSlides.length]);
 
+  // Preload all task slide images instantly into browser memory
+  useEffect(() => {
+    taskSlides.forEach((slide) => {
+      const imgUrl = slide.imageUrl || (slide.id ? `/api/task-banners/${slide.id}/image` : '');
+      if (imgUrl && typeof imgUrl === 'string') {
+        const img = new Image();
+        img.src = imgUrl;
+      }
+    });
+  }, [taskSlides]);
+
   // Backend-tracked task submissions & statuses
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
@@ -396,9 +407,9 @@ export const TasksPage: React.FC = () => {
 
       {/* 1. Header Hero Image Slides Carousel - Only rendered when taskSlides exist in admin panel */}
       {taskSlides.length > 0 && (
-        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(22,101,52,0.12)] border-2 border-white/90 group bg-[#071F14]">
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.18)] border-2 border-white/90 group bg-[#0A0A0A]">
           {/* Slides Track */}
-          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
+          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden bg-[#0A0A0A]">
             {taskSlides.map((slide, index) => {
               const isActive = index === currentSlide;
               const imgUrl = slide.imageUrl || (slide.id ? `/api/task-banners/${slide.id}/image` : '');
@@ -406,11 +417,11 @@ export const TasksPage: React.FC = () => {
               return (
                 <div
                   key={slide.id || index}
-                  className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                  className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${
                     isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                 >
-                  {/* Slide Background: Pure Image (No dark/green overlays) */}
+                  {/* Slide Background: Pure Image on neutral base (Zero green overlays / Zero tint) */}
                   {imgUrl ? (
                     <img
                       src={imgUrl}
@@ -422,7 +433,7 @@ export const TasksPage: React.FC = () => {
                     <div
                       className="w-full h-full"
                       style={{
-                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0B2516'}, ${slide.gradientEnd || '#04160E'})`,
+                        background: `linear-gradient(135deg, ${slide.gradientStart || '#18181B'}, ${slide.gradientEnd || '#09090B'})`,
                       }}
                     />
                   )}

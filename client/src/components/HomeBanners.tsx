@@ -198,22 +198,33 @@ export const HomeBanners: React.FC = () => {
     };
   }, []);
 
+  // Preload all home banner images immediately into browser memory
+  useEffect(() => {
+    slides.forEach((s) => {
+      const src = s.image;
+      if (src && typeof src === 'string') {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+  }, [slides]);
+
   return (
     <div className="space-y-6">
       
       {/* 1. Header Hero Image Slides Carousel (Shown ONLY when banners exist) */}
       {slides.length > 0 && (
-        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.14)] border-2 border-white/90 group bg-[#0A0A0A]">
           
           {/* Slides Track - Reduced size on mobile and desktop views */}
-          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
+          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden bg-[#0A0A0A]">
             {slides.map((slide, index) => {
               const isActive = index === currentSlide;
 
               return (
                 <div
                   key={slide.id}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${
                     isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                 >

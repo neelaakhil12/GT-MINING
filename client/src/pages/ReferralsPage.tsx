@@ -125,6 +125,17 @@ export const ReferralsPage: React.FC = () => {
     };
   }, []);
 
+  // Preload all referral banner images into memory
+  useEffect(() => {
+    slides.forEach((s) => {
+      const src = s.imageUrl || s.image;
+      if (src && typeof src === 'string') {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+  }, [slides]);
+
   // Auto-cycle top dividend slides every 4.5s
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -231,20 +242,20 @@ export const ReferralsPage: React.FC = () => {
 
       {/* 1. TOP PROTOCOL DIVIDEND CAROUSEL BANNER (Shown ONLY when banners exist) */}
       {slides.length > 0 && (
-        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-neutral-950">
-          <div className="relative h-[165px] sm:h-[210px] md:h-[250px] w-full overflow-hidden">
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(0,0,0,0.12)] border-2 border-white/90 group bg-[#0A0A0A]">
+          <div className="relative h-[165px] sm:h-[210px] md:h-[250px] w-full overflow-hidden bg-[#0A0A0A]">
             {slides.map((slide, index) => {
               const isActive = index === activeSlide;
               const slideImg = slide.imageUrl || slide.image;
               return (
                 <div
                   key={slide.id || index}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                     }`}
                   style={
                     !slideImg
                       ? {
-                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0A2A18'}, ${slide.gradientEnd || '#05180E'})`,
+                        background: `linear-gradient(135deg, ${slide.gradientStart || '#18181B'}, ${slide.gradientEnd || '#09090B'})`,
                       }
                       : undefined
                   }

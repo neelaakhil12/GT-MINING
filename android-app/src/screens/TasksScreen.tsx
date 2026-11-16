@@ -98,6 +98,13 @@ function buildVideoHtml(rawUrl: string): string {
 </html>`;
 }
 
+import {
+  fetchAndCacheTaskBanners,
+  getCachedTaskBannersFromStorage,
+  getMemoryTaskBanners,
+  TaskBannerSlide,
+} from '../utils/taskBannerCache';
+
 interface TaskItem {
   id: string;
   category: 'social' | 'video';
@@ -122,8 +129,8 @@ export const TasksScreen: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'all' | 'social' | 'video'>('all');
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Dynamic Task Banners from Admin Panel (No hardcoded slides)
-  const [taskSlides, setTaskSlides] = useState<any[]>([]);
+  // Dynamic Task Banners with instant memory cache & offline storage
+  const [taskSlides, setTaskSlides] = useState<TaskBannerSlide[]>(() => getMemoryTaskBanners() || []);
 
   // Live tasks and backend-tracked submissions
   const [tasksList, setTasksList] = useState<TaskItem[]>(DEFAULT_TASKS_DATA);
@@ -142,19 +149,23 @@ export const TasksScreen: React.FC = () => {
   const [videoTimer, setVideoTimer] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<number>(0);
 
-  // Fetch Task Banners dynamically from Admin Panel
-  const fetchTaskBanners = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/task-banners?t=${Date.now()}`, {
-        headers: { 'Cache-Control': 'no-cache' },
-      });
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.banners)) {
-        const active = data.banners.filter((b: any) => b.isActive !== false);
-        setTaskSlides(active);
+  // Sync Task Banners dynamically from Admin Panel with zero delay
+  useEffect(() => {
+    let isMounted = true;
+    getCachedTaskBannersFromStorage().then((cached) => {
+      if (isMounted && cached && cached.length > 0) {
+        setTaskSlides(cached);
       }
-    } catch {}
-  };
+    });
+    fetchAndCacheTaskBanners().then((live) => {
+      if (isMounted && live && live.length > 0) {
+        setTaskSlides(live);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Auto-cycle hero slider (4 seconds)
   useEffect(() => {
@@ -167,7 +178,9 @@ export const TasksScreen: React.FC = () => {
 
   // Fetch live tasks and user submissions from backend API
   const fetchTasksAndSubmissions = async () => {
-    fetchTaskBanners();
+    fetchAndCacheTaskBanners().then((live) => {
+      if (live && live.length > 0) setTaskSlides(live);
+    });
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const authHeaders: Record<string, string> = {
@@ -504,23 +517,38 @@ export const TasksScreen: React.FC = () => {
           {taskSlides.length > 0 && activeSlideData && (
             <View style={styles.carouselBannerCard}>
               <View style={styles.carouselInner}>
-                {activeSlideData.imageUrl ? (
-                  <Image
-                    source={{
-                      uri: activeSlideData.imageUrl.startsWith('http')
-                        ? activeSlideData.imageUrl
-                        : `${SERVER_HOST}${activeSlideData.imageUrl}`,
-                    }}
-                    style={[StyleSheet.absoluteFillObject, { opacity: 1 }]}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <LinearGradient
-                    colors={[activeSlideData.gradientStart || '#061E12', '#0A2D1B', activeSlideData.gradientEnd || '#04150C']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFillObject}
-                  />
+                {/* Clean neutral base: NO dark green overlays */}
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#0A0A0A' }]} />
+
+                {/* Pre-mounted stack of all slide images with fadeDuration={0} for instant zero-black transitions */}
+                {taskSlides.map((slide, idx) =>
+                  slide.imageUrl ? (
+                    <Image
+                      key={`tb_img_${slide.id || idx}`}
+                      source={{
+                        uri: slide.imageUrl.startsWith('http')
+                          ? slide.imageUrl
+                          : `${SERVER_HOST}${slide.imageUrl}`,
+                      }}
+                      fadeDuration={0}
+                      style={[
+                        StyleSheet.absoluteFillObject,
+                        { opacity: idx === currentSlide ? 1 : 0 },
+                      ]}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <LinearGradient
+                      key={`tb_grad_${slide.id || idx}`}
+                      colors={[slide.gradientStart || '#18181B', slide.gradientEnd || '#09090B']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[
+                        StyleSheet.absoluteFillObject,
+                        { opacity: idx === currentSlide ? 1 : 0 },
+                      ]}
+                    />
+                  )
                 )}
 
                 {(activeSlideData.tag || activeSlideData.badgeText) && (
@@ -1125,10 +1153,11 @@ const styles = StyleSheet.create({
   carouselBannerCard: {
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#166534',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
+    backgroundColor: '#0A0A0A',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
     elevation: 6,
   },
   carouselInner: {
@@ -1137,15 +1166,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     position: 'relative',
     gap: 6,
-  },
-  carouselGlow: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(34, 197, 94, 0.25)',
   },
   carouselTagBadge: {
     flexDirection: 'row',

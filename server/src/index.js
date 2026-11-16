@@ -82,7 +82,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/market', marketRouter);
 
-function serveBannerImage(res, list, id) {
+function serveBannerImage(req, res, list, id) {
   const banner = (list || []).find((b) => b.id === id);
   if (!banner || !banner.imageUrl) {
     return res.status(404).send('Not found');
@@ -90,8 +90,14 @@ function serveBannerImage(res, list, id) {
   if (banner.imageUrl.startsWith('data:')) {
     const match = banner.imageUrl.match(/^data:([^;]+);base64,(.*)$/);
     if (!match) return res.status(400).send('Invalid image data');
+    const version = banner.updatedAt || banner.createdAt || banner.id || '1';
+    const etag = `W/"${banner.id}-${version}"`;
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
     res.setHeader('Content-Type', match[1]);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     return res.send(Buffer.from(match[2], 'base64'));
   }
   return res.redirect(banner.imageUrl);
@@ -108,7 +114,7 @@ function normalizeBannersWithImageUrls(list, routePrefix) {
     })
     .map((b) => {
       if (b.imageUrl && b.imageUrl.startsWith('data:')) {
-        const version = encodeURIComponent(b.updatedAt || b.createdAt || Date.now());
+        const version = encodeURIComponent(b.updatedAt || b.createdAt || b.id || '1');
         return { ...b, imageUrl: `${routePrefix}/${b.id}/image?v=${version}` };
       }
       return b;
@@ -118,7 +124,7 @@ function normalizeBannersWithImageUrls(list, routePrefix) {
 // Public Banners Endpoints
 app.get('/api/onboarding-banners/:id/image', (req, res) => {
   const db = readDB();
-  return serveBannerImage(res, db.onboardingBanners, req.params.id);
+  return serveBannerImage(req, res, db.onboardingBanners, req.params.id);
 });
 
 app.get('/api/onboarding-banners', (req, res) => {
@@ -129,7 +135,7 @@ app.get('/api/onboarding-banners', (req, res) => {
 
 app.get('/api/home-banners/:id/image', (req, res) => {
   const db = readDB();
-  return serveBannerImage(res, db.homeBanners, req.params.id);
+  return serveBannerImage(req, res, db.homeBanners, req.params.id);
 });
 
 app.get('/api/home-banners', (req, res) => {
@@ -141,7 +147,7 @@ app.get('/api/home-banners', (req, res) => {
 // Public Referral Page Sliders Endpoint
 app.get('/api/referral-banners/:id/image', (req, res) => {
   const db = readDB();
-  return serveBannerImage(res, db.referralBanners, req.params.id);
+  return serveBannerImage(req, res, db.referralBanners, req.params.id);
 });
 
 app.get('/api/referral-banners', (req, res) => {
@@ -153,7 +159,7 @@ app.get('/api/referral-banners', (req, res) => {
 // Public Task Page Sliders Endpoint
 app.get('/api/task-banners/:id/image', (req, res) => {
   const db = readDB();
-  return serveBannerImage(res, db.taskBanners, req.params.id);
+  return serveBannerImage(req, res, db.taskBanners, req.params.id);
 });
 
 app.get('/api/task-banners', (req, res) => {

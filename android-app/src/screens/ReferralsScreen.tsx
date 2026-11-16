@@ -34,6 +34,12 @@ import * as Haptics from 'expo-haptics';
 import { appStorage } from '../utils/storage';
 import { API_BASE_URL, SERVER_HOST } from '../config/api';
 import { useAppSafeArea } from '../utils/safeArea';
+import {
+  getMemoryReferralBanners,
+  getCachedReferralBannersFromStorage,
+  fetchAndCacheReferralBanners,
+  ReferralBannerSlide,
+} from '../utils/referralBannerCache';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +54,7 @@ export const ReferralsScreen: React.FC = () => {
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
   const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
-  const [slides, setSlides] = useState<any[]>(defaultDividendSlides);
+  const [slides, setSlides] = useState<any[]>(() => getMemoryReferralBanners() || []);
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Dynamic Referral Statistics loaded from backend DB
@@ -126,56 +132,17 @@ export const ReferralsScreen: React.FC = () => {
         return { ...b, imageUrl };
       });
 
-    const prefetchSlides = (list: any[]) => {
-      const urls = list
-        .map((b) => b?.imageUrl)
-        .filter((u): u is string => typeof u === 'string' && /^https?:\/\//i.test(u));
-      Promise.allSettled(urls.map((u) => Image.prefetch(u))).catch(() => {});
-    };
+    getCachedReferralBannersFromStorage().then((cached) => {
+      if (cached && cached.length > 0) {
+        setSlides(cached);
+      }
+    });
 
-    const loadCachedSlides = async () => {
-      try {
-        const cached = await appStorage.getItem('gt_cached_referral_banners');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const normalized = normalizeReferralSlides(parsed);
-            setSlides(normalized);
-            prefetchSlides(normalized);
-          }
-        }
-      } catch {}
-    };
-
-    const fetchReferralBanners = async () => {
-      try {
-        const endpoints = [
-          API_BASE_URL,
-          'http://localhost:5050/api',
-        ];
-        for (const base of endpoints) {
-          try {
-            const res = await fetch(`${base}/referral-banners?t=${Date.now()}`, {
-              headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
-            });
-            const data = await res.json();
-            if (data && data.success && Array.isArray(data.banners)) {
-              const normalized = normalizeReferralSlides(data.banners);
-              setSlides(normalized);
-              if (normalized.length > 0) {
-                prefetchSlides(normalized);
-                appStorage.setItem('gt_cached_referral_banners', JSON.stringify(normalized)).catch(() => {});
-              } else {
-                appStorage.removeItem('gt_cached_referral_banners').catch(() => {});
-              }
-              break;
-            }
-          } catch {}
-        }
-      } catch {}
-    };
-    loadCachedSlides();
-    fetchReferralBanners();
+    fetchAndCacheReferralBanners().then((live) => {
+      if (live && live.length > 0) {
+        setSlides(live);
+      }
+    });
   }, [user]);
 
   useEffect(() => {

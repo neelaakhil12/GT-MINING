@@ -415,15 +415,15 @@ export const AdminSlidersPage: React.FC = () => {
                 className="relative h-44 w-full p-4 flex flex-col justify-between overflow-hidden"
                 style={{
                   background: item.imageUrl
-                    ? `linear-gradient(135deg, rgba(6,78,59,0.88), rgba(2,44,23,0.92)), url(${item.imageUrl}) center/cover no-repeat`
-                    : `linear-gradient(135deg, ${item.gradientStart || '#064E3B'}, ${item.gradientEnd || '#022C17'})`,
+                    ? `url(${item.imageUrl}) center/cover no-repeat`
+                    : `linear-gradient(135deg, ${item.gradientStart || '#18181B'}, ${item.gradientEnd || '#09090B'})`,
                 }}
               >
                 {item.imageUrl && (
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40 pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                   />
                 )}
 
