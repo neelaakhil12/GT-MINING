@@ -72,11 +72,11 @@ export const requireAuth = (req, res, next) => {
     }
 
     if (user.deletedAt || user.accountStatus === 'DELETED') {
-      return res.status(403).json({ success: false, message: 'This account has been deleted.' });
+      return res.status(403).json({ success: false, message: 'Account not found. Sign up to create account.' });
     }
 
     if (user.accountStatus === 'SUSPENDED') {
-      return res.status(403).json({ success: false, message: 'This account has been suspended by an administrator.' });
+      return res.status(403).json({ success: false, message: 'Account is suspended.' });
     }
 
     req.user = user;

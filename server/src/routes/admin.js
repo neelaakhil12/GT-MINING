@@ -527,6 +527,65 @@ router.patch('/users/:id', async (req, res) => {
   });
 });
 
+// DELETE /api/admin/users/:id - Delete user permanently
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const db = readDB();
+    const userIndex = db.users.findIndex(u => u.id === req.params.id);
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const targetUser = db.users[userIndex];
+    if (targetUser.role === 'ADMIN' || targetUser.email.toLowerCase() === 'gtmining2026@gmail.com') {
+      return res.status(400).json({ success: false, message: 'Cannot delete administrator account.' });
+    }
+
+    const deletedEmail = targetUser.email;
+    const deletedName = targetUser.fullName;
+    const deletedId = targetUser.id;
+
+    // Permanently remove user from users array
+    db.users.splice(userIndex, 1);
+
+    // Clean up user's active wallet, mining claims, and associated records
+    if (db.wallets) {
+      db.wallets = db.wallets.filter(w => w.userId !== deletedId);
+    }
+    if (db.miningClaims) {
+      db.miningClaims = db.miningClaims.filter(c => c.userId !== deletedId);
+    }
+    if (db.taskSubmissions) {
+      db.taskSubmissions = db.taskSubmissions.filter(s => s.userId !== deletedId);
+    }
+    if (db.emailChangeRequests) {
+      db.emailChangeRequests = db.emailChangeRequests.filter(r => r.userId !== deletedId);
+    }
+    if (db.accountDeletionRequests) {
+      db.accountDeletionRequests = db.accountDeletionRequests.filter(r => r.userId !== deletedId);
+    }
+
+    createAuditLog(
+      db,
+      req.user?.id || 'admin',
+      'USER_DELETED',
+      'USER',
+      deletedId,
+      `Admin permanently deleted user "${deletedName}" (${deletedEmail})`
+    );
+
+    writeDB(db);
+
+    return res.json({
+      success: true,
+      message: `User ${deletedName} (${deletedEmail}) has been deleted successfully.`
+    });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete user.' });
+  }
+});
+
 // GET /api/admin/mining-settings
 router.get('/mining-settings', (req, res) => {
   const db = readDB();

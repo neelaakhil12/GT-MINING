@@ -485,22 +485,18 @@ router.post('/login', async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
   const db = readDB();
-  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt);
+  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt && u.accountStatus !== 'DELETED');
 
   if (!user) {
     return res.status(404).json({
       success: false,
-      message: 'Account not found. Please sign up first.',
+      message: 'Account not found. Sign up to create account.',
       notFound: true
     });
   }
 
-  if (user.accountStatus === 'DELETED') {
-    return res.status(403).json({ success: false, message: 'This account was deleted.' });
-  }
-
   if (user.accountStatus === 'SUSPENDED') {
-    return res.status(403).json({ success: false, message: 'Your account is suspended. Please contact support.' });
+    return res.status(403).json({ success: false, message: 'Account is suspended.' });
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -535,7 +531,12 @@ router.post('/google', async (req, res) => {
   await lockManager.acquire('google_auth_lock');
   try {
     const db = readDB();
-    let user = db.users.find(u => u.email.toLowerCase() === targetEmail && !u.deletedAt);
+    let user = db.users.find(u => u.email.toLowerCase() === targetEmail && !u.deletedAt && u.accountStatus !== 'DELETED');
+
+    if (user && user.accountStatus === 'SUSPENDED') {
+      lockManager.release('google_auth_lock');
+      return res.status(403).json({ success: false, message: 'Account is suspended.' });
+    }
 
     // If user does NOT exist in database
     if (!user) {
@@ -544,7 +545,7 @@ router.post('/google', async (req, res) => {
         lockManager.release('google_auth_lock');
         return res.status(404).json({
           success: false,
-          message: 'No account registered with this Google email. Please sign up first.',
+          message: 'Account not found. Sign up to create account.',
           notFound: true,
           notRegistered: true
         });

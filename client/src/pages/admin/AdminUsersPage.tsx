@@ -8,7 +8,8 @@ import {
   Coins,
   History,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -42,6 +43,23 @@ export const AdminUsersPage: React.FC = () => {
       showToast('Failed to fetch user list', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (u: any) => {
+    if (!window.confirm(`Are you sure you want to permanently delete user "${u.fullName}" (${u.email})? This user will be removed and their login will show "Account not found. Sign up to create account."`)) {
+      return;
+    }
+    try {
+      const res = await api.deleteAdminUser(u.id);
+      if (res.success) {
+        showToast(res.message || 'User deleted successfully', 'success');
+        setUsers(prev => prev.filter(user => user.id !== u.id));
+      } else {
+        showToast(res.message || 'Failed to delete user', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting user', 'error');
     }
   };
 
@@ -163,21 +181,34 @@ export const AdminUsersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      {u.role !== 'ADMIN' && u.accountStatus !== 'DELETED' && (
-                        <button
-                          onClick={() => {
-                            setModalUser(u);
-                            setNewStatus(u.accountStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
-                            setReason('');
-                          }}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                            u.accountStatus === 'ACTIVE'
-                              ? 'bg-[#F87171]/15 text-[#F87171] hover:bg-[#F87171] hover:text-white'
-                              : 'bg-[#22C55E]/15 text-[#4ADE80] hover:bg-[#22C55E] hover:text-[#07130D]'
-                          }`}
-                        >
-                          {u.accountStatus === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
-                        </button>
+                      {u.role !== 'ADMIN' && (
+                        <div className="flex items-center justify-end gap-2">
+                          {u.accountStatus !== 'DELETED' && (
+                            <button
+                              onClick={() => {
+                                setModalUser(u);
+                                setNewStatus(u.accountStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+                                setReason('');
+                              }}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                u.accountStatus === 'ACTIVE'
+                                  ? 'bg-[#F87171]/15 text-[#F87171] hover:bg-[#F87171] hover:text-white'
+                                  : 'bg-[#22C55E]/15 text-[#4ADE80] hover:bg-[#22C55E] hover:text-[#07130D]'
+                              }`}
+                            >
+                              {u.accountStatus === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                            title="Permanently delete user"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

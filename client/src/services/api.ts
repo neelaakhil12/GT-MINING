@@ -157,6 +157,7 @@ export const api = {
     return request<any>(`/admin/users?${params.toString()}`);
   },
   updateUserStatus: (id: string, body: any) => request<any>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminUser: (id: string) => request<any>(`/admin/users/${id}`, { method: 'DELETE' }),
   getAdminEmailRequests: () => request<any>('/admin/email-change-requests'),
   approveEmailRequest: (id: string) => request<any>(`/admin/email-change-requests/${id}/approve`, { method: 'POST' }),
   rejectEmailRequest: (id: string, reason?: string) => request<any>(`/admin/email-change-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
