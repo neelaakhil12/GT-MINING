@@ -66,23 +66,10 @@ export const CommunityScreen: React.FC = () => {
   const { user } = useAuth();
   const { top, tabContentPaddingBottom } = useAppSafeArea();
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Latest'>('All');
+  // Never load stale cached posts on mount so zero flash occurs
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [likesCount, setLikesCount] = useState<Record<string, number>>({});
-
-  // Instant cached posts loader on mount
-  useEffect(() => {
-    appStorage.getItem('@gt_cached_community_posts').then((cached) => {
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setPosts(parsed);
-          }
-        } catch {}
-      }
-    });
-  }, []);
 
   // Comments Modal State
   const [activeCommentPost, setActiveCommentPost] = useState<PostItem | null>(null);
@@ -91,11 +78,12 @@ export const CommunityScreen: React.FC = () => {
   const [commentInput, setCommentInput] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const isWithin24Hours = (dateStr?: string) => {
+  // Latest filter strictly checks for posts updated or created within the last 6 hours
+  const isWithin6Hours = (dateStr?: string) => {
     if (!dateStr) return false;
     const t = new Date(dateStr).getTime();
     if (isNaN(t)) return false;
-    return (Date.now() - t) <= 24 * 60 * 60 * 1000;
+    return Date.now() - t <= 6 * 60 * 60 * 1000;
   };
 
   useEffect(() => {
@@ -131,7 +119,6 @@ export const CommunityScreen: React.FC = () => {
               likedBy: Array.isArray(p.likedBy) ? p.likedBy : [],
             }));
             setPosts(mapped);
-            appStorage.setItem('@gt_cached_community_posts', JSON.stringify(mapped)).catch(() => {});
 
             // Sync user like status from server database
             const userIdentifier = user?.id || user?.email || '';
@@ -159,9 +146,9 @@ export const CommunityScreen: React.FC = () => {
 
   const displayedPosts = (() => {
     if (selectedCategory === 'Latest') {
-      const recent = posts.filter(p => isWithin24Hours(p.createdAt || p.dateStr));
-      const list = recent.length > 0 ? recent : posts;
-      return [...list].sort((a, b) => {
+      // Strictly show only posts within 6 hours. No fallback to all posts!
+      const recent = posts.filter(p => isWithin6Hours(p.createdAt || p.dateStr));
+      return [...recent].sort((a, b) => {
         const timeA = new Date(a.createdAt || a.dateStr).getTime() || 0;
         const timeB = new Date(b.createdAt || b.dateStr).getTime() || 0;
         return timeB - timeA;
@@ -388,10 +375,10 @@ export const CommunityScreen: React.FC = () => {
                             <Text style={styles.pinnedPillText}>Pinned</Text>
                           </View>
                         )}
-                        {isWithin24Hours(post.createdAt || post.dateStr) ? (
+                        {isWithin6Hours(post.createdAt || post.dateStr) ? (
                           <View style={styles.latestPill}>
                             <Sparkles size={9} color="#15803D" />
-                            <Text style={styles.latestPillText}>LATEST (24H)</Text>
+                            <Text style={styles.latestPillText}>LATEST (6H)</Text>
                           </View>
                         ) : (
                           <View style={styles.nodePill}>

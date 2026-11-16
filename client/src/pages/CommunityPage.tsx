@@ -33,17 +33,9 @@ interface PostComment {
 export const CommunityPage: React.FC = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [posts, setPosts] = useState<CommunityPost[]>(() => {
-    try {
-      const cached = localStorage.getItem('gt_cached_community_posts');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return [];
-  });
-  const [loading, setLoading] = useState(false);
+  // Never load stale cached deleted posts on mount so zero flash occurs
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
 
@@ -58,11 +50,12 @@ export const CommunityPage: React.FC = () => {
 
   const categories = ['All', 'Latest'];
 
-  const isWithin24Hours = (dateStr?: string) => {
+  // Latest filter strictly checks for posts updated or created within the last 6 hours
+  const isWithin6Hours = (dateStr?: string) => {
     if (!dateStr) return false;
     const t = new Date(dateStr).getTime();
     if (isNaN(t)) return false;
-    return (Date.now() - t) <= 24 * 60 * 60 * 1000;
+    return Date.now() - t <= 6 * 60 * 60 * 1000;
   };
 
   useEffect(() => {
@@ -78,13 +71,10 @@ export const CommunityPage: React.FC = () => {
     try {
       const res = await api.getCommunityPosts();
       if (res.success && res.posts) {
-        try {
-          localStorage.setItem('gt_cached_community_posts', JSON.stringify(res.posts));
-        } catch {}
         let loaded = res.posts;
         if (selectedCategory === 'Latest') {
-          const recent = loaded.filter((p: CommunityPost) => isWithin24Hours(p.createdAt || p.updatedAt));
-          loaded = recent.length > 0 ? recent : loaded;
+          // Strictly show only posts within 6 hours. No fallback to all posts!
+          loaded = loaded.filter((p: CommunityPost) => isWithin6Hours(p.createdAt || p.updatedAt));
           loaded = [...loaded].sort((a, b) => {
             const timeA = new Date(a.updatedAt || a.createdAt).getTime();
             const timeB = new Date(b.updatedAt || b.createdAt).getTime();
@@ -303,10 +293,10 @@ export const CommunityPage: React.FC = () => {
                         <span>Pinned</span>
                       </span>
                     )}
-                    {isWithin24Hours(post.createdAt || post.updatedAt) ? (
+                    {isWithin6Hours(post.createdAt || post.updatedAt) ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/20 text-[#15803D] border border-[#22C55E]/40 uppercase flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5 text-[#16A34A]" />
-                        <span>LATEST (24H)</span>
+                        <span>LATEST (6H)</span>
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E2E8F0] text-[#475569] border border-[#CBD5E1] uppercase">

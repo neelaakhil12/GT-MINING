@@ -130,6 +130,9 @@ export const api = {
   changePassword: (body: any) => request<any>('/profile/change-password', { method: 'POST', body: JSON.stringify(body) }),
   requestEmailChange: (newEmail: string) => request<any>('/profile/request-email-change', { method: 'POST', body: JSON.stringify({ newEmail }) }),
   getEmailChangeStatus: () => request<any>('/profile/email-change-status'),
+  requestAccountDeletion: (reason?: string) => request<any>('/profile/request-account-deletion', { method: 'POST', body: JSON.stringify({ reason }) }),
+  getAccountDeletionStatus: () => request<any>('/profile/account-deletion-status'),
+  cancelAccountDeletionRequest: () => request<any>('/profile/cancel-deletion-request', { method: 'DELETE' }),
   deleteAccount: (body: any) => request<any>('/profile', { method: 'DELETE', body: JSON.stringify(body) }),
 
   // Notifications
@@ -188,6 +191,18 @@ export const api = {
   updateAdminReferralBanner: (id: string, body: any) => request<any>(`/admin/referral-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAdminReferralBanner: (id: string) => request<any>(`/admin/referral-banners/${id}`, { method: 'DELETE' }),
   getPublicReferralBanners: () => request<any>('/referral-banners'),
+
+  // Task Page Carousel Banners
+  getAdminTaskBanners: () => request<any>('/admin/task-banners'),
+  createAdminTaskBanner: (body: any) => request<any>('/admin/task-banners', { method: 'POST', body: JSON.stringify(body) }),
+  updateAdminTaskBanner: (id: string, body: any) => request<any>(`/admin/task-banners/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminTaskBanner: (id: string) => request<any>(`/admin/task-banners/${id}`, { method: 'DELETE' }),
+  getPublicTaskBanners: () => request<any>('/task-banners'),
+
+  // Account Deletion Requests (Admin)
+  getAdminAccountDeletionRequests: () => request<any>('/admin/account-deletion-requests'),
+  approveAccountDeletionRequest: (id: string) => request<any>(`/admin/account-deletion-requests/${id}/approve`, { method: 'POST' }),
+  rejectAccountDeletionRequest: (id: string, reason?: string) => request<any>(`/admin/account-deletion-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
 
   // Tasks & Video Quests
   getAdminTasks: () => request<any>('/admin/tasks'),

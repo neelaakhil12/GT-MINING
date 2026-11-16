@@ -20,13 +20,13 @@ import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { AdminNav } from './AdminNav';
 
-type SliderCategory = 'home' | 'onboarding' | 'referrals';
+type SliderCategory = 'home' | 'onboarding' | 'referrals' | 'tasks';
 
 export const AdminSlidersPage: React.FC = () => {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Tab state: 'home' | 'onboarding' | 'referrals'
+  // Tab state: 'home' | 'onboarding' | 'referrals' | 'tasks'
   const initialTab = (searchParams.get('tab') as SliderCategory) || 'home';
   const [activeTab, setActiveTab] = useState<SliderCategory>(initialTab);
 
@@ -34,6 +34,7 @@ export const AdminSlidersPage: React.FC = () => {
   const [homeBanners, setHomeBanners] = useState<any[]>([]);
   const [onboardingBanners, setOnboardingBanners] = useState<any[]>([]);
   const [referralBanners, setReferralBanners] = useState<any[]>([]);
+  const [taskBanners, setTaskBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Common Modal state
@@ -63,15 +64,17 @@ export const AdminSlidersPage: React.FC = () => {
 
   const fetchAllSliders = async () => {
     try {
-      const [hRes, oRes, rRes] = await Promise.all([
+      const [hRes, oRes, rRes, tRes] = await Promise.all([
         api.getAdminHomeBanners().catch(() => ({ success: false, banners: [] })),
         api.getAdminOnboardingBanners().catch(() => ({ success: false, banners: [] })),
         api.getAdminReferralBanners().catch(() => ({ success: false, banners: [] })),
+        api.getAdminTaskBanners().catch(() => ({ success: false, banners: [] })),
       ]);
 
       if (hRes.success) setHomeBanners(hRes.banners || []);
       if (oRes.success) setOnboardingBanners(oRes.banners || []);
       if (rRes.success) setReferralBanners(rRes.banners || []);
+      if (tRes.success) setTaskBanners(tRes.banners || []);
     } catch (err: any) {
       showToast('Failed to load sliders data', 'error');
     } finally {
@@ -123,6 +126,11 @@ export const AdminSlidersPage: React.FC = () => {
       setGradientStart('#0B2516');
       setGradientEnd('#04160E');
       setOrder(onboardingBanners.length + 1);
+    } else if (activeTab === 'tasks') {
+      setAccentColor('#22C55E');
+      setGradientStart('#0B2516');
+      setGradientEnd('#04160E');
+      setOrder(taskBanners.length + 1);
     } else {
       setAccentColor('#22C55E');
       setGradientStart('#064E3B');
@@ -160,8 +168,10 @@ export const AdminSlidersPage: React.FC = () => {
         res = await api.deleteAdminHomeBanner(id);
       } else if (activeTab === 'onboarding') {
         res = await api.deleteAdminOnboardingBanner(id);
-      } else {
+      } else if (activeTab === 'referrals') {
         res = await api.deleteAdminReferralBanner(id);
+      } else {
+        res = await api.deleteAdminTaskBanner(id);
       }
 
       if (res.success) {
@@ -184,8 +194,10 @@ export const AdminSlidersPage: React.FC = () => {
         res = await api.updateAdminHomeBanner(item.id, { isActive: newStatus });
       } else if (activeTab === 'onboarding') {
         res = await api.updateAdminOnboardingBanner(item.id, { isActive: newStatus });
-      } else {
+      } else if (activeTab === 'referrals') {
         res = await api.updateAdminReferralBanner(item.id, { isActive: newStatus });
+      } else {
+        res = await api.updateAdminTaskBanner(item.id, { isActive: newStatus });
       }
 
       if (res.success) {
@@ -234,16 +246,20 @@ export const AdminSlidersPage: React.FC = () => {
           res = await api.updateAdminHomeBanner(editingItem.id, payload);
         } else if (activeTab === 'onboarding') {
           res = await api.updateAdminOnboardingBanner(editingItem.id, payload);
-        } else {
+        } else if (activeTab === 'referrals') {
           res = await api.updateAdminReferralBanner(editingItem.id, payload);
+        } else {
+          res = await api.updateAdminTaskBanner(editingItem.id, payload);
         }
       } else {
         if (activeTab === 'home') {
           res = await api.createAdminHomeBanner(payload);
         } else if (activeTab === 'onboarding') {
           res = await api.createAdminOnboardingBanner(payload);
-        } else {
+        } else if (activeTab === 'referrals') {
           res = await api.createAdminReferralBanner(payload);
+        } else {
+          res = await api.createAdminTaskBanner(payload);
         }
       }
 
@@ -254,6 +270,7 @@ export const AdminSlidersPage: React.FC = () => {
           localStorage.removeItem('gt_cached_onboarding_banners');
           localStorage.removeItem('gt_cached_home_banners');
           localStorage.removeItem('gt_cached_referral_banners');
+          localStorage.removeItem('gt_cached_task_banners');
           window.dispatchEvent(new Event('gt_db_updated'));
         } catch { }
         fetchAllSliders();
@@ -272,7 +289,9 @@ export const AdminSlidersPage: React.FC = () => {
       ? homeBanners
       : activeTab === 'onboarding'
       ? onboardingBanners
-      : referralBanners;
+      : activeTab === 'referrals'
+      ? referralBanners
+      : taskBanners;
 
   const activeCount = currentList.filter((b) => b.isActive !== false).length;
 
@@ -292,7 +311,7 @@ export const AdminSlidersPage: React.FC = () => {
                 Sliders
               </h1>
               <p className="text-xs text-[#A7C9B1]">
-                Centralized slider management for Home Banners, Pre-Open Sliders, and Referral Slides
+                Centralized slider management for Home Banners, Pre-Open Sliders, Referral Slides, and Task Slides
               </p>
             </div>
           </div>
@@ -308,12 +327,12 @@ export const AdminSlidersPage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span>Add New {activeTab === 'home' ? 'Home Banner' : activeTab === 'onboarding' ? 'Pre-Open Slide' : 'Referral Slide'}</span>
+            <span>Add New {activeTab === 'home' ? 'Home Banner' : activeTab === 'onboarding' ? 'Pre-Open Slide' : activeTab === 'referrals' ? 'Referral Slide' : 'Task Slide'}</span>
           </button>
         </div>
       </div>
 
-      {/* 3 CATEGORY TABS */}
+      {/* 4 CATEGORY TABS */}
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#071F14] border border-[#86EFAC]/20 overflow-x-auto scrollbar-none">
         <button
           onClick={() => switchTab('home')}
@@ -349,6 +368,18 @@ export const AdminSlidersPage: React.FC = () => {
         >
           <Gift className="w-4 h-4" />
           <span>Referral Slides ({referralBanners.length})</span>
+        </button>
+
+        <button
+          onClick={() => switchTab('tasks')}
+          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black transition-all ${
+            activeTab === 'tasks'
+              ? 'bg-[#22C55E] text-[#05180E] shadow-md'
+              : 'text-[#A7C9B1] hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Tasks Slides ({taskBanners.length})</span>
         </button>
       </div>
 
@@ -460,7 +491,7 @@ export const AdminSlidersPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Sliders className="w-5 h-5 text-[#86EFAC]" />
                 <h2 className="text-lg font-bold text-white">
-                  {editingItem ? 'Edit Slider' : `Add New ${activeTab === 'home' ? 'Home Banner' : activeTab === 'onboarding' ? 'Pre-Open Slide' : 'Referral Slide'}`}
+                  {editingItem ? 'Edit Slider' : `Add New ${activeTab === 'home' ? 'Home Banner' : activeTab === 'onboarding' ? 'Pre-Open Slide' : activeTab === 'referrals' ? 'Referral Slide' : 'Task Slide'}`}
                 </h2>
               </div>
               <button

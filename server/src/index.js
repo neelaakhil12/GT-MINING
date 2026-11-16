@@ -142,6 +142,18 @@ app.get('/api/referral-banners', (req, res) => {
   return res.json({ success: true, banners });
 });
 
+// Public Task Page Sliders Endpoint
+app.get('/api/task-banners/:id/image', (req, res) => {
+  const db = readDB();
+  return serveBannerImage(res, db.taskBanners, req.params.id);
+});
+
+app.get('/api/task-banners', (req, res) => {
+  const db = readDB();
+  const banners = normalizeBannersWithImageUrls(db.taskBanners, '/api/task-banners');
+  return res.json({ success: true, banners });
+});
+
 // Public Tasks Endpoint
 app.get('/api/tasks', (req, res) => {
   const db = readDB();

@@ -53,6 +53,8 @@ export const ProfileScreen: React.FC = () => {
   );
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<any>(null);
+  const [requestingDeletion, setRequestingDeletion] = useState(false);
 
   useEffect(() => {
     if (user?.fullName) {
@@ -73,8 +75,24 @@ export const ProfileScreen: React.FC = () => {
         },
       });
       const data = await res.json();
-      if (data && data.success && data.request) {
-        setPendingRequest(data.request);
+      if (data && data.success) {
+        setPendingRequest(data.request || null);
+      }
+    } catch {}
+  };
+
+  const fetchDeletionStatus = async () => {
+    try {
+      const token = await appStorage.getItem('gt_mobile_token');
+      const res = await fetch(`${API_BASE_URL}/profile/account-deletion-status`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setDeletionRequest(data.request || null);
       }
     } catch {}
   };
@@ -82,6 +100,7 @@ export const ProfileScreen: React.FC = () => {
   useEffect(() => {
     refreshUserData?.();
     fetchEmailStatus();
+    fetchDeletionStatus();
   }, []);
 
   // Upload Custom Photo from Gallery
@@ -195,6 +214,75 @@ export const ProfileScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleRequestDeletion = async () => {
+    Alert.alert(
+      'Request Account Deletion',
+      'Are you sure you want to request account deletion? Your request will be sent to the Administrator in Notifications panel for approval.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Request Deletion',
+          style: 'destructive',
+          onPress: async () => {
+            setRequestingDeletion(true);
+            try {
+              const token = await appStorage.getItem('gt_mobile_token');
+              const res = await fetch(`${API_BASE_URL}/profile/request-account-deletion`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({ reason: 'User requested deletion from mobile app' }),
+              });
+              const data = await res.json();
+              if (data && data.success) {
+                Alert.alert('Request Submitted', data.message || 'Deletion request sent for administrator review.');
+                await fetchDeletionStatus();
+              } else {
+                Alert.alert('Request Failed', data.message || 'Unable to submit deletion request.');
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Network error.');
+            } finally {
+              setRequestingDeletion(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelDeletion = async () => {
+    Alert.alert(
+      'Cancel Deletion Request',
+      'Do you want to cancel your pending account deletion request?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel Request',
+          onPress: async () => {
+            try {
+              const token = await appStorage.getItem('gt_mobile_token');
+              const res = await fetch(`${API_BASE_URL}/profile/cancel-deletion-request`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+              });
+              const data = await res.json();
+              if (data && data.success) {
+                Alert.alert('Cancelled', 'Your account deletion request has been cancelled.');
+                await fetchDeletionStatus();
+              }
+            } catch {}
+          },
+        },
+      ]
+    );
   };
 
   const handleLogout = async () => {
@@ -459,13 +547,78 @@ export const ProfileScreen: React.FC = () => {
             </Text>
 
             {pendingRequest && (
-              <View style={styles.pendingBanner}>
-                <AlertTriangle size={15} color="#D97706" />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={styles.pendingTitle}>Pending Email Change Request</Text>
-                  <Text style={styles.pendingSubtitle}>
-                    New: {pendingRequest.requested_email} (Status: {pendingRequest.status})
+              <View
+                style={[
+                  styles.pendingBanner,
+                  pendingRequest.status === 'APPROVED' && {
+                    backgroundColor: '#ECFDF5',
+                    borderColor: '#6EE7B7',
+                  },
+                  pendingRequest.status === 'REJECTED' && {
+                    backgroundColor: '#FEF2F2',
+                    borderColor: '#FECACA',
+                  },
+                ]}
+              >
+                <View style={{ flex: 1, gap: 3 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text
+                      style={[
+                        styles.pendingTitle,
+                        pendingRequest.status === 'APPROVED' && { color: '#065F46' },
+                        pendingRequest.status === 'REJECTED' && { color: '#991B1B' },
+                      ]}
+                    >
+                      Email Change Request
+                    </Text>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                        backgroundColor:
+                          pendingRequest.status === 'APPROVED'
+                            ? '#D1FAE5'
+                            : pendingRequest.status === 'REJECTED'
+                            ? '#FEE2E2'
+                            : '#FDE68A',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: '900',
+                          color:
+                            pendingRequest.status === 'APPROVED'
+                              ? '#065F46'
+                              : pendingRequest.status === 'REJECTED'
+                              ? '#991B1B'
+                              : '#92400E',
+                        }}
+                      >
+                        {pendingRequest.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.pendingSubtitle,
+                      pendingRequest.status === 'APPROVED' && { color: '#047857' },
+                      pendingRequest.status === 'REJECTED' && { color: '#B91C1C' },
+                    ]}
+                  >
+                    New: {pendingRequest.requestedNewEmail || pendingRequest.requested_email}
                   </Text>
+                  {pendingRequest.status === 'PENDING' && (
+                    <Text style={{ fontSize: 9.5, color: '#B45309' }}>
+                      Waiting for Administrator approval.
+                    </Text>
+                  )}
+                  {pendingRequest.status === 'REJECTED' && pendingRequest.reason && (
+                    <Text style={{ fontSize: 9.5, color: '#DC2626' }}>
+                      Reason: {pendingRequest.reason}
+                    </Text>
+                  )}
                 </View>
               </View>
             )}
@@ -502,21 +655,68 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.dangerHeaderTitle}>Danger Zone</Text>
             </View>
             <Text style={styles.dangerNoticeText}>
-              Once requested for deletion, all pending transactions and referral earnings are permanently removed.
+              Once requested, an account deletion request will be sent to the administrator. Account will only be deleted after admin approval in Notifications.
             </Text>
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() =>
-                Alert.alert(
-                  'Account Deletion Request',
-                  'Please contact support or admin to request account deletion.'
-                )
-              }
-              activeOpacity={0.8}
-            >
-              <Trash2 size={13} color="#FFFFFF" />
-              <Text style={styles.deleteBtnText}>Request Account Deletion</Text>
-            </TouchableOpacity>
+
+            {deletionRequest && deletionRequest.status === 'PENDING' ? (
+              <View
+                style={{
+                  backgroundColor: '#FEF3C7',
+                  borderWidth: 1,
+                  borderColor: '#FCD34D',
+                  borderRadius: 12,
+                  padding: 10,
+                  gap: 6,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E' }}>
+                    Deletion Request: PENDING
+                  </Text>
+                  <View style={{ backgroundColor: '#FDE68A', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '900', color: '#92400E' }}>AWAITING APPROVAL</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 10, color: '#B45309' }}>
+                  Submitted to Administrator in Notifications panel. Account remains active until admin reviews.
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#FDE68A',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 10,
+                    marginTop: 4,
+                  }}
+                  onPress={handleCancelDeletion}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E' }}>Cancel Request</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ gap: 6 }}>
+                {deletionRequest && deletionRequest.status === 'REJECTED' && (
+                  <View style={{ backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7', borderRadius: 10, padding: 8 }}>
+                    <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#065F46' }}>
+                      Previous deletion request was rejected by Administrator. Your account remains active.
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={handleRequestDeletion}
+                  disabled={requestingDeletion}
+                  activeOpacity={0.8}
+                >
+                  <Trash2 size={13} color="#FFFFFF" />
+                  <Text style={styles.deleteBtnText}>
+                    {requestingDeletion ? 'Submitting...' : 'Request Account Deletion'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* 5. Logout Card */}

@@ -114,30 +114,6 @@ interface TaskItem {
 // Only tasks created in Admin Panel are displayed. No hardcoded dummy tasks.
 const DEFAULT_TASKS_DATA: TaskItem[] = [];
 
-const TASK_SLIDES = [
-  {
-    id: 1,
-    tag: 'DAILY REWARDS',
-    title: 'Complete Tasks, Earn GT',
-    description: 'Boost your balance every day by completing verified social quests.',
-    accentColor: '#22C55E',
-  },
-  {
-    id: 2,
-    tag: 'GLOBAL COMMUNITY',
-    title: 'Connect & Multiply',
-    description: 'Join official GT channels across X, Telegram, and YouTube.',
-    accentColor: '#38BDF8',
-  },
-  {
-    id: 3,
-    tag: 'VIDEO REWARDS',
-    title: 'Watch & Collect',
-    description: 'Explore the latest GT ecosystem updates and claim instant rewards.',
-    accentColor: '#A855F7',
-  },
-];
-
 export const TasksScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, refreshUserData } = useAuth();
@@ -145,6 +121,9 @@ export const TasksScreen: React.FC = () => {
 
   const [selectedTab, setSelectedTab] = useState<'all' | 'social' | 'video'>('all');
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Dynamic Task Banners from Admin Panel (No hardcoded slides)
+  const [taskSlides, setTaskSlides] = useState<any[]>([]);
 
   // Live tasks and backend-tracked submissions
   const [tasksList, setTasksList] = useState<TaskItem[]>(DEFAULT_TASKS_DATA);
@@ -163,16 +142,30 @@ export const TasksScreen: React.FC = () => {
   const [videoTimer, setVideoTimer] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<number>(0);
 
+  // Fetch Task Banners dynamically from Admin Panel
+  const fetchTaskBanners = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/task-banners`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.banners)) {
+        const active = data.banners.filter((b: any) => b.isActive !== false);
+        setTaskSlides(active);
+      }
+    } catch {}
+  };
+
   // Auto-cycle hero slider (4 seconds)
   useEffect(() => {
+    if (taskSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % TASK_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % taskSlides.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [taskSlides.length]);
 
   // Fetch live tasks and user submissions from backend API
   const fetchTasksAndSubmissions = async () => {
+    fetchTaskBanners();
     try {
       const token = await appStorage.getItem('gt_mobile_token');
       const authHeaders: Record<string, string> = {
@@ -383,7 +376,7 @@ export const TasksScreen: React.FC = () => {
   });
 
   const completedCount = submissions.filter((s) => s.status === 'APPROVED').length;
-  const activeSlideData = TASK_SLIDES[currentSlide];
+  const activeSlideData = taskSlides[currentSlide] || taskSlides[0] || null;
 
   // Resolve absolute video URL if hosted on server
   const resolveVideoUrl = (rawUrl: string) => {
@@ -505,38 +498,57 @@ export const TasksScreen: React.FC = () => {
             <Text style={styles.stationTitle}>GT TASKS STATION</Text>
           </View>
 
-          {/* 1. Top Hero Slides Carousel matching website */}
-          <View style={styles.carouselBannerCard}>
-            <LinearGradient
-              colors={['#061E12', '#0A2D1B', '#04150C']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.carouselInner}
-            >
-              <View style={styles.carouselGlow} pointerEvents="none" />
-
-              <View style={styles.carouselTagBadge}>
-                <View style={[styles.carouselTagDot, { backgroundColor: activeSlideData.accentColor }]} />
-                <Text style={styles.carouselTagText}>{activeSlideData.tag}</Text>
-              </View>
-
-              <Text style={styles.carouselTitle}>{activeSlideData.title}</Text>
-              <Text style={styles.carouselDesc}>{activeSlideData.description}</Text>
-
-              {/* Indicator Dots */}
-              <View style={styles.dotsRow}>
-                {TASK_SLIDES.map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      i === currentSlide ? styles.dotActive : styles.dotInactive,
-                    ]}
+          {/* 1. Top Hero Slides Carousel matching website (only when slides exist from Admin Panel) */}
+          {taskSlides.length > 0 && activeSlideData && (
+            <View style={styles.carouselBannerCard}>
+              <LinearGradient
+                colors={[activeSlideData.gradientStart || '#061E12', '#0A2D1B', activeSlideData.gradientEnd || '#04150C']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.carouselInner}
+              >
+                {activeSlideData.imageUrl ? (
+                  <Image
+                    source={{
+                      uri: activeSlideData.imageUrl.startsWith('http')
+                        ? activeSlideData.imageUrl
+                        : `${SERVER_HOST}${activeSlideData.imageUrl}`,
+                    }}
+                    style={[StyleSheet.absoluteFillObject, { opacity: 0.35 }]}
+                    resizeMode="cover"
                   />
-                ))}
-              </View>
-            </LinearGradient>
-          </View>
+                ) : null}
+                <View style={styles.carouselGlow} pointerEvents="none" />
+
+                {(activeSlideData.tag || activeSlideData.badgeText) && (
+                  <View style={styles.carouselTagBadge}>
+                    <View style={[styles.carouselTagDot, { backgroundColor: activeSlideData.accentColor || '#22C55E' }]} />
+                    <Text style={styles.carouselTagText}>{activeSlideData.tag || activeSlideData.badgeText}</Text>
+                  </View>
+                )}
+
+                <Text style={styles.carouselTitle}>{activeSlideData.title}</Text>
+                {activeSlideData.description ? (
+                  <Text style={styles.carouselDesc}>{activeSlideData.description}</Text>
+                ) : null}
+
+                {/* Indicator Dots */}
+                {taskSlides.length > 1 && (
+                  <View style={styles.dotsRow}>
+                    {taskSlides.map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.dot,
+                          i === currentSlide ? styles.dotActive : styles.dotInactive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                )}
+              </LinearGradient>
+            </View>
+          )}
 
           {/* 2. Tasks Rewards Summary Card */}
           <View style={styles.rewardsSummaryCard}>

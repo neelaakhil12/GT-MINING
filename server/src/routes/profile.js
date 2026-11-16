@@ -211,6 +211,72 @@ router.get('/email-change-status', requireAuth, (req, res) => {
   return res.json({ success: true, request: latest });
 });
 
+// POST /api/profile/request-account-deletion
+router.post('/request-account-deletion', requireAuth, (req, res) => {
+  if (req.user.role === 'ADMIN') {
+    return res.status(400).json({ success: false, message: 'Administrator accounts cannot request deletion.' });
+  }
+
+  const db = readDB();
+  if (!db.accountDeletionRequests) db.accountDeletionRequests = [];
+
+  const existing = db.accountDeletionRequests.find(r => r.userId === req.user.id && r.status === 'PENDING');
+  if (existing) {
+    return res.json({
+      success: true,
+      message: 'You already have an account deletion request pending review by an Administrator.',
+      request: existing
+    });
+  }
+
+  const reason = (req.body && req.body.reason) ? String(req.body.reason).trim() : 'User requested account deletion';
+
+  const newRequest = {
+    id: generateId('delreq'),
+    userId: req.user.id,
+    userFullName: req.user.fullName || 'User',
+    email: req.user.email,
+    reason,
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+    reviewedAt: null,
+    reviewedBy: null
+  };
+
+  db.accountDeletionRequests.push(newRequest);
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: 'Account deletion request submitted! Administrator will review your request in the Notifications panel.',
+    request: newRequest
+  });
+});
+
+// GET /api/profile/account-deletion-status
+router.get('/account-deletion-status', requireAuth, (req, res) => {
+  const db = readDB();
+  const requests = (db.accountDeletionRequests || []).filter(r => r.userId === req.user.id);
+  const latest = requests[requests.length - 1] || null;
+  return res.json({ success: true, request: latest });
+});
+
+// DELETE /api/profile/cancel-deletion-request
+router.delete('/cancel-deletion-request', requireAuth, (req, res) => {
+  const db = readDB();
+  if (!db.accountDeletionRequests) db.accountDeletionRequests = [];
+
+  const existingIndex = db.accountDeletionRequests.findIndex(r => r.userId === req.user.id && r.status === 'PENDING');
+  if (existingIndex === -1) {
+    return res.status(404).json({ success: false, message: 'No pending deletion request found to cancel.' });
+  }
+
+  db.accountDeletionRequests.splice(existingIndex, 1);
+  writeDB(db);
+
+  return res.json({ success: true, message: 'Account deletion request cancelled successfully.' });
+});
+
 // DELETE /api/profile - True Account Deletion with Anonymization & Ledger Protection
 router.delete('/', requireAuth, async (req, res) => {
   const { password, confirmationText } = req.body;

@@ -39,27 +39,41 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [pendingEmailCount, setPendingEmailCount] = useState<number>(0);
   const [pendingTaskCount, setPendingTaskCount] = useState<number>(0);
 
-  // Poll for pending email change requests & task submissions count
+  // Poll for pending email change requests, deletion requests & task submissions count
   useEffect(() => {
     let isMounted = true;
     const fetchPendingCount = async () => {
       try {
-        const res = await api.getAdminEmailRequests();
-        if (res && res.success && isMounted) {
-          if (typeof res.pendingCount === 'number') {
-            setPendingEmailCount(res.pendingCount);
-          } else if (Array.isArray(res.requests)) {
-            const count = res.requests.filter((r: any) => r.status === 'PENDING').length;
-            setPendingEmailCount(count);
-          }
-        }
+        const [emailRes, delRes, taskRes] = await Promise.all([
+          api.getAdminEmailRequests().catch(() => ({ success: false })),
+          api.getAdminAccountDeletionRequests().catch(() => ({ success: false })),
+          api.getAdminTaskSubmissions('PENDING').catch(() => ({ success: false })),
+        ]);
 
-        const taskRes = await api.getAdminTaskSubmissions('PENDING');
-        if (taskRes && taskRes.success && isMounted) {
-          if (typeof taskRes.pendingCount === 'number') {
-            setPendingTaskCount(taskRes.pendingCount);
-          } else if (Array.isArray(taskRes.submissions)) {
-            setPendingTaskCount(taskRes.submissions.length);
+        if (isMounted) {
+          let totalNotifications = 0;
+          if (emailRes && emailRes.success) {
+            if (typeof emailRes.pendingCount === 'number') {
+              totalNotifications += emailRes.pendingCount;
+            } else if (Array.isArray(emailRes.requests)) {
+              totalNotifications += emailRes.requests.filter((r: any) => r.status === 'PENDING').length;
+            }
+          }
+          if (delRes && delRes.success) {
+            if (typeof delRes.pendingCount === 'number') {
+              totalNotifications += delRes.pendingCount;
+            } else if (Array.isArray(delRes.requests)) {
+              totalNotifications += delRes.requests.filter((r: any) => r.status === 'PENDING').length;
+            }
+          }
+          setPendingEmailCount(totalNotifications);
+
+          if (taskRes && taskRes.success) {
+            if (typeof taskRes.pendingCount === 'number') {
+              setPendingTaskCount(taskRes.pendingCount);
+            } else if (Array.isArray(taskRes.submissions)) {
+              setPendingTaskCount(taskRes.submissions.length);
+            }
           }
         }
       } catch (err) {

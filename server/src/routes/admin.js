@@ -1396,6 +1396,202 @@ router.post('/email-change-requests/:id/reject', (req, res) => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// TASK BANNERS / SLIDERS MANAGEMENT FOR ADMIN
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/task-banners
+router.get('/task-banners', (req, res) => {
+  const db = readDB();
+  const banners = db.taskBanners || [];
+  return res.json({ success: true, banners });
+});
+
+// POST /api/admin/task-banners
+router.post('/task-banners', (req, res) => {
+  const { title, description, tag, imageUrl, ctaText, targetRoute, accentColor, gradientStart, gradientEnd, order, isActive } = req.body;
+  if (!title) {
+    return res.status(400).json({ success: false, message: 'Title is required' });
+  }
+
+  const db = readDB();
+  if (!db.taskBanners) db.taskBanners = [];
+
+  const newBanner = {
+    id: generateId('tb'),
+    title: title.trim(),
+    description: (description || '').trim(),
+    tag: (tag || '').trim(),
+    imageUrl: (imageUrl || '').trim(),
+    ctaText: (ctaText || '').trim(),
+    targetRoute: (targetRoute || '').trim(),
+    accentColor: accentColor || '#22C55E',
+    gradientStart: gradientStart || '#0A2A18',
+    gradientEnd: gradientEnd || '#05180E',
+    order: Number(order) || (db.taskBanners.length + 1),
+    isActive: isActive !== false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  db.taskBanners.push(newBanner);
+  writeDB(db);
+
+  return res.json({ success: true, banner: newBanner, message: 'Task banner created successfully' });
+});
+
+// PATCH /api/admin/task-banners/:id
+router.patch('/task-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.taskBanners) db.taskBanners = [];
+  const banner = db.taskBanners.find(b => b.id === req.params.id);
+  if (!banner) {
+    return res.status(404).json({ success: false, message: 'Task banner not found' });
+  }
+
+  const { title, description, tag, imageUrl, ctaText, targetRoute, accentColor, gradientStart, gradientEnd, order, isActive } = req.body;
+
+  if (title !== undefined) banner.title = title.trim();
+  if (description !== undefined) banner.description = description.trim();
+  if (tag !== undefined) banner.tag = tag.trim();
+  if (imageUrl !== undefined) banner.imageUrl = imageUrl.trim();
+  if (ctaText !== undefined) banner.ctaText = ctaText.trim();
+  if (targetRoute !== undefined) banner.targetRoute = targetRoute.trim();
+  if (accentColor !== undefined) banner.accentColor = accentColor;
+  if (gradientStart !== undefined) banner.gradientStart = gradientStart;
+  if (gradientEnd !== undefined) banner.gradientEnd = gradientEnd;
+  if (order !== undefined) banner.order = Number(order);
+  if (isActive !== undefined) banner.isActive = isActive;
+  banner.updatedAt = new Date().toISOString();
+
+  writeDB(db);
+  return res.json({ success: true, banner, message: 'Task banner updated successfully' });
+});
+
+// DELETE /api/admin/task-banners/:id
+router.delete('/task-banners/:id', (req, res) => {
+  const db = readDB();
+  if (!db.taskBanners) db.taskBanners = [];
+  const index = db.taskBanners.findIndex(b => b.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Task banner not found' });
+  }
+
+  db.taskBanners.splice(index, 1);
+  writeDB(db);
+  return res.json({ success: true, message: 'Task banner deleted successfully' });
+});
+
+// ---------------------------------------------------------------------------
+// ACCOUNT DELETION REQUESTS MANAGEMENT FOR ADMIN
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/account-deletion-requests
+router.get('/account-deletion-requests', (req, res) => {
+  const db = readDB();
+  const requests = (db.accountDeletionRequests || []).slice().reverse();
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  return res.json({ success: true, requests, pendingCount });
+});
+
+// POST /api/admin/account-deletion-requests/:id/approve
+router.post('/account-deletion-requests/:id/approve', (req, res) => {
+  const db = readDB();
+  if (!db.accountDeletionRequests) db.accountDeletionRequests = [];
+  const request = db.accountDeletionRequests.find(r => r.id === req.params.id);
+  if (!request) {
+    return res.status(404).json({ success: false, message: 'Deletion request not found' });
+  }
+  if (request.status !== 'PENDING') {
+    return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+  }
+
+  const targetUser = db.users.find(u => u.id === request.userId);
+  if (!targetUser) {
+    request.status = 'APPROVED';
+    request.reviewedAt = new Date().toISOString();
+    request.reviewedBy = req.user ? req.user.email : 'Master Admin';
+    writeDB(db);
+    return res.json({ success: true, message: 'User was already deleted or not found. Request marked approved.' });
+  }
+
+  if (targetUser.role === 'ADMIN') {
+    return res.status(400).json({ success: false, message: 'Administrator accounts cannot be deleted.' });
+  }
+
+  const now = new Date().toISOString();
+  targetUser.accountStatus = 'DELETED';
+  targetUser.isDeleted = true;
+  targetUser.deletedAt = now;
+  targetUser.status = 'DELETED';
+  targetUser.fullName = `Deleted User (${targetUser.id.substring(4, 9)})`;
+  targetUser.email = `deleted_${targetUser.id}@anonymized.gtnetwork.io`;
+  targetUser.updatedAt = now;
+
+  request.status = 'APPROVED';
+  request.reviewedAt = now;
+  request.reviewedBy = req.user ? req.user.email : 'Master Admin';
+
+  if (!db.adminAuditLogs) db.adminAuditLogs = [];
+  db.adminAuditLogs.push({
+    id: generateId('audit'),
+    adminUserId: req.user?.id || 'usr_admin_001',
+    action: 'APPROVE_ACCOUNT_DELETION',
+    entityType: 'USER',
+    entityId: targetUser.id,
+    reason: `Account deletion approved by administrator. Requested reason: ${request.reason}`,
+    metadata: { deletedAt: now },
+    createdAt: now
+  });
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: `Account deletion approved. User account for ${request.email} has been permanently deleted.`,
+    request
+  });
+});
+
+// POST /api/admin/account-deletion-requests/:id/reject
+router.post('/account-deletion-requests/:id/reject', (req, res) => {
+  const db = readDB();
+  if (!db.accountDeletionRequests) db.accountDeletionRequests = [];
+  const request = db.accountDeletionRequests.find(r => r.id === req.params.id);
+  if (!request) {
+    return res.status(404).json({ success: false, message: 'Deletion request not found' });
+  }
+  if (request.status !== 'PENDING') {
+    return res.status(400).json({ success: false, message: `Request is already ${request.status}` });
+  }
+
+  const now = new Date().toISOString();
+  request.status = 'REJECTED';
+  request.rejectionReason = req.body.reason || 'Rejected by Administrator';
+  request.reviewedAt = now;
+  request.reviewedBy = req.user ? req.user.email : 'Master Admin';
+
+  if (!db.adminAuditLogs) db.adminAuditLogs = [];
+  db.adminAuditLogs.push({
+    id: generateId('audit'),
+    adminUserId: req.user?.id || 'usr_admin_001',
+    action: 'REJECT_ACCOUNT_DELETION',
+    entityType: 'USER',
+    entityId: request.userId,
+    reason: `Account deletion rejected: ${request.rejectionReason}`,
+    metadata: { reviewedAt: now },
+    createdAt: now
+  });
+
+  writeDB(db);
+
+  return res.json({
+    success: true,
+    message: 'Account deletion request rejected. User account remains active.',
+    request
+  });
+});
+
 // ==========================================
 // PRIVATE ROOMS & CHATS MANAGEMENT FOR ADMIN
 // ==========================================

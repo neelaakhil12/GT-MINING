@@ -29,6 +29,17 @@ router.get('/', requireAuth, (req, res) => {
       }
     });
 
+    const cooldownSeconds = Number(db.settings?.cooldownSeconds || 7200);
+    const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
+
+    const formattedTransactions = transactions.map(tx => {
+      if (tx.type === 'MINING_REWARD' && typeof tx.description === 'string') {
+        const desc = tx.description.replace(/\d+-Hour Mining Reward/i, `${cycleHours}-Hour Mining Reward`);
+        return { ...tx, description: desc };
+      }
+      return tx;
+    });
+
     return res.json({
       success: true,
       wallet: {
@@ -39,7 +50,7 @@ router.get('/', requireAuth, (req, res) => {
         taskRewardsTotal: Number(taskRewardsTotal.toFixed(4)),
         adminAdjustmentsTotal: Number(adminAdjustmentsTotal.toFixed(4))
       },
-      transactions: transactions.slice(0, 20)
+      transactions: formattedTransactions.slice(0, 20)
     });
   } catch (err) {
     console.error('Wallet error:', err);
@@ -62,9 +73,20 @@ router.get('/transactions', requireAuth, (req, res) => {
 
     transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+    const cooldownSeconds = Number(db.settings?.cooldownSeconds || 7200);
+    const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
+
+    const formattedTransactions = transactions.map(tx => {
+      if (tx.type === 'MINING_REWARD' && typeof tx.description === 'string') {
+        const desc = tx.description.replace(/\d+-Hour Mining Reward/i, `${cycleHours}-Hour Mining Reward`);
+        return { ...tx, description: desc };
+      }
+      return tx;
+    });
+
     return res.json({
       success: true,
-      transactions: transactions.slice(0, parseInt(limit, 10))
+      transactions: formattedTransactions.slice(0, parseInt(limit, 10))
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to fetch transactions.' });

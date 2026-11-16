@@ -42,9 +42,7 @@ export const ProfilePage: React.FC = () => {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [deleteModal, setDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deletePassword, setDeletePassword] = useState('');
+  const [deletionRequest, setDeletionRequest] = useState<any>(null);
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [requestingEmail, setRequestingEmail] = useState(false);
@@ -60,14 +58,24 @@ export const ProfilePage: React.FC = () => {
   const fetchEmailStatus = async () => {
     try {
       const res = await api.getEmailChangeStatus();
-      if (res.success && res.request) {
-        setPendingRequest(res.request);
+      if (res.success) {
+        setPendingRequest(res.request || null);
+      }
+    } catch {}
+  };
+
+  const fetchDeletionStatus = async () => {
+    try {
+      const res = await api.getAccountDeletionStatus();
+      if (res.success) {
+        setDeletionRequest(res.request || null);
       }
     } catch {}
   };
 
   useEffect(() => {
     fetchEmailStatus();
+    fetchDeletionStatus();
   }, []);
 
   // Handle Photo File Upload with Canvas Center Crop
@@ -202,32 +210,38 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') {
-      showToast('Please type DELETE in capital letters to confirm', 'error');
-      return;
-    }
-    if (!deletePassword) {
-      showToast('Please enter your password for verification', 'error');
-      return;
-    }
+  const handleRequestDeletion = async () => {
+    const ok = window.confirm(
+      'Are you sure you want to request account deletion?\n\nThis will send a deletion request to the Administrator in the Notifications panel. Once the administrator approves it, your account will be deleted permanently.'
+    );
+    if (!ok) return;
 
     setDeleting(true);
     try {
-      const res = await api.deleteAccount({
-        confirmationText: deleteConfirmText,
-        password: deletePassword,
-      });
-
+      const res = await api.requestAccountDeletion();
       if (res.success) {
-        showToast('Your account has been permanently deleted.', 'info');
-        logout();
-        navigate('/');
+        showToast(res.message || 'Account deletion request submitted for admin approval.', 'success');
+        await fetchDeletionStatus();
+      } else {
+        showToast(res.message || 'Failed to submit deletion request', 'error');
       }
     } catch (err: any) {
-      showToast(err.message || 'Account deletion failed', 'error');
+      showToast(err.message || 'Error submitting deletion request', 'error');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    if (!window.confirm('Cancel your account deletion request?')) return;
+    try {
+      const res = await api.cancelAccountDeletionRequest();
+      if (res.success) {
+        showToast('Account deletion request cancelled.', 'info');
+        await fetchDeletionStatus();
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to cancel request', 'error');
     }
   };
 
@@ -493,14 +507,41 @@ export const ProfilePage: React.FC = () => {
           Current registered email is <strong className="text-[#0A341B]">{user?.email}</strong>. Submit a new email address to request an account email change. Once approved by the administrator, your login email will be updated.
         </p>
 
-        {pendingRequest && pendingRequest.status === 'PENDING' && (
-          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-800 flex items-center justify-between">
+        {pendingRequest && (
+          <div
+            className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
+              pendingRequest.status === 'APPROVED'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                : pendingRequest.status === 'REJECTED'
+                ? 'bg-red-50 border-red-300 text-red-800'
+                : 'bg-amber-50 border-amber-300 text-amber-800'
+            }`}
+          >
             <div>
-              <span className="font-bold block text-amber-900">Pending Admin Approval</span>
-              <span className="text-[11px] font-mono">Requested: {pendingRequest.requestedNewEmail}</span>
+              <div className="font-bold flex items-center gap-1.5">
+                <span>Email Change Request:</span>
+                <span className="font-mono text-[11px] underline">
+                  {pendingRequest.requestedNewEmail || pendingRequest.requested_email}
+                </span>
+              </div>
+              <p className="text-[11px] mt-0.5 opacity-80">
+                {pendingRequest.status === 'APPROVED'
+                  ? 'Request has been approved by Administrator.'
+                  : pendingRequest.status === 'REJECTED'
+                  ? `Request was rejected by Administrator.${pendingRequest.reason ? ' Reason: ' + pendingRequest.reason : ''}`
+                  : 'Awaiting Administrator review in Admin Notifications.'}
+              </p>
             </div>
-            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-200 text-amber-900 uppercase">
-              Under Review
+            <span
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${
+                pendingRequest.status === 'APPROVED'
+                  ? 'bg-emerald-200 text-emerald-900'
+                  : pendingRequest.status === 'REJECTED'
+                  ? 'bg-red-200 text-red-900'
+                  : 'bg-amber-200 text-amber-900 animate-pulse'
+              }`}
+            >
+              {pendingRequest.status}
             </span>
           </div>
         )}
@@ -528,24 +569,54 @@ export const ProfilePage: React.FC = () => {
         </form>
       </GlassCard>
 
-      {/* Danger Zone: Mandatory Account Deletion */}
+      {/* Danger Zone: Account Deletion Request */}
       <div className="rounded-3xl border-2 border-red-200 bg-red-50/60 p-6 space-y-4 shadow-sm backdrop-blur-xl">
         <div className="flex items-center gap-2 text-[#DC2626]">
           <AlertTriangle className="w-5 h-5" />
-          <h2 className="text-base font-black">Danger Zone: Irreversible Account Deletion</h2>
+          <h2 className="text-base font-black">Danger Zone: Account Deletion Request</h2>
         </div>
 
         <p className="text-xs text-[#991B1B] leading-relaxed max-w-2xl font-medium">
-          Permanently delete your GT account and anonymize all personal identifying data in accordance with data privacy regulations. Active sessions will be revoked and this account cannot be recovered.
+          Once requested, an account deletion request will be submitted to the Administrator under the Notifications tab. Only upon admin approval will your account and associated records be permanently erased.
         </p>
 
-        <button
-          onClick={() => setDeleteModal(true)}
-          className="px-5 py-2.5 rounded-2xl font-bold text-xs text-white bg-[#DC2626] hover:bg-[#B91C1C] transition-all flex items-center gap-2 shadow-sm cursor-pointer"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span>Delete Account Permanently</span>
-        </button>
+        {deletionRequest && deletionRequest.status === 'PENDING' ? (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 uppercase">
+                  PENDING APPROVAL
+                </span>
+                <span>Deletion Request Sent to Administrator</span>
+              </div>
+              <p className="text-[11px] text-amber-800/80">
+                Awaiting administrator review in Notifications panel. Your account remains active until approved.
+              </p>
+            </div>
+            <button
+              onClick={handleCancelDeletion}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 transition-colors cursor-pointer self-start sm:self-auto"
+            >
+              Cancel Request
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {deletionRequest && deletionRequest.status === 'REJECTED' && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-medium">
+                Previous account deletion request was rejected by Administrator. Your account remains active.
+              </div>
+            )}
+            <button
+              onClick={handleRequestDeletion}
+              disabled={deleting}
+              className="px-5 py-2.5 rounded-2xl font-bold text-xs text-white bg-[#DC2626] hover:bg-[#B91C1C] transition-all flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{deleting ? 'Submitting Request...' : 'Request Account Deletion'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Account Session Logout Section (At the end of Profile Page) */}
@@ -571,71 +642,6 @@ export const ProfilePage: React.FC = () => {
           <span>Log Out of Account</span>
         </button>
       </div>
-
-      {/* Account Deletion Confirmation Modal */}
-      {deleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <div className="w-full max-w-md glass-panel p-6 rounded-3xl border-2 border-white space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3 text-[#DC2626]">
-              <div className="w-10 h-10 rounded-2xl bg-red-100 border border-red-200 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-[#0A341B]">Confirm Account Deletion</h3>
-                <p className="text-xs text-[#DC2626] font-bold">This action cannot be undone.</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[#1E5E36] leading-relaxed font-medium">
-              Your profile, personal details, and sessions will be immediately erased. To protect against accidental actions, please verify your credentials below:
-            </p>
-
-            <div className="space-y-3 pt-2">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-[#1E5E36]">
-                  Type <strong className="font-mono text-[#DC2626]">DELETE</strong> to confirm:
-                </label>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-white text-xs font-mono font-bold text-[#0A341B] shadow-sm"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-[#1E5E36]">Account Password:</label>
-                <input
-                  type="password"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-white text-xs font-medium text-[#0A341B] shadow-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => setDeleteModal(false)}
-                className="flex-1 py-2.5 rounded-2xl text-xs font-bold text-[#1E5E36] bg-white hover:bg-white/80 border border-white shadow-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAccount}
-                disabled={deleting || deleteConfirmText !== 'DELETE' || !deletePassword}
-                className="flex-1 py-2.5 rounded-2xl text-xs font-bold text-white bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-50 transition-all shadow-md"
-              >
-                {deleting ? 'Deleting...' : 'Confirm Deletion'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

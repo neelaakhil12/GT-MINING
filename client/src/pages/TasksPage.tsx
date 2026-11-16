@@ -107,49 +107,55 @@ const TaskIcon: React.FC<{ type: TaskItem['iconType'] }> = ({ type }) => {
   }
 };
 
-// Slider slides for GT Tasks station matching homepage slider size and theme
-const TASK_SLIDES = [
-  {
-    id: 1,
-    image: '/banners/task_slide1.jpg',
-    tag: 'DAILY REWARDS',
-    title: 'Complete Tasks, Earn GT',
-    description: 'Boost your balance every day by completing verified social quests.',
-    accentColor: '#22C55E',
-  },
-  {
-    id: 2,
-    image: '/banners/task_slide2.jpg',
-    tag: 'GLOBAL COMMUNITY',
-    title: 'Connect & Multiply',
-    description: 'Join official GT channels across X, Telegram, and YouTube.',
-    accentColor: '#38BDF8',
-  },
-  {
-    id: 3,
-    image: '/banners/task_slide3.jpg',
-    tag: 'VIDEO REWARDS',
-    title: 'Watch & Collect',
-    description: 'Explore the latest GT ecosystem updates and claim instant rewards.',
-    accentColor: '#A855F7',
-  },
-];
-
 export const TasksPage: React.FC = () => {
   const { showToast } = useToast();
 
   // Active filter tab
   const [activeTab, setActiveTab] = useState<'all' | 'social' | 'video'>('all');
 
-  // Slider state with 1 second auto-scroll as requested
+  // Dynamic Task Banners from Admin Panel (No hardcoded slides)
+  const [taskSlides, setTaskSlides] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_task_banners');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Slider state with auto-scroll
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % TASK_SLIDES.length);
-    }, 1000);
-    return () => clearInterval(timer);
+    let isMounted = true;
+    const fetchBanners = async () => {
+      try {
+        const res = await api.getPublicTaskBanners();
+        if (res && res.success && isMounted) {
+          const list = (res.banners || []).filter((b: any) => b.isActive !== false);
+          setTaskSlides(list);
+          try {
+            localStorage.setItem('gt_cached_task_banners', JSON.stringify(list));
+          } catch {}
+        }
+      } catch {}
+    };
+    fetchBanners();
+    const handleUpdate = () => fetchBanners();
+    window.addEventListener('gt_db_updated', handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('gt_db_updated', handleUpdate);
+    };
   }, []);
+
+  useEffect(() => {
+    if (taskSlides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % taskSlides.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [taskSlides.length]);
 
   // Backend-tracked task submissions & statuses
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -384,67 +390,85 @@ export const TasksPage: React.FC = () => {
         </span>
       </div>
 
-      {/* 1. Header Hero Image Slides Carousel - Same size as homepage slider, auto 1-second transition, without left/right arrows */}
-      <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(22,101,52,0.12)] border-2 border-white/90 group bg-[#071F14]">
-        {/* Slides Track */}
-        <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
-          {TASK_SLIDES.map((slide, index) => {
-            const isActive = index === currentSlide;
+      {/* 1. Header Hero Image Slides Carousel - Only rendered when taskSlides exist in admin panel */}
+      {taskSlides.length > 0 && (
+        <div className="relative rounded-3xl overflow-hidden shadow-[0_14px_35px_rgba(22,101,52,0.12)] border-2 border-white/90 group bg-[#071F14]">
+          {/* Slides Track */}
+          <div className="relative h-[165px] sm:h-[210px] md:h-[260px] w-full overflow-hidden">
+            {taskSlides.map((slide, index) => {
+              const isActive = index === currentSlide;
+              const imgUrl = slide.imageUrl || (slide.id ? `/api/task-banners/${slide.id}/image` : '');
 
-            return (
-              <div
-                key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
-                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                }`}
-              >
-                {/* Background Image with Ambient Glass Gradient Overlays */}
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.08] transition-transform duration-1000 scale-100"
-                  loading="eager"
-                />
+              return (
+                <div
+                  key={slide.id || index}
+                  className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                    isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
+                >
+                  {/* Background Image with Ambient Glass Gradient Overlays */}
+                  {imgUrl ? (
+                    <img
+                      src={imgUrl}
+                      alt={slide.title}
+                      className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.08] transition-transform duration-1000 scale-100"
+                      loading="eager"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background: `linear-gradient(135deg, ${slide.gradientStart || '#0B2516'}, ${slide.gradientEnd || '#04160E'})`,
+                      }}
+                    />
+                  )}
 
-                {/* Multi-layered cinematic gradient overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-                <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-[#22C55E]/20 rounded-full blur-3xl pointer-events-none" />
+                  {/* Multi-layered cinematic gradient overlays */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+                  <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-[#22C55E]/20 rounded-full blur-3xl pointer-events-none" />
 
-                {/* Slide Foreground Content */}
-                <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1 sm:space-y-2 z-20">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
-                    <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor }} />
-                    <span>{slide.tag}</span>
+                  {/* Slide Foreground Content */}
+                  <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1 sm:space-y-2 z-20">
+                    {(slide.tag || slide.badgeText) && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                        <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor || '#22C55E' }} />
+                        <span>{slide.tag || slide.badgeText}</span>
+                      </div>
+                    )}
+
+                    <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
+                      {slide.title}
+                    </h2>
+
+                    {slide.description && (
+                      <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
+                        {slide.description}
+                      </p>
+                    )}
                   </div>
-
-                  <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
-                    {slide.title}
-                  </h2>
-
-                  <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
-                    {slide.description}
-                  </p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Indicator Dots - Auto loop without left/right arrows */}
-        <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
-          {TASK_SLIDES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                currentSlide === i ? 'w-6 bg-[#22C55E] shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/80'
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
+          {/* Indicator Dots */}
+          {taskSlides.length > 1 && (
+            <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+              {taskSlides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    currentSlide === i ? 'w-6 bg-[#22C55E] shadow-sm' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                  }`}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* 2. Tasks Rewards Summary Card - Reduced height and size matching Screenshot 4 */}
       <div className="relative p-4 sm:p-5 rounded-3xl bg-white border border-white shadow-[0_10px_30px_rgba(22,101,52,0.06)] overflow-hidden">

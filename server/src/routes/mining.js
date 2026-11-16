@@ -213,6 +213,8 @@ router.post('/claim', requireAuth, async (req, res) => {
     };
     db.miningClaims.push(miningClaimRecord);
 
+    const cycleHours = Math.max(1, Math.round(cooldownSeconds / 3600));
+
     // 4. Record wallet transaction
     const transactionRecord = {
       id: txId,
@@ -222,7 +224,7 @@ router.post('/claim', requireAuth, async (req, res) => {
       status: 'COMPLETED',
       idempotencyKey: `idemp_claim_${claimId}`,
       referenceId: claimId,
-      description: `4-Hour Mining Reward (+${rewardAmount} GT)`,
+      description: `${cycleHours}-Hour Mining Reward (+${rewardAmount} GT)`,
       createdAt: claimedAt,
       createdBy: 'SYSTEM'
     };
@@ -233,7 +235,7 @@ router.post('/claim', requireAuth, async (req, res) => {
       id: generateId('notif'),
       userId,
       title: 'Mining Claim Successful!',
-      message: `You mined +${rewardAmount} GT! Your next mining session opens in 4 hours.`,
+      message: `You mined +${rewardAmount} GT! Your next mining session opens in ${cycleHours} hour${cycleHours > 1 ? 's' : ''}.`,
       type: 'MINING',
       readAt: null,
       createdAt: claimedAt
