@@ -248,22 +248,23 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="space-y-5 w-full max-w-xl mx-auto pb-32 sm:pb-36 px-2 sm:px-0">
       
-      {/* Header Profile Summary matching Dashboard theme */}
-      <GlassCard glow className="space-y-5">
-        <div className="flex items-center gap-4 border-b border-black/5 pb-5">
+      {/* Header Profile Summary matching Dashboard theme & Mobile App Layout */}
+      <GlassCard glow className="space-y-4">
+        {/* User Info Row */}
+        <div className="flex items-center gap-4 border-b border-black/5 pb-4">
           <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-2xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden shrink-0 border-2 border-white">
-            {user?.avatar || user?.profileImage || user?.avatarUrl ? (
+            {selectedAvatar || user?.avatar || user?.profileImage || user?.avatarUrl ? (
               <img
-                src={user.avatar || user.profileImage || user.avatarUrl}
-                alt={user.fullName}
+                src={selectedAvatar || user?.avatar || user?.profileImage || user?.avatarUrl}
+                alt={user?.fullName || fullName}
                 className="w-full h-full object-cover"
               />
             ) : (
-              user?.fullName.charAt(0).toUpperCase()
+              (user?.fullName || fullName || 'U').charAt(0).toUpperCase()
             )}
           </div>
           <div className="space-y-0.5 min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-black text-[#0A341B] truncate">{user?.fullName}</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-[#0A341B] truncate">{user?.fullName || fullName}</h1>
             <p className="text-xs font-semibold text-[#1E5E36] truncate">{user?.email}</p>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/15 text-[#15803D] border border-[#22C55E]/30 mt-1">
               <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
@@ -272,8 +273,135 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
+        {/* TWO PROMINENT BUTTONS: Upload Profile Image & Choose Avatar (Matching Mobile App) */}
+        <div className="space-y-2">
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/png, image/jpeg, image/jpg, image/webp"
+            className="hidden"
+          />
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="py-2.5 px-3 rounded-2xl font-bold text-xs text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.3)] flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98]"
+            >
+              <Upload className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Upload Profile Image</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+              className={`py-2.5 px-3 rounded-2xl font-bold text-xs border shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                showAvatarPicker
+                  ? 'bg-[#059669] text-white border-[#059669]'
+                  : 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{showAvatarPicker ? 'Hide Avatars' : 'Choose Avatar'}</span>
+            </button>
+          </div>
+
+          {/* Remove / Reset Custom Avatar if present */}
+          {(selectedAvatar || user?.avatar || user?.profileImage) && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                disabled={savingAvatar}
+                onClick={handleRemoveAvatar}
+                className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Restore default letter initial"
+              >
+                <X className="w-3 h-3" />
+                <span>Reset to Default Initial</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* AVATAR PICKER (Matching Mobile App Inside Top Card) */}
+        {showAvatarPicker && (
+          <div className="p-4 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-3">
+            {/* Gender Switch Tabs */}
+            <div className="flex gap-2 max-w-xs">
+              <button
+                type="button"
+                onClick={() => setActiveGenderTab('boy')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeGenderTab === 'boy'
+                    ? 'bg-[#16A34A] text-white shadow-xs'
+                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
+                }`}
+              >
+                👦 Boys Avatars (3)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveGenderTab('girl')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeGenderTab === 'girl'
+                    ? 'bg-[#16A34A] text-white shadow-xs'
+                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
+                }`}
+              >
+                👧 Girls Avatars (3)
+              </button>
+            </div>
+
+            {/* Horizontally Scrollable Row */}
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-green-300">
+              {(activeGenderTab === 'boy' ? BOY_AVATARS : GIRL_AVATARS).map((av) => {
+                const isSelected = selectedAvatar === av.url;
+                return (
+                  <button
+                    key={av.id}
+                    type="button"
+                    onClick={() => setSelectedAvatar(av.url)}
+                    className={`shrink-0 w-20 p-2 rounded-2xl border transition-all flex flex-col items-center gap-1.5 cursor-pointer relative ${
+                      isSelected
+                        ? 'bg-[#DCFCE7] border-[#16A34A] shadow-[0_4px_18px_rgba(34,197,94,0.3)] ring-2 ring-[#22C55E]/50'
+                        : 'bg-white border-[#E5E7EB] hover:border-[#16A34A]/50 shadow-xs'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    )}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shadow-xs border border-white/60">
+                      <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
+                    </div>
+                    <span className={`text-[10px] font-bold text-center truncate w-full ${isSelected ? 'text-[#15803D]' : 'text-[#4B5563]'}`}>
+                      {av.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Save Avatar Button */}
+            <div className="pt-1 flex justify-end">
+              <button
+                type="button"
+                disabled={savingAvatar || !selectedAvatar}
+                onClick={() => handleSaveAvatar()}
+                className="px-5 py-2 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-[#16A34A] to-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.35)] hover:shadow-md flex items-center gap-1.5 disabled:opacity-40 transition-all cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{savingAvatar ? 'Saving Avatar...' : 'Save Avatar'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Account Details Metadata (Matching App's 4-card grid) */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-2 gap-3 text-xs pt-1">
           <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
             <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">Referral Code</span>
             <span className="font-mono font-black text-sm text-[#15803D]">{user?.referralCode}</span>
@@ -294,175 +422,6 @@ export const ProfilePage: React.FC = () => {
             </span>
           </div>
         </div>
-      </GlassCard>
-
-      {/* Profile Picture Card */}
-      <GlassCard className="space-y-5">
-        <div>
-          <h2 className="text-base font-black text-[#0A341B] flex items-center gap-2">
-            <Camera className="w-5 h-5 text-[#16A34A]" />
-            <span>Profile Photo</span>
-          </h2>
-          <p className="text-xs text-[#1E5E36] font-medium mt-1">
-            Upload your custom profile photo from device.
-          </p>
-        </div>
-
-        {/* Live Preview & Buttons */}
-        <div className="p-4 rounded-3xl bg-white/80 border border-white/90 shadow-sm flex flex-col sm:flex-row items-center gap-5">
-          {/* Active Preview */}
-          <div className="relative group shrink-0">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-2xl text-white shadow-[0_8px_25px_rgba(34,197,94,0.35)] overflow-hidden border-2 border-white">
-              {selectedAvatar ? (
-                <img
-                  src={selectedAvatar}
-                  alt="Profile Preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                fullName.charAt(0).toUpperCase()
-              )}
-            </div>
-          </div>
-
-          {/* Action Details & Buttons */}
-          <div className="space-y-2.5 text-center sm:text-left flex-1">
-            <div>
-              <span className="text-xs font-bold text-[#0A341B] block">Current Photo Status</span>
-              <span className="text-[11px] text-[#1E5E36] font-semibold">
-                {selectedAvatar
-                  ? selectedAvatar.includes('dicebear') || selectedAvatar.startsWith('data:image/svg+xml')
-                    ? 'Preset Selected'
-                    : 'Custom Image Uploaded'
-                  : 'Using Default Letter Initial'}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept="image/png, image/jpeg, image/jpg, image/webp"
-                className="hidden"
-              />
-
-              {/* Upload Profile Image */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.35)] flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Profile Image</span>
-              </button>
-
-              {/* Choose Preset */}
-              <button
-                type="button"
-                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                className={`px-4 py-2.5 rounded-xl font-bold text-xs border shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                  showAvatarPicker
-                    ? 'bg-[#059669] text-white border-[#059669]'
-                    : 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{showAvatarPicker ? 'Hide Presets' : 'Choose Preset'}</span>
-              </button>
-
-              {/* Remove / Reset Button */}
-              {selectedAvatar && (
-                <button
-                  type="button"
-                  disabled={savingAvatar}
-                  onClick={handleRemoveAvatar}
-                  className="px-3 py-2.5 rounded-xl font-bold text-xs text-red-600 hover:bg-red-50 border border-red-200 transition-all flex items-center gap-1 cursor-pointer"
-                  title="Remove avatar and restore default initial"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Remove</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* AVATAR PICKER (5 Boys & 5 Girls Horizontally Scrollable) */}
-        {showAvatarPicker && (
-          <div className="p-5 rounded-3xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-4">
-            {/* Gender Switch Tabs */}
-            <div className="flex gap-2 max-w-xs">
-              <button
-                type="button"
-                onClick={() => setActiveGenderTab('boy')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeGenderTab === 'boy'
-                    ? 'bg-[#16A34A] text-white shadow-xs'
-                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
-                }`}
-              >
-                👦 Boys Avatars (3)
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveGenderTab('girl')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeGenderTab === 'girl'
-                    ? 'bg-[#16A34A] text-white shadow-xs'
-                    : 'bg-white text-[#166534] border border-[#DCFCE7] hover:bg-white/90'
-                }`}
-              >
-                👧 Girls Avatars (3)
-              </button>
-            </div>
-
-            {/* Horizontally Scrollable Row */}
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-green-300">
-              {(activeGenderTab === 'boy' ? BOY_AVATARS : GIRL_AVATARS).map((av) => {
-                const isSelected = selectedAvatar === av.url;
-                return (
-                  <button
-                    key={av.id}
-                    type="button"
-                    onClick={() => setSelectedAvatar(av.url)}
-                    className={`shrink-0 w-24 p-3 rounded-2xl border transition-all flex flex-col items-center gap-2 cursor-pointer relative ${
-                      isSelected
-                        ? 'bg-[#DCFCE7] border-[#16A34A] shadow-[0_4px_18px_rgba(34,197,94,0.3)] ring-2 ring-[#22C55E]/50'
-                        : 'bg-white border-[#E5E7EB] hover:border-[#16A34A]/50 shadow-xs'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                    )}
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xs border border-white/60">
-                      <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
-                    </div>
-                    <span className={`text-[10.5px] font-bold text-center truncate w-full ${isSelected ? 'text-[#15803D]' : 'text-[#4B5563]'}`}>
-                      {av.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Save Avatar Button */}
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                disabled={savingAvatar || !selectedAvatar}
-                onClick={() => handleSaveAvatar()}
-                className="px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-[#16A34A] to-[#15803D] shadow-[0_4px_14px_rgba(22,163,74,0.35)] hover:shadow-md flex items-center gap-2 disabled:opacity-40 transition-all cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{savingAvatar ? 'Saving Avatar...' : 'Save Avatar'}</span>
-              </button>
-            </div>
-          </div>
-        )}
       </GlassCard>
 
       {/* Edit Profile Form */}
@@ -507,7 +466,7 @@ export const ProfilePage: React.FC = () => {
 
         {pendingRequest && (
           <div
-            className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
+            className={`p-4 rounded-2xl border text-xs space-y-2 w-full overflow-hidden shadow-xs ${
               pendingRequest.status === 'APPROVED'
                 ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                 : pendingRequest.status === 'REJECTED'
@@ -515,14 +474,31 @@ export const ProfilePage: React.FC = () => {
                 : 'bg-amber-50 border-amber-300 text-amber-800'
             }`}
           >
-            <div>
-              <div className="font-bold flex items-center gap-1.5">
-                <span>Email Change Request:</span>
-                <span className="font-mono text-[11px] underline">
+            {/* Top row: Title and Badge (never cuts off) */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-black text-xs">Email Change Request</span>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${
+                  pendingRequest.status === 'APPROVED'
+                    ? 'bg-emerald-200 text-emerald-900'
+                    : pendingRequest.status === 'REJECTED'
+                    ? 'bg-red-200 text-red-900'
+                    : 'bg-amber-200 text-amber-900 animate-pulse'
+                }`}
+              >
+                {pendingRequest.status}
+              </span>
+            </div>
+
+            {/* Bottom content: New email and Reason */}
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold flex items-center gap-1.5 flex-wrap">
+                <span className="opacity-75">New:</span>
+                <span className="font-mono font-bold underline break-all">
                   {pendingRequest.requestedNewEmail || pendingRequest.requested_email}
                 </span>
               </div>
-              <p className="text-[11px] mt-0.5 opacity-80">
+              <p className="text-[11px] leading-relaxed break-words opacity-90">
                 {pendingRequest.status === 'APPROVED'
                   ? 'Request has been approved by Administrator.'
                   : pendingRequest.status === 'REJECTED'
@@ -530,17 +506,6 @@ export const ProfilePage: React.FC = () => {
                   : 'Awaiting Administrator review in Admin Notifications.'}
               </p>
             </div>
-            <span
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${
-                pendingRequest.status === 'APPROVED'
-                  ? 'bg-emerald-200 text-emerald-900'
-                  : pendingRequest.status === 'REJECTED'
-                  ? 'bg-red-200 text-red-900'
-                  : 'bg-amber-200 text-amber-900 animate-pulse'
-              }`}
-            >
-              {pendingRequest.status}
-            </span>
           </div>
         )}
 

@@ -106,9 +106,9 @@ export function fetchAndCacheOnboardingBanners(timeoutMs = 5000): Promise<Onboar
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/onboarding-banners`, {
+      const res = await fetch(`${API_BASE_URL}/onboarding-banners?t=${Date.now()}`, {
         signal: controller ? controller.signal : undefined,
-        headers: { 'Cache-Control': 'no-cache' },
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
       });
       if (timer) clearTimeout(timer);
 

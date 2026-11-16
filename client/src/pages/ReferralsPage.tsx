@@ -111,6 +111,18 @@ export const ReferralsPage: React.FC = () => {
       }
     };
     fetchSlides();
+    const handleUpdate = () => {
+      fetchReferralData();
+      fetchSlides();
+    };
+    window.addEventListener('gt_db_updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    const pollTimer = setInterval(handleUpdate, 10000);
+    return () => {
+      window.removeEventListener('gt_db_updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      clearInterval(pollTimer);
+    };
   }, []);
 
   // Auto-cycle top dividend slides every 4.5s

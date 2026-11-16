@@ -91,7 +91,13 @@ export const HomeBanners: React.FC = () => {
     loadBanners();
     const handleUpdate = () => loadBanners();
     window.addEventListener('gt_db_updated', handleUpdate);
-    return () => window.removeEventListener('gt_db_updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    const pollTimer = setInterval(loadBanners, 10000);
+    return () => {
+      window.removeEventListener('gt_db_updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      clearInterval(pollTimer);
+    };
   }, []);
 
   // Auto stream slides (1 image per 1.5 seconds as requested)

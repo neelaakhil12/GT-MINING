@@ -221,7 +221,6 @@ export const AdminSlidersPage: React.FC = () => {
       const payload: any = {
         title: title.trim(),
         description: description.trim(),
-        imageUrl: imageUrl.trim(),
         ctaText: ctaText.trim(),
         targetRoute: targetRoute.trim(),
         accentColor,
@@ -230,6 +229,10 @@ export const AdminSlidersPage: React.FC = () => {
         order: Number(order) || 1,
         isActive,
       };
+
+      if (imageUrl && !imageUrl.trim().startsWith('/api/')) {
+        payload.imageUrl = imageUrl.trim();
+      }
 
       if (activeTab === 'onboarding') {
         payload.subtitle = subtitle.trim();

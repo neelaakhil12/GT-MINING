@@ -155,7 +155,9 @@ export const ReferralsScreen: React.FC = () => {
         ];
         for (const base of endpoints) {
           try {
-            const res = await fetch(`${base}/referral-banners`);
+            const res = await fetch(`${base}/referral-banners?t=${Date.now()}`, {
+              headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+            });
             const data = await res.json();
             if (data && data.success && Array.isArray(data.banners)) {
               const normalized = normalizeReferralSlides(data.banners);

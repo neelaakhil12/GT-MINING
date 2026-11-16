@@ -145,7 +145,9 @@ export const TasksScreen: React.FC = () => {
   // Fetch Task Banners dynamically from Admin Panel
   const fetchTaskBanners = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/task-banners`);
+      const res = await fetch(`${API_BASE_URL}/task-banners?t=${Date.now()}`, {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       const data = await res.json();
       if (data && data.success && Array.isArray(data.banners)) {
         const active = data.banners.filter((b: any) => b.isActive !== false);
@@ -501,12 +503,7 @@ export const TasksScreen: React.FC = () => {
           {/* 1. Top Hero Slides Carousel matching website (only when slides exist from Admin Panel) */}
           {taskSlides.length > 0 && activeSlideData && (
             <View style={styles.carouselBannerCard}>
-              <LinearGradient
-                colors={[activeSlideData.gradientStart || '#061E12', '#0A2D1B', activeSlideData.gradientEnd || '#04150C']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.carouselInner}
-              >
+              <View style={styles.carouselInner}>
                 {activeSlideData.imageUrl ? (
                   <Image
                     source={{
@@ -514,11 +511,17 @@ export const TasksScreen: React.FC = () => {
                         ? activeSlideData.imageUrl
                         : `${SERVER_HOST}${activeSlideData.imageUrl}`,
                     }}
-                    style={[StyleSheet.absoluteFillObject, { opacity: 0.35 }]}
+                    style={[StyleSheet.absoluteFillObject, { opacity: 1 }]}
                     resizeMode="cover"
                   />
-                ) : null}
-                <View style={styles.carouselGlow} pointerEvents="none" />
+                ) : (
+                  <LinearGradient
+                    colors={[activeSlideData.gradientStart || '#061E12', '#0A2D1B', activeSlideData.gradientEnd || '#04150C']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                )}
 
                 {(activeSlideData.tag || activeSlideData.badgeText) && (
                   <View style={styles.carouselTagBadge}>
@@ -527,9 +530,15 @@ export const TasksScreen: React.FC = () => {
                   </View>
                 )}
 
-                <Text style={styles.carouselTitle}>{activeSlideData.title}</Text>
+                {activeSlideData.title ? (
+                  <Text style={[styles.carouselTitle, { textShadowColor: 'rgba(0,0,0,0.85)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}>
+                    {activeSlideData.title}
+                  </Text>
+                ) : null}
                 {activeSlideData.description ? (
-                  <Text style={styles.carouselDesc}>{activeSlideData.description}</Text>
+                  <Text style={[styles.carouselDesc, { textShadowColor: 'rgba(0,0,0,0.85)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}>
+                    {activeSlideData.description}
+                  </Text>
                 ) : null}
 
                 {/* Indicator Dots */}
@@ -546,7 +555,7 @@ export const TasksScreen: React.FC = () => {
                     ))}
                   </View>
                 )}
-              </LinearGradient>
+              </View>
             </View>
           )}
 

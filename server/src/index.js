@@ -39,6 +39,14 @@ app.use(cors({
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+// Ensure all API endpoints are always fresh and never cached by browsers or mobile clients
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Serve static uploaded files (videos, proofs, avatars)
 const UPLOADS_DIR = path.resolve('uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -83,7 +91,7 @@ function serveBannerImage(res, list, id) {
     const match = banner.imageUrl.match(/^data:([^;]+);base64,(.*)$/);
     if (!match) return res.status(400).send('Invalid image data');
     res.setHeader('Content-Type', match[1]);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.send(Buffer.from(match[2], 'base64'));
   }
   return res.redirect(banner.imageUrl);
@@ -100,7 +108,7 @@ function normalizeBannersWithImageUrls(list, routePrefix) {
     })
     .map((b) => {
       if (b.imageUrl && b.imageUrl.startsWith('data:')) {
-        const version = encodeURIComponent(b.updatedAt || b.createdAt || '1');
+        const version = encodeURIComponent(b.updatedAt || b.createdAt || Date.now());
         return { ...b, imageUrl: `${routePrefix}/${b.id}/image?v=${version}` };
       }
       return b;

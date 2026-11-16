@@ -574,8 +574,9 @@ export const ProfileScreen: React.FC = () => {
                     <View
                       style={{
                         paddingHorizontal: 8,
-                        paddingVertical: 2,
+                        paddingVertical: 2.5,
                         borderRadius: 6,
+                        flexShrink: 0,
                         backgroundColor:
                           pendingRequest.status === 'APPROVED'
                             ? '#D1FAE5'

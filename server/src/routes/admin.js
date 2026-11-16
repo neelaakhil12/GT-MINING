@@ -951,17 +951,24 @@ router.post('/onboarding-banners', (req, res) => {
   return res.status(201).json({ success: true, banner: newBanner, message: 'Pre-opening banner added.' });
 });
 
-// PATCH /api/admin/onboarding-banners/:id
-router.patch('/onboarding-banners/:id', (req, res) => {
+// PATCH & PUT /api/admin/onboarding-banners/:id
+const updateOnboardingBannerHandler = (req, res) => {
   const db = readDB();
   if (!db.onboardingBanners) db.onboardingBanners = [];
   const idx = db.onboardingBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
-  db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...req.body, updatedAt: new Date().toISOString() };
+  
+  const updateData = { ...req.body };
+  if (updateData.imageUrl && updateData.imageUrl.trim().startsWith('/api/')) {
+    delete updateData.imageUrl;
+  }
+  db.onboardingBanners[idx] = { ...db.onboardingBanners[idx], ...updateData, updatedAt: new Date().toISOString() };
   createAuditLog(db, req.user?.id || 'admin', 'UPDATE_ONBOARDING_BANNER', 'ONBOARDING_BANNER', req.params.id, `Updated pre-opening banner "${db.onboardingBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.onboardingBanners[idx], message: 'Banner updated.' });
-});
+};
+router.patch('/onboarding-banners/:id', updateOnboardingBannerHandler);
+router.put('/onboarding-banners/:id', updateOnboardingBannerHandler);
 
 // DELETE /api/admin/onboarding-banners/:id
 router.delete('/onboarding-banners/:id', (req, res) => {
@@ -995,17 +1002,24 @@ router.post('/home-banners', (req, res) => {
   return res.status(201).json({ success: true, banner: newBanner, message: 'Home banner added.' });
 });
 
-// PATCH /api/admin/home-banners/:id
-router.patch('/home-banners/:id', (req, res) => {
+// PATCH & PUT /api/admin/home-banners/:id
+const updateHomeBannerHandler = (req, res) => {
   const db = readDB();
   if (!db.homeBanners) db.homeBanners = [];
   const idx = db.homeBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Banner not found' });
-  db.homeBanners[idx] = { ...db.homeBanners[idx], ...req.body };
+  
+  const updateData = { ...req.body };
+  if (updateData.imageUrl && updateData.imageUrl.trim().startsWith('/api/')) {
+    delete updateData.imageUrl;
+  }
+  db.homeBanners[idx] = { ...db.homeBanners[idx], ...updateData, updatedAt: new Date().toISOString() };
   createAuditLog(db, req.user?.id || 'admin', 'UPDATE_HOME_BANNER', 'HOME_BANNER', req.params.id, `Updated home banner "${db.homeBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.homeBanners[idx], message: 'Home banner updated.' });
-});
+};
+router.patch('/home-banners/:id', updateHomeBannerHandler);
+router.put('/home-banners/:id', updateHomeBannerHandler);
 
 // DELETE /api/admin/home-banners/:id
 router.delete('/home-banners/:id', (req, res) => {
@@ -1054,21 +1068,28 @@ router.post('/referral-banners', (req, res) => {
   return res.status(201).json({ success: true, banner: newBanner, message: 'Referral slide created successfully.' });
 });
 
-// PATCH /api/admin/referral-banners/:id
-router.patch('/referral-banners/:id', (req, res) => {
+// PATCH & PUT /api/admin/referral-banners/:id
+const updateReferralBannerHandler = (req, res) => {
   const db = readDB();
   if (!db.referralBanners) db.referralBanners = [];
   const idx = db.referralBanners.findIndex(b => b.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Referral slide not found' });
+  
+  const updateData = { ...req.body };
+  if (updateData.imageUrl && updateData.imageUrl.trim().startsWith('/api/')) {
+    delete updateData.imageUrl;
+  }
   db.referralBanners[idx] = {
     ...db.referralBanners[idx],
-    ...req.body,
+    ...updateData,
     updatedAt: new Date().toISOString()
   };
   createAuditLog(db, req.user?.id || 'admin', 'UPDATE_REFERRAL_BANNER', 'REFERRAL_BANNER', req.params.id, `Updated referral banner "${db.referralBanners[idx].title || 'Banner'}"`);
   writeDB(db);
   return res.json({ success: true, banner: db.referralBanners[idx], message: 'Referral slide updated.' });
-});
+};
+router.patch('/referral-banners/:id', updateReferralBannerHandler);
+router.put('/referral-banners/:id', updateReferralBannerHandler);
 
 // DELETE /api/admin/referral-banners/:id
 router.delete('/referral-banners/:id', (req, res) => {
@@ -1450,8 +1471,8 @@ router.post('/task-banners', (req, res) => {
   return res.json({ success: true, banner: newBanner, message: 'Task banner created successfully' });
 });
 
-// PATCH /api/admin/task-banners/:id
-router.patch('/task-banners/:id', (req, res) => {
+// PATCH & PUT /api/admin/task-banners/:id
+const updateTaskBannerHandler = (req, res) => {
   const db = readDB();
   if (!db.taskBanners) db.taskBanners = [];
   const banner = db.taskBanners.find(b => b.id === req.params.id);
@@ -1464,7 +1485,9 @@ router.patch('/task-banners/:id', (req, res) => {
   if (title !== undefined) banner.title = title.trim();
   if (description !== undefined) banner.description = description.trim();
   if (tag !== undefined) banner.tag = tag.trim();
-  if (imageUrl !== undefined) banner.imageUrl = imageUrl.trim();
+  if (imageUrl !== undefined && !imageUrl.trim().startsWith('/api/')) {
+    banner.imageUrl = imageUrl.trim();
+  }
   if (ctaText !== undefined) banner.ctaText = ctaText.trim();
   if (targetRoute !== undefined) banner.targetRoute = targetRoute.trim();
   if (accentColor !== undefined) banner.accentColor = accentColor;
@@ -1476,7 +1499,9 @@ router.patch('/task-banners/:id', (req, res) => {
 
   writeDB(db);
   return res.json({ success: true, banner, message: 'Task banner updated successfully' });
-});
+};
+router.patch('/task-banners/:id', updateTaskBannerHandler);
+router.put('/task-banners/:id', updateTaskBannerHandler);
 
 // DELETE /api/admin/task-banners/:id
 router.delete('/task-banners/:id', (req, res) => {

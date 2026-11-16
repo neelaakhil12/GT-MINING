@@ -77,9 +77,9 @@ export function fetchAndCacheHomeBanners(timeoutMs = 4500): Promise<HomeBannerSl
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/home-banners`, {
+      const res = await fetch(`${API_BASE_URL}/home-banners?t=${Date.now()}`, {
         signal: controller ? controller.signal : undefined,
-        headers: { 'Cache-Control': 'no-cache' },
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
       });
       if (timer) clearTimeout(timer);
 

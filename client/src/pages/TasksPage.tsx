@@ -143,9 +143,13 @@ export const TasksPage: React.FC = () => {
     fetchBanners();
     const handleUpdate = () => fetchBanners();
     window.addEventListener('gt_db_updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    const pollInterval = setInterval(fetchBanners, 10000);
     return () => {
       isMounted = false;
       window.removeEventListener('gt_db_updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -406,12 +410,12 @@ export const TasksPage: React.FC = () => {
                     isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                   }`}
                 >
-                  {/* Background Image with Ambient Glass Gradient Overlays */}
+                  {/* Slide Background: Pure Image (No dark/green overlays) */}
                   {imgUrl ? (
                     <img
                       src={imgUrl}
-                      alt={slide.title}
-                      className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.08] transition-transform duration-1000 scale-100"
+                      alt={slide.title || 'Task Slide'}
+                      className="w-full h-full object-cover object-center"
                       loading="eager"
                     />
                   ) : (
@@ -423,30 +427,29 @@ export const TasksPage: React.FC = () => {
                     />
                   )}
 
-                  {/* Multi-layered cinematic gradient overlays */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-                  <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-[#22C55E]/20 rounded-full blur-3xl pointer-events-none" />
+                  {/* Slide Foreground Content (Only if text exists, subtle without dark green overlays) */}
+                  {(slide.title || slide.description || slide.tag || slide.badgeText) && (
+                    <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1 sm:space-y-2 z-20 pointer-events-none">
+                      {(slide.tag || slide.badgeText) && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: slide.accentColor || '#22C55E' }} />
+                          <span>{slide.tag || slide.badgeText}</span>
+                        </div>
+                      )}
 
-                  {/* Slide Foreground Content */}
-                  <div className="absolute inset-0 p-4 sm:p-7 md:p-8 flex flex-col justify-end text-white max-w-xl space-y-1 sm:space-y-2 z-20">
-                    {(slide.tag || slide.badgeText) && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[9px] sm:text-[10px] font-black tracking-widest uppercase w-fit">
-                        <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: slide.accentColor || '#22C55E' }} />
-                        <span>{slide.tag || slide.badgeText}</span>
-                      </div>
-                    )}
+                      {slide.title ? (
+                        <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] leading-tight">
+                          {slide.title}
+                        </h2>
+                      ) : null}
 
-                    <h2 className="text-base sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md leading-tight">
-                      {slide.title}
-                    </h2>
-
-                    {slide.description && (
-                      <p className="text-[11px] sm:text-xs text-white/85 line-clamp-1 sm:line-clamp-2 font-medium max-w-md drop-shadow">
-                        {slide.description}
-                      </p>
-                    )}
-                  </div>
+                      {slide.description ? (
+                        <p className="text-[11px] sm:text-xs text-white/95 line-clamp-1 sm:line-clamp-2 font-semibold max-w-md drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
+                          {slide.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               );
             })}
