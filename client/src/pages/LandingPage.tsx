@@ -21,7 +21,6 @@ if (typeof window !== 'undefined') {
     img.src = src;
   });
 }
-}
 
 const getInitialSlides = (): OnboardingSlide[] => {
   if (typeof window !== 'undefined') {
