@@ -223,11 +223,11 @@ export const DashboardPage: React.FC = () => {
                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
-            <p className="text-xl sm:text-2xl md:text-3xl font-black text-[#0A341B] tracking-tight truncate">
+            <p className="text-lg sm:text-2xl lg:text-3xl font-black text-[#0A341B] tracking-tight whitespace-nowrap">
               Private Room
             </p>
-            <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-bold text-[#15803D] truncate">
-              <div className="flex items-center gap-1.5 truncate">
+            <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-bold text-[#15803D]">
+              <div className="flex items-center gap-1.5 overflow-hidden">
                 <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse shrink-0" />
                 <span className="truncate">Open Chat & Mining</span>
               </div>
