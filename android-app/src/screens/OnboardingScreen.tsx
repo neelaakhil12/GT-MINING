@@ -242,8 +242,14 @@ export const OnboardingScreen: React.FC = () => {
               end={{ x: 0.5, y: 1 }}
               style={styles.launchGradient}
             >
-              {/* Glossy top glass reflection highlight */}
-              <View style={styles.glossHighlightEmerald} />
+              {/* Glossy top glass reflection highlight - smooth gradient so no visible box */}
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.40)', 'rgba(255, 255, 255, 0.0)']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.glossHighlightGrad}
+                pointerEvents="none"
+              />
               <View style={styles.launchContentRow}>
                 <Text style={styles.launchBtnText}>
                   {currentIdx === slides.length - 1 ? 'Launch' : 'Continue'}
@@ -260,9 +266,20 @@ export const OnboardingScreen: React.FC = () => {
             disabled={loadingDemo}
             style={styles.actionBtnWrapper}
           >
-            <View style={styles.previewFrostedGlass}>
-              {/* Subtle top reflection */}
-              <View style={styles.glossHighlightFrosted} />
+            <LinearGradient
+              colors={['rgba(20, 83, 45, 0.85)', 'rgba(6, 78, 59, 0.90)', 'rgba(2, 44, 34, 0.95)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.previewGreenGlass}
+            >
+              {/* Subtle top reflection - smooth gradient so no visible box */}
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.28)', 'rgba(255, 255, 255, 0.0)']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.glossHighlightGrad}
+                pointerEvents="none"
+              />
               <Text style={styles.previewBtnText}>
                 {loadingDemo
                   ? 'Logging in...'
@@ -270,7 +287,7 @@ export const OnboardingScreen: React.FC = () => {
                   ? 'Preview'
                   : 'Try Demo Login'}
               </Text>
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -404,14 +421,13 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 8,
   },
-  glossHighlightEmerald: {
+  glossHighlightGrad: {
     position: 'absolute',
-    top: 2,
-    left: 16,
-    right: 16,
-    height: 20,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    top: 1,
+    left: 12,
+    right: 12,
+    height: 22,
+    borderRadius: 22,
   },
   launchContentRow: {
     flexDirection: 'row',
@@ -426,31 +442,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  previewFrostedGlass: {
+  previewGreenGlass: {
     width: '100%',
     height: 52,
     borderRadius: 28,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.42)',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderColor: 'rgba(134, 239, 172, 0.60)',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  glossHighlightFrosted: {
-    position: 'absolute',
-    top: 2,
-    left: 16,
-    right: 16,
-    height: 18,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    shadowRadius: 10,
+    elevation: 6,
   },
   previewBtnText: {
     fontSize: 16,

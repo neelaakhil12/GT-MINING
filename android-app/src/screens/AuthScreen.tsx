@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Modal,
 } from 'react-native';
@@ -135,6 +136,7 @@ export const AuthScreen: React.FC = () => {
     setConfirmPassword('');
     setOtpCode('');
     setForgotStep('REQUEST_OTP');
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
     if (Platform.OS === 'web') {
@@ -153,6 +155,7 @@ export const AuthScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const handleLoginSubmit = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
     if (!email.trim()) {
@@ -177,6 +180,7 @@ export const AuthScreen: React.FC = () => {
 
   // Send OTP code to email
   const handleSendSignupOtp = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -206,6 +210,7 @@ export const AuthScreen: React.FC = () => {
 
   // Complete single-page registration
   const handleCompleteSinglePageSignup = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -255,6 +260,7 @@ export const AuthScreen: React.FC = () => {
 
   // Demo Login - instant access without account creation
   const handleDemoLogin = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
     setLoading(true);
@@ -270,6 +276,7 @@ export const AuthScreen: React.FC = () => {
 
   // Step 1: Request OTP code dispatched via Gmail SMTP
   const handleRequestForgotOtp = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -316,6 +323,7 @@ export const AuthScreen: React.FC = () => {
 
   // Step 2: Verify OTP code and save new password
   const handleVerifyForgotOtp = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -375,6 +383,7 @@ export const AuthScreen: React.FC = () => {
   };
 
   const handleGoogleSubmit = async () => {
+    Keyboard.dismiss();
     setErrorMessage('');
     setSuccessMessage('');
     setLoading(true);
@@ -451,6 +460,7 @@ export const AuthScreen: React.FC = () => {
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Header: Logo & Branding */}
             <View style={styles.headerArea}>
@@ -753,11 +763,13 @@ export const AuthScreen: React.FC = () => {
                         )}
                         <TouchableOpacity
                           onPress={handleSendSignupOtp}
-                          disabled={loading || signupCountdown > 0 || !email.includes('@')}
+                          disabled={loading || signupCountdown > 0}
+                          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                          activeOpacity={0.7}
                           style={{
                             backgroundColor: signupCountdown > 0 ? '#E2E8F0' : '#16A34A',
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 7,
                             borderRadius: 12,
                           }}
                         >
@@ -835,6 +847,7 @@ export const AuthScreen: React.FC = () => {
                       onPress={handleCompleteSinglePageSignup}
                       style={styles.primaryBtn}
                       activeOpacity={0.88}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       disabled={loading}
                     >
                       <Text style={styles.primaryBtnText}>

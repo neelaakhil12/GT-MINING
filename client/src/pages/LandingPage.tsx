@@ -459,18 +459,18 @@ export const LandingPage: React.FC = () => {
             <ChevronRight className="relative z-10 w-5 h-5 text-white stroke-[3] transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
 
-          {/* Button 2: Frosted Glass Capsule */}
+          {/* Button 2: Green Glassmorphic Capsule */}
           <button
             type="button"
             onClick={handleDemoLogin}
             disabled={loadingDemo}
-            className="group relative w-full h-[52px] rounded-full overflow-hidden flex items-center justify-center gap-2 text-white font-extrabold text-base tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer border-[1.5px] border-white/40 bg-black/45 backdrop-blur-md"
+            className="group relative w-full h-[52px] rounded-full overflow-hidden flex items-center justify-center gap-2 text-white font-extrabold text-base tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer border-[1.5px] border-[#86EFAC]/60 bg-gradient-to-b from-[#14532D]/80 via-[#064E3B]/85 to-[#022C22]/90 backdrop-blur-md"
             style={{
-              boxShadow: '0 6px 20px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.4)',
+              boxShadow: '0 6px 24px rgba(6,78,59,0.5), inset 0 1px 2px rgba(134,239,172,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)',
             }}
           >
             {/* Subtle top reflection */}
-            <div className="absolute inset-x-3 top-0.5 h-[45%] rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-3 top-0.5 h-[45%] rounded-full bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
             <span className="relative z-10 drop-shadow-sm font-black text-[16px]">
               {loadingDemo
                 ? 'Logging in...'

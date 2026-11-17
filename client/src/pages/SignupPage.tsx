@@ -105,7 +105,11 @@ export const SignupPage: React.FC = () => {
   }, [otpCode, otpSent, otpVerified]);
 
   // Send OTP to email
-  const handleSendOtp = async () => {
+  const handleSendOtp = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (countdown > 0 || otpSending) return;
     setError(null);
 
@@ -385,7 +389,11 @@ export const SignupPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    disabled={otpSending || countdown > 0 || !isEmailValid}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSendOtp(e);
+                    }}
+                    disabled={otpSending || countdown > 0}
                     className="px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:opacity-95 disabled:opacity-40 transition-all shadow-sm cursor-pointer"
                   >
                     {otpSending ? 'Sending...' : 'Send OTP'}
