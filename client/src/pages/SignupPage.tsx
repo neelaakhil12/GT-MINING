@@ -445,7 +445,7 @@ export const SignupPage: React.FC = () => {
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   placeholder="Enter referral or user id"
-                  className="w-full bg-transparent text-sm font-mono font-bold uppercase text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
+                  className={`w-full bg-transparent text-sm font-bold ${referralCode ? 'uppercase font-mono' : 'font-sans'} text-[#0A341B] placeholder:normal-case placeholder:font-sans placeholder:font-medium placeholder:text-[#1E5E36]/40 outline-none p-0 border-none leading-tight`}
                 />
               </div>
               {referralCode.trim().length >= 4 && (
