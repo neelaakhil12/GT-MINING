@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -229,25 +230,47 @@ export const OnboardingScreen: React.FC = () => {
             <Text style={styles.slideDescription}>{activeSlide.description}</Text>
           </View>
 
-          {/* Continue Action Button */}
+          {/* 1st Action Button: Continue on normal slides, Launch on last slide */}
           <TouchableOpacity
             onPress={handleNext}
-            style={styles.continueBtn}
-            activeOpacity={0.88}
+            activeOpacity={0.85}
+            style={styles.actionBtnWrapper}
           >
-            <Text style={styles.continueBtnText}>Continue</Text>
+            <LinearGradient
+              colors={['#22C55E', '#10B981', '#047857']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.launchGradient}
+            >
+              {/* Glossy top glass reflection highlight */}
+              <View style={styles.glossHighlightEmerald} />
+              <View style={styles.launchContentRow}>
+                <Text style={styles.launchBtnText}>
+                  {currentIdx === slides.length - 1 ? 'Launch' : 'Continue'}
+                </Text>
+                <ChevronRight size={20} color="#FFFFFF" strokeWidth={3} />
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
 
-          {/* Try Demo Login Button */}
+          {/* 2nd Action Button: Try Demo Login on normal slides, Preview on last slide */}
           <TouchableOpacity
             onPress={handleDemoLogin}
-            style={styles.demoLoginBtn}
-            activeOpacity={0.88}
+            activeOpacity={0.85}
             disabled={loadingDemo}
+            style={styles.actionBtnWrapper}
           >
-            <Text style={styles.demoLoginBtnText}>
-              {loadingDemo ? 'Logging in...' : 'Try Demo Login'}
-            </Text>
+            <View style={styles.previewFrostedGlass}>
+              {/* Subtle top reflection */}
+              <View style={styles.glossHighlightFrosted} />
+              <Text style={styles.previewBtnText}>
+                {loadingDemo
+                  ? 'Logging in...'
+                  : currentIdx === slides.length - 1
+                  ? 'Preview'
+                  : 'Try Demo Login'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -361,44 +384,79 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
-  continueBtn: {
+  actionBtnWrapper: {
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 26,
-    backgroundColor: '#091520',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 28,
+  },
+  launchGradient: {
+    width: '100%',
+    height: 54,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(134, 239, 172, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  glossHighlightEmerald: {
+    position: 'absolute',
+    top: 2,
+    left: 16,
+    right: 16,
+    height: 20,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  launchContentRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    gap: 8,
+    zIndex: 2,
   },
-  continueBtnText: {
-    fontSize: 15,
+  launchBtnText: {
+    fontSize: 17,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  demoLoginBtn: {
+  previewFrostedGlass: {
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 26,
-    backgroundColor: '#EAF8EE',
+    height: 52,
+    borderRadius: 28,
     borderWidth: 1.5,
-    borderColor: '#22C55E',
-    alignItems: 'center',
+    borderColor: 'rgba(255, 255, 255, 0.42)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  demoLoginBtnText: {
-    fontSize: 14.5,
+  glossHighlightFrosted: {
+    position: 'absolute',
+    top: 2,
+    left: 16,
+    right: 16,
+    height: 18,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  previewBtnText: {
+    fontSize: 16,
     fontWeight: '900',
-    color: '#15803D',
-    letterSpacing: 0.2,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+    zIndex: 2,
   },
 });

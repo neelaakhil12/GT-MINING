@@ -34,7 +34,7 @@
       "passwordHash": "$2b$10$rdN.JelOosPNz3JDScEhaeSUh/HlDpuiwQDPd4fK0EgGU./OxIpv6",
       "referralCode": "GTAKNATH",
       "referredByUserId": null,
-      "role": "ADMIN",
+      "role": "USER",
       "accountStatus": "ACTIVE",
       "emailVerifiedAt": "2026-11-06T16:06:39.425Z",
       "lastMiningAt": null,

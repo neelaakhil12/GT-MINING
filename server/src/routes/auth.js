@@ -9,10 +9,10 @@ const router = express.Router();
 // Helper to sanitize user object
 export const sanitizeUser = (user) => {
   const { passwordHash, ...rest } = user;
-  const isEmailAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const isMasterAdmin = user && user.email && user.email.toLowerCase().trim() === 'gtmining2026@gmail.com';
   return {
     ...rest,
-    role: isEmailAdmin ? 'ADMIN' : (user.role || 'USER'),
+    role: isMasterAdmin ? 'ADMIN' : 'USER',
   };
 };
 
@@ -582,8 +582,8 @@ router.post('/google', async (req, res) => {
       db.wallets.push({
         id: generateId('wal'),
         userId: userId,
-        availableBalance: 1.0,
-        lifetimeEarned: 1.0,
+        availableBalance: 0.0,
+        lifetimeEarned: 0.0,
         createdAt: now,
         updatedAt: now
       });

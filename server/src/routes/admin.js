@@ -414,15 +414,11 @@ router.get('/top-miners', (req, res) => {
         u.id === 'usr_demo_002' ||
         u.id === 'usr_demo_miner';
 
-      const isAdmin =
-        role === 'ADMIN' ||
-        u.isAdmin === true ||
-        u.is_admin === true ||
+      const isMasterAdmin =
         email === 'gtmining2026@gmail.com' ||
-        email.includes('admin') ||
-        name.includes('administrator');
+        u.id === 'usr_admin_001';
 
-      return !isDemo && !isAdmin && !u.deletedAt && !u.isDeleted;
+      return !isDemo && !isMasterAdmin && !u.deletedAt && !u.isDeleted;
     });
 
     const miners = users.map(u => {

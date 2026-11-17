@@ -5,14 +5,11 @@ export const JWT_SECRET = process.env.JWT_SECRET || 'gt-mining-secret-super-key-
 
 export const ADMIN_EMAILS = [
   'gtmining2026@gmail.com',
-  'neelaakhilkumar50@gmail.com',
-  'neelaakhilharish@gmail.com',
-  'admin@gtmining.com',
 ];
 
 export const generateToken = (user) => {
-  const isEmailAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
-  const effectiveRole = isEmailAdmin ? 'ADMIN' : (user.role || 'USER');
+  const isEmailAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+  const effectiveRole = isEmailAdmin ? 'ADMIN' : 'USER';
   return jwt.sign(
     {
       userId: user.id,
@@ -88,11 +85,9 @@ export const requireAuth = (req, res, next) => {
 
 export const requireAdmin = (req, res, next) => {
   requireAuth(req, res, () => {
-    const isEmailAdmin = req.user && req.user.email && ADMIN_EMAILS.includes(req.user.email.toLowerCase());
-    if (req.user && (req.user.role === 'ADMIN' || isEmailAdmin)) {
-      if (req.user.role !== 'ADMIN' && isEmailAdmin) {
-        req.user.role = 'ADMIN';
-      }
+    const isEmailAdmin = req.user && req.user.email && req.user.email.toLowerCase().trim() === 'gtmining2026@gmail.com';
+    if (isEmailAdmin) {
+      req.user.role = 'ADMIN';
       next();
     } else {
       res.status(403).json({ success: false, message: 'Access denied. Administrator privileges required.' });

@@ -101,7 +101,11 @@ export const WalletPage: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-2xl bg-white/80 border border-white shadow-sm flex items-center gap-4">
-            <GtLogo size="sm" glow animated />
+            <img
+              src="/wallet-lifetime-logo.png"
+              alt="GT Coin"
+              className="w-10 h-10 object-contain drop-shadow-sm select-none"
+            />
             <div>
               <p className="text-[11px] font-bold text-[#1E5E36] uppercase tracking-wider">Lifetime Total Earned</p>
               <p className="text-xl font-black text-[#0A341B]">{lifetime.toFixed(4)} GT</p>

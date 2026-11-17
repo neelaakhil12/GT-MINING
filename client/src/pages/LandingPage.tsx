@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { ChevronRight } from 'lucide-react';
 
 interface OnboardingSlide {
   id: number;
@@ -439,24 +440,44 @@ export const LandingPage: React.FC = () => {
         {/* Spacer */}
         <div className="flex-1 pointer-events-none" />
 
-        {/* Bottom Action Area: Continue / Get Started & Try Demo Login */}
+        {/* Bottom Action Area: Continue / Launch & Try Demo Login / Preview */}
         <div className="relative z-20 px-6 pb-8 pt-4 flex flex-col items-center gap-3 shrink-0">
+          {/* Button 1: Emerald Glass Capsule */}
           <button
             type="button"
             onClick={handleNextSlide}
-            className="w-full py-4 rounded-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] hover:brightness-110 text-white text-base font-black shadow-[0_10px_25px_rgba(34,197,94,0.4)] active:scale-[0.98] transition-all cursor-pointer border border-[#86EFAC]/30"
+            className="group relative w-full h-[54px] rounded-full overflow-hidden flex items-center justify-center gap-2 text-white font-extrabold text-base tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer border-[1.5px] border-[#86EFAC]/80 bg-gradient-to-b from-[#22C55E] via-[#10B981] to-[#047857]"
+            style={{
+              boxShadow: '0 8px 32px rgba(34,197,94,0.45), inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -2px 4px rgba(0,0,0,0.3)',
+            }}
           >
-            {currentSlide === slides.length - 1 ? 'Get Started & Mine Now 🚀' : 'Continue'}
+            {/* Glossy top glass reflection highlight */}
+            <div className="absolute inset-x-3 top-0.5 h-[45%] rounded-full bg-gradient-to-b from-white/35 to-transparent pointer-events-none" />
+            <span className="relative z-10 drop-shadow-sm font-black text-[17px]">
+              {currentSlide === slides.length - 1 ? 'Launch' : 'Continue'}
+            </span>
+            <ChevronRight className="relative z-10 w-5 h-5 text-white stroke-[3] transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
 
-          {/* Try Demo Login Button */}
+          {/* Button 2: Frosted Glass Capsule */}
           <button
             type="button"
             onClick={handleDemoLogin}
             disabled={loadingDemo}
-            className="w-full py-3.5 rounded-full border border-[#22C55E]/40 bg-[#EAF8EE] hover:bg-[#DCFCE7] text-sm font-black text-[#15803D] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            className="group relative w-full h-[52px] rounded-full overflow-hidden flex items-center justify-center gap-2 text-white font-extrabold text-base tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer border-[1.5px] border-white/40 bg-black/45 backdrop-blur-md"
+            style={{
+              boxShadow: '0 6px 20px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.4)',
+            }}
           >
-            <span>{loadingDemo ? 'Logging in...' : 'Try Demo Login'}</span>
+            {/* Subtle top reflection */}
+            <div className="absolute inset-x-3 top-0.5 h-[45%] rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+            <span className="relative z-10 drop-shadow-sm font-black text-[16px]">
+              {loadingDemo
+                ? 'Logging in...'
+                : currentSlide === slides.length - 1
+                ? 'Preview'
+                : 'Try Demo Login'}
+            </span>
           </button>
         </div>
       </div>
