@@ -5,10 +5,11 @@ import * as Haptics from 'expo-haptics';
 
 interface SocialShareRowProps {
   referralCode: string;
+  cycleHours?: number;
 }
 
-export const SocialShareRow: React.FC<SocialShareRowProps> = ({ referralCode }) => {
-  const shareMessage = `⛏️ Join me on GT Mining! Mine virtual GT coins every 4 hours. Use my referral code: ${referralCode}`;
+export const SocialShareRow: React.FC<SocialShareRowProps> = ({ referralCode, cycleHours = 4 }) => {
+  const shareMessage = `⛏️ Join me on GT Mining! Mine virtual GT coins every ${cycleHours} hours. Use my referral code: ${referralCode}`;
 
   const triggerHaptic = () => {
     try {

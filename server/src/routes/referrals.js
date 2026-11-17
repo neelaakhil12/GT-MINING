@@ -50,12 +50,16 @@ router.get('/summary', requireAuth, (req, res) => {
 
     const baseUrl = settings.websiteUrl || 'https://gtnetwork.io';
     const referralLink = `${baseUrl}/signup?ref=${user.referralCode}`;
+    const cooldownSec = Number(settings.cooldownSeconds || 14400);
+    const cycleHours = Math.max(1, Math.round(cooldownSec / 3600));
 
     return res.json({
       success: true,
       referralCode: user.referralCode,
       referralLink,
       referralReward: Number(settings.referralReward ?? 0.5),
+      cooldownSeconds: cooldownSec,
+      cycleHours,
       statistics: {
         totalReferrals: userReferrals.length,
         activeFriends,
@@ -65,7 +69,8 @@ router.get('/summary', requireAuth, (req, res) => {
         availableToClaim: Number(availableToClaim.toFixed(4)),
         totalCommissionClaimed: Number(totalCommissionClaimed.toFixed(4)),
         activeThresholdDays: thresholdDays,
-        referralReward: Number(settings.referralReward ?? 0.5)
+        referralReward: Number(settings.referralReward ?? 0.5),
+        cycleHours
       }
     });
   } catch (err) {

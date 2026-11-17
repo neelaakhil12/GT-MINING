@@ -978,6 +978,31 @@ router.get('/audit-logs', (req, res) => {
   return res.json({ success: true, logs });
 });
 
+// GET /api/admin/all-sliders (Unified instant fetch for all 4 slider categories)
+router.get('/all-sliders', (req, res) => {
+  try {
+    const db = readDB();
+    const home = (db.homeBanners || []).slice().sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    const onboarding = (db.onboardingBanners || []).slice().sort((a, b) => {
+      const ordA = Number(a.order !== undefined && a.order !== null ? a.order : a.stepNumber) || 0;
+      const ordB = Number(b.order !== undefined && b.order !== null ? b.order : b.stepNumber) || 0;
+      return ordA - ordB;
+    });
+    const referrals = (db.referralBanners || []).slice().sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    const tasks = (db.taskBanners || []).slice().sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    return res.json({
+      success: true,
+      home,
+      onboarding,
+      referrals,
+      tasks,
+    });
+  } catch (err) {
+    console.error('Error fetching all sliders:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch sliders' });
+  }
+});
+
 // GET /api/admin/onboarding-banners
 router.get('/onboarding-banners', (req, res) => {
   const db = readDB();
@@ -1710,6 +1735,16 @@ router.get('/private-rooms', (req, res) => {
     hostIdSet.forEach(hostId => {
       const hostUser = db.users.find(u => u.id === hostId && !u.deletedAt && u.accountStatus !== 'DELETED');
       if (!hostUser) return;
+
+      // Exclude Demo Miner room from admin panel view
+      if (
+        hostId === 'demo-miner' ||
+        (hostUser.email && hostUser.email.toLowerCase() === 'demo@gtnetwork.io') ||
+        (hostUser.fullName && hostUser.fullName.toLowerCase() === 'demo miner') ||
+        hostUser.isDemo
+      ) {
+        return;
+      }
 
       const circleData = db.privateNetworks[hostId] || { messages: [] };
       const rawMessages = circleData.messages || [];

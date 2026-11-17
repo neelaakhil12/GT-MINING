@@ -86,6 +86,21 @@ export const CommunityScreen: React.FC = () => {
     return Date.now() - t <= 6 * 60 * 60 * 1000;
   };
 
+  // Human-readable relative time (e.g. Just now, 1 min ago, 1 hour ago, 2 hours ago)
+  const getRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return 'Just now';
+    const t = new Date(dateStr).getTime();
+    if (isNaN(t) || t <= 0) return 'Just now';
+    const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+  };
+
   useEffect(() => {
     const fetchLivePosts = async () => {
       const endpoints = [
@@ -338,9 +353,13 @@ export const CommunityScreen: React.FC = () => {
             {displayedPosts.length === 0 ? (
               <View style={styles.emptyFeedCard}>
                 <MessageSquare size={36} color="#22C55E" />
-                <Text style={styles.emptyFeedTitle}>No Announcements Found</Text>
+                <Text style={styles.emptyFeedTitle}>
+                  {selectedCategory === 'Latest' ? 'No Latest Posts' : 'No Announcements Found'}
+                </Text>
                 <Text style={styles.emptyFeedSubtitle}>
-                  Updates and node news posted by administrators will appear here.
+                  {selectedCategory === 'Latest'
+                    ? 'There are no announcements published in the last 6 hours.'
+                    : 'Updates and node news posted by administrators will appear here.'}
                 </Text>
               </View>
             ) : (
@@ -361,11 +380,13 @@ export const CommunityScreen: React.FC = () => {
                       <View style={styles.authorRow}>
                         <View style={styles.authorAvatar}>
                           <Text style={styles.authorInitial}>
-                            {post.author.charAt(0)}
+                            {(post.author || 'G').charAt(0).toUpperCase()}
                           </Text>
                         </View>
-                        <View>
-                          <Text style={styles.authorName}>{post.author}</Text>
+                        <View style={styles.authorInfo}>
+                          <Text style={styles.authorName} numberOfLines={1} ellipsizeMode="tail">
+                            {post.author}
+                          </Text>
                           <Text style={styles.verifiedText}>Verified Publisher</Text>
                         </View>
                       </View>
@@ -380,11 +401,15 @@ export const CommunityScreen: React.FC = () => {
                         {isWithin6Hours(post.createdAt || post.dateStr) ? (
                           <View style={styles.latestPill}>
                             <Sparkles size={9} color="#15803D" />
-                            <Text style={styles.latestPillText}>LATEST (6H)</Text>
+                            <Text style={styles.latestPillText} numberOfLines={1}>
+                              {getRelativeTime(post.createdAt || post.dateStr)}
+                            </Text>
                           </View>
                         ) : (
                           <View style={styles.nodePill}>
-                            <Text style={styles.nodePillText}>NODE POST</Text>
+                            <Text style={styles.nodePillText} numberOfLines={1}>
+                              {getRelativeTime(post.createdAt || post.dateStr)}
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -680,11 +705,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
     paddingBottom: 10,
+    gap: 8,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  authorInfo: {
+    flex: 1,
+    minWidth: 0,
   },
   authorAvatar: {
     width: 32,
@@ -713,6 +745,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
+    justifyContent: 'flex-end',
   },
   pinnedPill: {
     flexDirection: 'row',

@@ -101,10 +101,17 @@ export const AdminPrivateRoomsPage: React.FC = () => {
     try {
       const res = await api.getAdminPrivateRooms(query);
       if (res && res.success) {
-        setRooms(res.rooms || []);
+        // Exclude Demo Miner room from admin panel view
+        const cleanRooms = (res.rooms || []).filter((r: RoomSummary) => {
+          const email = (r.host?.email || '').toLowerCase();
+          const name = (r.host?.fullName || '').toLowerCase();
+          const hostId = (r.circleHostId || '').toLowerCase();
+          return email !== 'demo@gtnetwork.io' && hostId !== 'demo-miner' && !name.includes('demo miner');
+        });
+        setRooms(cleanRooms);
         // Auto-select first room if none selected
-        if (!selectedHostId && res.rooms && res.rooms.length > 0) {
-          setSelectedHostId(res.rooms[0].circleHostId);
+        if (!selectedHostId && cleanRooms.length > 0) {
+          setSelectedHostId(cleanRooms[0].circleHostId);
         }
       } else {
         if (!silent) showToast(res?.message || 'Failed to fetch rooms', 'error');

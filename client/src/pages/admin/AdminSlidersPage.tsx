@@ -30,12 +30,43 @@ export const AdminSlidersPage: React.FC = () => {
   const initialTab = (searchParams.get('tab') as SliderCategory) || 'home';
   const [activeTab, setActiveTab] = useState<SliderCategory>(initialTab);
 
-  // Data states
-  const [homeBanners, setHomeBanners] = useState<any[]>([]);
-  const [onboardingBanners, setOnboardingBanners] = useState<any[]>([]);
-  const [referralBanners, setReferralBanners] = useState<any[]>([]);
-  const [taskBanners, setTaskBanners] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Data states with 0ms instant display from local cache
+  const [homeBanners, setHomeBanners] = useState<any[]>(() => {
+    try {
+      const c = localStorage.getItem('gt_cached_home_banners');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [onboardingBanners, setOnboardingBanners] = useState<any[]>(() => {
+    try {
+      const c = localStorage.getItem('gt_cached_onboarding_banners');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [referralBanners, setReferralBanners] = useState<any[]>(() => {
+    try {
+      const c = localStorage.getItem('gt_cached_referral_banners');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [taskBanners, setTaskBanners] = useState<any[]>(() => {
+    try {
+      const c = localStorage.getItem('gt_cached_task_banners');
+      return c ? JSON.parse(c) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      return !(
+        localStorage.getItem('gt_cached_home_banners') ||
+        localStorage.getItem('gt_cached_onboarding_banners') ||
+        localStorage.getItem('gt_cached_referral_banners') ||
+        localStorage.getItem('gt_cached_task_banners')
+      );
+    } catch {
+      return true;
+    }
+  });
 
   // Common Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,19 +95,60 @@ export const AdminSlidersPage: React.FC = () => {
 
   const fetchAllSliders = async () => {
     try {
-      const [hRes, oRes, rRes, tRes] = await Promise.all([
-        api.getAdminHomeBanners().catch(() => ({ success: false, banners: [] })),
-        api.getAdminOnboardingBanners().catch(() => ({ success: false, banners: [] })),
-        api.getAdminReferralBanners().catch(() => ({ success: false, banners: [] })),
-        api.getAdminTaskBanners().catch(() => ({ success: false, banners: [] })),
-      ]);
+      // Fast path: fetch all sliders in single unified request
+      const allRes = await api.getAdminAllSliders().catch(() => null);
+      if (allRes && allRes.success) {
+        if (allRes.home) {
+          setHomeBanners(allRes.home);
+          try { localStorage.setItem('gt_cached_home_banners', JSON.stringify(allRes.home)); } catch {}
+        }
+        if (allRes.onboarding) {
+          setOnboardingBanners(allRes.onboarding);
+          try { localStorage.setItem('gt_cached_onboarding_banners', JSON.stringify(allRes.onboarding)); } catch {}
+        }
+        if (allRes.referrals) {
+          setReferralBanners(allRes.referrals);
+          try { localStorage.setItem('gt_cached_referral_banners', JSON.stringify(allRes.referrals)); } catch {}
+        }
+        if (allRes.tasks) {
+          setTaskBanners(allRes.tasks);
+          try { localStorage.setItem('gt_cached_task_banners', JSON.stringify(allRes.tasks)); } catch {}
+        }
+      } else {
+        // Fallback to individual requests if unified endpoint is unavailable
+        const [hRes, oRes, rRes, tRes] = await Promise.all([
+          api.getAdminHomeBanners().catch(() => ({ success: false, banners: [] })),
+          api.getAdminOnboardingBanners().catch(() => ({ success: false, banners: [] })),
+          api.getAdminReferralBanners().catch(() => ({ success: false, banners: [] })),
+          api.getAdminTaskBanners().catch(() => ({ success: false, banners: [] })),
+        ]);
 
-      if (hRes.success) setHomeBanners(hRes.banners || []);
-      if (oRes.success) setOnboardingBanners(oRes.banners || []);
-      if (rRes.success) setReferralBanners(rRes.banners || []);
-      if (tRes.success) setTaskBanners(tRes.banners || []);
+        if (hRes.success) {
+          setHomeBanners(hRes.banners || []);
+          try { localStorage.setItem('gt_cached_home_banners', JSON.stringify(hRes.banners || [])); } catch {}
+        }
+        if (oRes.success) {
+          setOnboardingBanners(oRes.banners || []);
+          try { localStorage.setItem('gt_cached_onboarding_banners', JSON.stringify(oRes.banners || [])); } catch {}
+        }
+        if (rRes.success) {
+          setReferralBanners(rRes.banners || []);
+          try { localStorage.setItem('gt_cached_referral_banners', JSON.stringify(rRes.banners || [])); } catch {}
+        }
+        if (tRes.success) {
+          setTaskBanners(tRes.banners || []);
+          try { localStorage.setItem('gt_cached_task_banners', JSON.stringify(tRes.banners || [])); } catch {}
+        }
+      }
     } catch (err: any) {
-      showToast('Failed to load sliders data', 'error');
+      if (
+        homeBanners.length === 0 &&
+        onboardingBanners.length === 0 &&
+        referralBanners.length === 0 &&
+        taskBanners.length === 0
+      ) {
+        showToast('Failed to load sliders data', 'error');
+      }
     } finally {
       setLoading(false);
     }

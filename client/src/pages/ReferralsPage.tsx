@@ -63,6 +63,14 @@ export const ReferralsPage: React.FC = () => {
   const [claimedAmount, setClaimedAmount] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
   const [referralReward, setReferralReward] = useState<number>(0.5);
+  const [cycleHours, setCycleHours] = useState<number>(() => {
+    try {
+      const cached = localStorage.getItem('gt_mining_cycle_hours');
+      return cached ? Number(cached) || 4 : 4;
+    } catch {
+      return 4;
+    }
+  });
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Fetch real referral summary & friends from Database
@@ -84,6 +92,11 @@ export const ReferralsPage: React.FC = () => {
         setClaimedAmount(Number(s.totalCommissionClaimed ?? 0));
         setTotalEarned(Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0));
         setReferralReward(Number(sumRes.referralReward ?? s.referralReward ?? 0.5));
+        const dynamicCycleHours = Number(sumRes.cycleHours || s.cycleHours || (sumRes.cooldownSeconds ? Math.round(sumRes.cooldownSeconds / 3600) : 4));
+        if (dynamicCycleHours > 0) {
+          setCycleHours(dynamicCycleHours);
+          try { localStorage.setItem('gt_mining_cycle_hours', String(dynamicCycleHours)); } catch {}
+        }
       }
       if (histRes && histRes.success && Array.isArray(histRes.referrals)) {
         setFriendsList(histRes.referrals);
@@ -203,7 +216,7 @@ export const ReferralsPage: React.FC = () => {
   };
 
   const shareText = encodeURIComponent(
-    `⛏️ Join me on GT Mining! Mine virtual GT coins every 4 hours. Use referral code: ${referralCode} ${referralLink}`
+    `⛏️ Join me on GT Mining! Mine virtual GT coins every ${cycleHours} hours. Use referral code: ${referralCode} ${referralLink}`
   );
 
   const shareWhatsApp = () => {
@@ -213,7 +226,7 @@ export const ReferralsPage: React.FC = () => {
   const shareTelegram = () => {
     window.open(
       `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(
-        `⛏️ Join me on GT Mining! Code: ${referralCode}`
+        `⛏️ Join me on GT Mining! Mine virtual GT coins every ${cycleHours} hours. Code: ${referralCode}`
       )}`,
       '_blank'
     );
@@ -228,7 +241,7 @@ export const ReferralsPage: React.FC = () => {
       try {
         await navigator.share({
           title: 'Join GT Mining Network',
-          text: `Mine virtual GT coins every 4 hours! Code: ${referralCode}`,
+          text: `Mine virtual GT coins every ${cycleHours} hours! Code: ${referralCode}`,
           url: referralLink,
         });
       } catch (e) {

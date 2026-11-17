@@ -52,6 +52,7 @@ export const ReferralsScreen: React.FC = () => {
   const [claimedTotal, setClaimedTotal] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
   const [referralReward, setReferralReward] = useState<number>(0.5);
+  const [cycleHours, setCycleHours] = useState<number>(4);
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
   const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
@@ -108,6 +109,10 @@ export const ReferralsScreen: React.FC = () => {
             setClaimableAmount(Number(s.availableToClaim ?? 0));
             setClaimedTotal(Number(s.totalCommissionClaimed ?? 0));
             setReferralReward(Number(sumData.referralReward ?? s.referralReward ?? 0.5));
+            const dynamicHours = Number(sumData.cycleHours || s.cycleHours || (sumData.cooldownSeconds ? Math.round(sumData.cooldownSeconds / 3600) : 4));
+            if (dynamicHours > 0) {
+              setCycleHours(dynamicHours);
+            }
           }
           if (histData && histData.success && Array.isArray(histData.referrals)) {
             setFriendsList(histData.referrals);
@@ -214,7 +219,7 @@ export const ReferralsScreen: React.FC = () => {
     }
   };
 
-  const shareMessage = `⛏️ Join me on GT Mining! Mine virtual GT coins every 4 hours. Use referral code: ${referralCode}\n${referralLink}`;
+  const shareMessage = `⛏️ Join me on GT Mining! Mine virtual GT coins every ${cycleHours} hours. Use referral code: ${referralCode}\n${referralLink}`;
   const encodedText = encodeURIComponent(shareMessage);
 
   const shareWhatsApp = async () => {
@@ -229,7 +234,7 @@ export const ReferralsScreen: React.FC = () => {
 
   const shareTelegram = async () => {
     const appUrl = `tg://msg?text=${encodedText}`;
-    const webUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`⛏️ Join me on GT Mining! Use referral code: ${referralCode}`)}`;
+    const webUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`⛏️ Join me on GT Mining! Mine virtual GT coins every ${cycleHours} hours. Code: ${referralCode}`)}`;
     try {
       await Linking.openURL(appUrl);
     } catch {

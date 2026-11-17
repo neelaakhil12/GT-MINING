@@ -26,8 +26,22 @@ import { cleanListSpacing, formatAsNumberedList, formatAsBulletList } from '../.
 
 export const AdminCommunityPage: React.FC = () => {
   const { showToast } = useToast();
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 0ms instant display from local cache
+  const [posts, setPosts] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('gt_cached_admin_posts');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem('gt_cached_admin_posts');
+    } catch {
+      return true;
+    }
+  });
   const [filterTab, setFilterTab] = useState<'All' | 'Latest'>('All');
 
   // Modal create/edit state
@@ -82,9 +96,18 @@ export const AdminCommunityPage: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const res = await api.getAdminPosts();
-      if (res.success) setPosts(res.posts || []);
+      if (res.success) {
+        const fetched = res.posts || [];
+        setPosts(fetched);
+        try {
+          localStorage.setItem('gt_cached_admin_posts', JSON.stringify(fetched));
+        } catch {}
+      }
     } catch (err: any) {
-      showToast('Failed to load posts', 'error');
+      // Only show error if no posts are cached
+      if (posts.length === 0) {
+        showToast('Failed to load posts', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,21 +244,41 @@ export const AdminCommunityPage: React.FC = () => {
       const res = await api.deleteAdminPost(id);
       if (res.success) {
         showToast('Node post removed successfully', 'success');
-        setPosts((prev) => prev.filter((p) => p.id !== id));
+        setPosts((prev) => {
+          const updated = prev.filter((p) => p.id !== id);
+          try {
+            localStorage.setItem('gt_cached_admin_posts', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
       }
     } catch (err: any) {
       showToast('Delete failed', 'error');
     }
   };
 
-  const isWithin24Hours = (dateStr: string) => {
+  const isWithin6Hours = (dateStr: string) => {
     const t = new Date(dateStr).getTime();
-    return !isNaN(t) && (Date.now() - t) <= 24 * 60 * 60 * 1000;
+    return !isNaN(t) && (Date.now() - t) <= 6 * 60 * 60 * 1000;
+  };
+
+  const getRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return 'Just now';
+    const t = new Date(dateStr).getTime();
+    if (isNaN(t) || t <= 0) return 'Just now';
+    const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
   };
 
   const filteredPosts =
     filterTab === 'Latest'
-      ? posts.filter((p) => isWithin24Hours(p.createdAt))
+      ? posts.filter((p) => isWithin6Hours(p.createdAt))
       : posts;
 
   return (
@@ -267,10 +310,10 @@ export const AdminCommunityPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter Tabs: All vs Latest (Last 24 Hours) */}
+      {/* Filter Tabs: All vs Latest (Last 6 Hours) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {(['All', 'Latest'] as const).map((tab) => {
-          const count = tab === 'All' ? posts.length : posts.filter((p) => isWithin24Hours(p.createdAt)).length;
+          const count = tab === 'All' ? posts.length : posts.filter((p) => isWithin6Hours(p.createdAt)).length;
           return (
             <button
               key={tab}
@@ -281,7 +324,7 @@ export const AdminCommunityPage: React.FC = () => {
                   : 'bg-[#0B2516]/60 text-[#A7C9B1] border border-[#86EFAC]/15 hover:text-white'
               }`}
             >
-              {tab === 'Latest' ? 'Latest (24 Hours)' : 'All Posts'} ({count})
+              {tab === 'Latest' ? 'Latest (6 Hours)' : 'All Posts'} ({count})
             </button>
           );
         })}
@@ -293,7 +336,7 @@ export const AdminCommunityPage: React.FC = () => {
           <div className="col-span-full py-16 text-center rounded-3xl bg-[#0B2516]/40 border border-white/5">
             <Globe className="w-10 h-10 text-[#A7C9B1] mx-auto mb-3 opacity-40" />
             <p className="text-sm font-bold text-white">
-              {filterTab === 'Latest' ? 'No posts published in the last 24 hours.' : 'No posts published yet.'}
+              {filterTab === 'Latest' ? 'No latest posts published in the last 6 hours.' : 'No posts published yet.'}
             </p>
             <p className="text-xs text-[#A7C9B1] mt-1">Tap "+ Create New Node Post" to publish one.</p>
           </div>
@@ -313,13 +356,14 @@ export const AdminCommunityPage: React.FC = () => {
                         <span>PINNED</span>
                       </span>
                     )}
-                    {isWithin24Hours(post.createdAt) ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#22C55E]/15 text-[#4ADE80] border border-[#22C55E]/30 uppercase">
-                        LATEST (24H)
+                    {isWithin6Hours(post.createdAt) ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#22C55E]/15 text-[#4ADE80] border border-[#22C55E]/30 uppercase flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-[#22C55E]" />
+                        <span>{getRelativeTime(post.createdAt)}</span>
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/5 text-[#A7C9B1] border border-white/10 uppercase">
-                        NODE FEED
+                        {getRelativeTime(post.createdAt)}
                       </span>
                     )}
                     <span className="text-[11px] text-[#A7C9B1]">

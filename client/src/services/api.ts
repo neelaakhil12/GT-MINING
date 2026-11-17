@@ -172,6 +172,9 @@ export const api = {
   updateAdminPost: (id: string, body: any) => request<any>(`/admin/community/posts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAdminPost: (id: string) => request<any>(`/admin/community/posts/${id}`, { method: 'DELETE' }),
 
+  // Unified All Sliders fetch
+  getAdminAllSliders: () => request<any>('/admin/all-sliders'),
+
   // Pre-Opening / Onboarding Sliders Banners
   getAdminOnboardingBanners: () => request<any>('/admin/onboarding-banners'),
   createAdminOnboardingBanner: (body: any) => request<any>('/admin/onboarding-banners', { method: 'POST', body: JSON.stringify(body) }),

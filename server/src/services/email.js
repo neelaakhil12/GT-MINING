@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
  * @param {string} [params.resetLink] - Direct reset URL
  */
 export async function sendPasswordResetEmail({ toEmail, otpCode, recipientName, resetLink, isAdmin }) {
-  const fromAddress = process.env.SMTP_FROM || '"GT Mining Network" <gtmining2026@gmail.com>';
+  const fromAddress = process.env.SMTP_FROM || '"GT Network" <gtmining2026@gmail.com>';
   const websiteUrl = process.env.WEBSITE_URL || 'http://localhost:5174';
   const isMasterAdmin = Boolean(isAdmin || (toEmail && toEmail.toLowerCase() === 'gtmining2026@gmail.com'));
   
@@ -45,7 +45,7 @@ export async function sendPasswordResetEmail({ toEmail, otpCode, recipientName, 
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>${isMasterAdmin ? 'GT Admin Gateway Password Reset' : 'GT Mining Account Recovery'}</title>
+      <title>${isMasterAdmin ? 'GT Admin Gateway Password Reset' : 'GT Network Account Recovery'}</title>
       <style>
         body { margin: 0; padding: 0; background-color: #F0FAF3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0A341B; }
         .wrapper { width: 100%; max-width: 580px; margin: 30px auto; background: #FFFFFF; border-radius: 24px; overflow: hidden; border: 1px solid #D1FAE5; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08); }
@@ -69,7 +69,7 @@ export async function sendPasswordResetEmail({ toEmail, otpCode, recipientName, 
       <div style="padding: 20px 10px;">
         <div class="wrapper">
           <div class="header">
-            <h1 class="logo-text">${isMasterAdmin ? '🛡️ GT ADMIN GATEWAY' : '💎 GT MINING NETWORK'}</h1>
+            <h1 class="logo-text">${isMasterAdmin ? '🛡️ GT ADMIN GATEWAY' : '💎 GT NETWORK'}</h1>
             <div class="sub-tag">${isMasterAdmin ? 'Master Administration Security' : 'Autonomous Decentralized Cloud Protocol'}</div>
           </div>
           
@@ -101,8 +101,8 @@ export async function sendPasswordResetEmail({ toEmail, otpCode, recipientName, 
           </div>
 
           <div class="footer">
-            <p style="margin: 0 0 6px 0;">This is an automated security dispatch from GT Mining Protocol.</p>
-            <p style="margin: 0;">© 2026 GT Mining Network. All rights reserved.</p>
+            <p style="margin: 0 0 6px 0;">This is an automated security dispatch from GT Network Protocol.</p>
+            <p style="margin: 0;">© 2026 GT Network. All rights reserved.</p>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@ export async function sendPasswordResetEmail({ toEmail, otpCode, recipientName, 
   `;
 
   const text = `
-GT MINING NETWORK - Password Reset
+GT NETWORK - Password Reset
 --------------------------------------------------
 Hello ${userName},
 
@@ -126,8 +126,8 @@ ${directLink}
 
 If you did not request this, please disregard this email.
 
-GT Mining Network Protocol
-https://gtmining.org
+GT Network Protocol
+https://gtnetwork.io
   `;
 
   const info = await transporter.sendMail({
@@ -150,7 +150,7 @@ https://gtmining.org
  * @param {string} [params.recipientName] - User's name
  */
 export async function sendSignUpOtpEmail({ toEmail, otpCode, recipientName }) {
-  const fromAddress = process.env.SMTP_FROM || '"GT Mining Network" <gtmining2026@gmail.com>';
+  const fromAddress = process.env.SMTP_FROM || '"GT Network" <gtmining2026@gmail.com>';
   const userName = recipientName || 'GT Pioneer';
   const subject = `[GT Network] ${otpCode} is your Account Verification Code`;
 
@@ -160,7 +160,7 @@ export async function sendSignUpOtpEmail({ toEmail, otpCode, recipientName }) {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>GT Mining Account Verification</title>
+      <title>GT Network Account Verification</title>
       <style>
         body { margin: 0; padding: 0; background-color: #F0FAF3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0A341B; }
         .wrapper { width: 100%; max-width: 580px; margin: 30px auto; background: #FFFFFF; border-radius: 24px; overflow: hidden; border: 1px solid #D1FAE5; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08); }
@@ -182,13 +182,13 @@ export async function sendSignUpOtpEmail({ toEmail, otpCode, recipientName }) {
       <div style="padding: 20px 10px;">
         <div class="wrapper">
           <div class="header">
-            <h1 class="logo-text">💎 GT MINING NETWORK</h1>
+            <h1 class="logo-text">💎 GT NETWORK</h1>
             <div class="sub-tag">Decentralized Autonomous Mining Protocol</div>
           </div>
           <div class="content">
             <h2 class="greeting">Welcome, ${userName}!</h2>
             <p class="body-text">
-              Thank you for registering on GT Mining Network. To verify your email address and activate your mining account, please enter the 6-digit verification code below:
+              Thank you for registering on GT Network. To verify your email address and activate your mining account, please enter the 6-digit verification code below:
             </p>
             <div class="otp-card">
               <div class="otp-label">Account Verification Code</div>
@@ -200,7 +200,7 @@ export async function sendSignUpOtpEmail({ toEmail, otpCode, recipientName }) {
             </div>
           </div>
           <div class="footer">
-            © ${new Date().getFullYear()} GT Mining Network. All rights reserved.
+            © ${new Date().getFullYear()} GT Network. All rights reserved.
           </div>
         </div>
       </div>
@@ -215,7 +215,7 @@ Your GT Network verification code is: ${otpCode}
 
 This code is valid for 10 minutes. Please enter this code to complete your registration.
 
-GT Mining Network
+GT Network
   `;
 
   const info = await transporter.sendMail({

@@ -58,6 +58,21 @@ export const CommunityPage: React.FC = () => {
     return Date.now() - t <= 6 * 60 * 60 * 1000;
   };
 
+  // Human-readable relative time (e.g. Just now, 1 min ago, 1 hour ago, 2 hours ago)
+  const getRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return 'Just now';
+    const t = new Date(dateStr).getTime();
+    if (isNaN(t) || t <= 0) return 'Just now';
+    const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+  };
+
   useEffect(() => {
     fetchPosts();
     const interval = setInterval(() => {
@@ -254,8 +269,14 @@ export const CommunityPage: React.FC = () => {
       ) : posts.length === 0 ? (
         <div className="py-16 text-center space-y-3 glass-panel rounded-3xl border-2 border-white">
           <MessageSquare className="w-12 h-12 text-[#16A34A]/30 mx-auto" />
-          <h3 className="text-base font-bold text-[#0A341B]">No announcements found</h3>
-          <p className="text-xs text-[#1E5E36]">No updates available in this category.</p>
+          <h3 className="text-base font-bold text-[#0A341B]">
+            {selectedCategory === 'Latest' ? 'No Latest Posts' : 'No announcements found'}
+          </h3>
+          <p className="text-xs text-[#1E5E36]">
+            {selectedCategory === 'Latest'
+              ? 'There are no announcements published in the last 6 hours.'
+              : 'No updates available in this category.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -275,18 +296,18 @@ export const CommunityPage: React.FC = () => {
                 }`}
               >
                 {/* Post Header with Pinned & Category */}
-                <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-xs text-white shadow-sm">
+                <div className="flex items-center justify-between gap-3 border-b border-black/5 pb-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#22C55E] to-[#86EFAC] flex items-center justify-center font-black text-xs text-white shadow-sm shrink-0">
                       {post.authorName.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <span className="text-xs font-black text-[#0A341B] block">{post.authorName}</span>
-                      <span className="text-[10px] font-bold text-[#15803D]">Verified Publisher</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-black text-[#0A341B] block truncate">{post.authorName}</span>
+                      <span className="text-[10px] font-bold text-[#15803D] block">Verified Publisher</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {post.isPinned && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                         <Pin className="w-3 h-3 fill-current text-[#D97706]" />
@@ -294,13 +315,13 @@ export const CommunityPage: React.FC = () => {
                       </span>
                     )}
                     {isWithin6Hours(post.createdAt || post.updatedAt) ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/20 text-[#15803D] border border-[#22C55E]/40 uppercase flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5 text-[#16A34A]" />
-                        <span>LATEST (6H)</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#22C55E]/20 text-[#15803D] border border-[#22C55E]/40 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                        <Sparkles className="w-2.5 h-2.5 text-[#16A34A] shrink-0" />
+                        <span>{getRelativeTime(post.createdAt || post.updatedAt)}</span>
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E2E8F0] text-[#475569] border border-[#CBD5E1] uppercase">
-                        NODE POST
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E2E8F0] text-[#475569] border border-[#CBD5E1] shrink-0 whitespace-nowrap">
+                        {getRelativeTime(post.createdAt || post.updatedAt)}
                       </span>
                     )}
                   </div>
