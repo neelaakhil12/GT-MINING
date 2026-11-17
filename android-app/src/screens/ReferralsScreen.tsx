@@ -649,14 +649,6 @@ export const ReferralsScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Protocol Notice */}
-            <View style={styles.noticeBox}>
-              <Info size={14} color="#15803D" style={{ marginTop: 1 }} />
-              <Text style={styles.noticeText}>
-                <Text style={{ fontWeight: '800' }}>Protocol Rule:</Text> "If your referred friend mines 100 GT, you earn 10 GT in commission."
-              </Text>
-            </View>
           </View>
 
           {/* 6. REFERRAL FRIENDS List matching real_web_referrals.png */}

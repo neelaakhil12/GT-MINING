@@ -620,14 +620,6 @@ export const ReferralsPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Protocol Rule Callout */}
-        <div className="p-3.5 rounded-2xl bg-[#F0FAF3] border border-[#DCF2E4] flex items-start gap-2.5 text-xs text-[#1E5E36] font-medium leading-relaxed">
-          <Info className="w-4 h-4 text-[#15803D] shrink-0 mt-0.5" />
-          <span>
-            <strong>Protocol Rule:</strong> "If your referred friend mines 100 GT, you earn 10 GT in commission."
-          </span>
-        </div>
       </div>
 
       {/* 6. REFERRAL FRIENDS (SCREENSHOT 4) */}
