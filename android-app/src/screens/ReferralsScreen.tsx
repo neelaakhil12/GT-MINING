@@ -51,6 +51,7 @@ export const ReferralsScreen: React.FC = () => {
   const [claimableAmount, setClaimableAmount] = useState<number>(0.0);
   const [claimedTotal, setClaimedTotal] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
+  const [referralReward, setReferralReward] = useState<number>(0.5);
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
   const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
@@ -106,6 +107,7 @@ export const ReferralsScreen: React.FC = () => {
             setTotalEarned(Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0));
             setClaimableAmount(Number(s.availableToClaim ?? 0));
             setClaimedTotal(Number(s.totalCommissionClaimed ?? 0));
+            setReferralReward(Number(sumData.referralReward ?? s.referralReward ?? 0.5));
           }
           if (histData && histData.success && Array.isArray(histData.referrals)) {
             setFriendsList(histData.referrals);
@@ -591,9 +593,6 @@ export const ReferralsScreen: React.FC = () => {
                 <View style={styles.protocolBadge}>
                   <Text style={styles.protocolBadgeText}>PROTOCOL DIVIDEND</Text>
                 </View>
-                <View style={styles.yieldRatioBadge}>
-                  <Text style={styles.yieldRatioText}>10% Mining Pro-Rata</Text>
-                </View>
               </View>
               <Text style={styles.dividendTitle}>Rewards & Commission</Text>
             </View>
@@ -602,11 +601,7 @@ export const ReferralsScreen: React.FC = () => {
             <View style={styles.dividendTable}>
               <View style={styles.dividendRow}>
                 <Text style={styles.dividendRowLabel}>Invited Verified Peer</Text>
-                <Text style={styles.dividendRowValueDark}>+2.00 GT per node</Text>
-              </View>
-              <View style={styles.dividendRow}>
-                <Text style={styles.dividendRowLabel}>Mining Yield Ratio</Text>
-                <Text style={styles.dividendRowValueGreen}>10% Confirmed Output</Text>
+                <Text style={styles.dividendRowValueDark}>+{referralReward.toFixed(2)} GT per node</Text>
               </View>
               <View style={styles.dividendRow}>
                 <Text style={styles.dividendRowLabel}>Total Commission Earned</Text>
@@ -624,7 +619,6 @@ export const ReferralsScreen: React.FC = () => {
             <View style={styles.claimRow}>
               <View>
                 <Text style={styles.availableLabel}>Available to Claim</Text>
-                <Text style={styles.cryptoProofText}>Cryptographic proof ready</Text>
               </View>
 
               <View style={styles.claimRightCol}>

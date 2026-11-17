@@ -55,6 +55,7 @@ router.get('/summary', requireAuth, (req, res) => {
       success: true,
       referralCode: user.referralCode,
       referralLink,
+      referralReward: Number(settings.referralReward ?? 0.5),
       statistics: {
         totalReferrals: userReferrals.length,
         activeFriends,
@@ -63,7 +64,8 @@ router.get('/summary', requireAuth, (req, res) => {
         totalCommissionEarned: Number(totalCommissionEarned.toFixed(4)),
         availableToClaim: Number(availableToClaim.toFixed(4)),
         totalCommissionClaimed: Number(totalCommissionClaimed.toFixed(4)),
-        activeThresholdDays: thresholdDays
+        activeThresholdDays: thresholdDays,
+        referralReward: Number(settings.referralReward ?? 0.5)
       }
     });
   } catch (err) {

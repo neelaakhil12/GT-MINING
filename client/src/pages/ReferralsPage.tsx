@@ -62,6 +62,7 @@ export const ReferralsPage: React.FC = () => {
   const [claimableAmount, setClaimableAmount] = useState<number>(0.0);
   const [claimedAmount, setClaimedAmount] = useState<number>(0.0);
   const [totalEarned, setTotalEarned] = useState<number>(0.0);
+  const [referralReward, setReferralReward] = useState<number>(0.5);
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Fetch real referral summary & friends from Database
@@ -82,6 +83,7 @@ export const ReferralsPage: React.FC = () => {
         setClaimableAmount(Number(s.availableToClaim ?? 0));
         setClaimedAmount(Number(s.totalCommissionClaimed ?? 0));
         setTotalEarned(Number(s.totalCommissionEarned ?? s.totalReferralRewardsEarned ?? 0));
+        setReferralReward(Number(sumRes.referralReward ?? s.referralReward ?? 0.5));
       }
       if (histRes && histRes.success && Array.isArray(histRes.referrals)) {
         setFriendsList(histRes.referrals);
@@ -521,9 +523,6 @@ export const ReferralsPage: React.FC = () => {
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20">
               PROTOCOL DIVIDEND
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F8EE] text-[#15803D] border border-[#22C55E]/30">
-              10% Mining Pro-Rata
-            </span>
           </div>
           <h3 className="text-xl font-black text-[#0A341B] pt-1">
             Rewards & Commission
@@ -534,12 +533,7 @@ export const ReferralsPage: React.FC = () => {
         <div className="space-y-2.5 text-xs">
           <div className="flex items-center justify-between py-1 border-b border-black/5">
             <span className="text-neutral-500 font-medium">Invited Verified Peer</span>
-            <span className="font-bold text-[#0A341B]">+2.00 GT per node</span>
-          </div>
-
-          <div className="flex items-center justify-between py-1 border-b border-black/5">
-            <span className="text-neutral-500 font-medium">Mining Yield Ratio</span>
-            <span className="font-bold text-[#15803D]">10% Confirmed Output</span>
+            <span className="font-bold text-[#0A341B]">+{referralReward.toFixed(2)} GT per node</span>
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-black/5">
@@ -558,9 +552,6 @@ export const ReferralsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-black text-[#0A341B]">Available to Claim</div>
-              <div className="text-[11px] text-[#15803D] font-medium">
-                Cryptographic proof ready
-              </div>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-2xl font-black text-[#0A341B] font-mono whitespace-nowrap">
