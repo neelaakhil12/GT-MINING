@@ -209,6 +209,11 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
+    if (!otpSent && !otpVerified && !otpCode.trim()) {
+      setError('Please tap "Send OTP" to receive a verification code first.');
+      return;
+    }
+
     if (!otpCode.trim() || otpCode.trim().length !== 6) {
       setError('Please enter the 6-digit verification code sent to your email.');
       return;

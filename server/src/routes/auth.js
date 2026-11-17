@@ -55,10 +55,10 @@ router.post('/signup/send-otp', async (req, res) => {
     let referrerUser = null;
     if (referralCode && referralCode.trim()) {
       const code = referralCode.trim().toUpperCase();
-      referrerUser = db.users.find(u => u.referralCode === code && !u.deletedAt);
+      referrerUser = db.users.find(u => (u.referralCode === code || u.id === code) && !u.deletedAt);
       if (!referrerUser) {
         lockManager.release('signup_lock');
-        return res.status(400).json({ success: false, message: 'Invalid referral code provided.' });
+        return res.status(400).json({ success: false, message: 'Invalid referral code or User ID provided.' });
       }
     }
 
@@ -77,9 +77,10 @@ router.post('/signup/send-otp', async (req, res) => {
       id: generateId('vcode'),
       email: cleanEmail,
       fullName: fullName.trim(),
-      phone: phone.trim(),
-      referralCode: referralCode ? referralCode.trim().toUpperCase() : null,
+      phone: cleanPhone,
+      referralCode: referrerUser ? referrerUser.referralCode : (referralCode ? referralCode.trim().toUpperCase() : null),
       otpCode,
+      otp: otpCode,
       verified: false,
       expiresAt,
       createdAt: new Date().toISOString()
@@ -142,7 +143,7 @@ router.post('/signup/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
     }
 
-    if (record.otpCode !== cleanOtp) {
+    if ((record.otpCode || record.otp) !== cleanOtp) {
       lockManager.release('signup_lock');
       return res.status(400).json({ success: false, message: 'Incorrect verification code. Please check your email and try again.' });
     }
@@ -214,7 +215,7 @@ router.post('/signup/complete', async (req, res) => {
     // Check referral user if recorded
     let referrerUser = null;
     if (record.referralCode) {
-      referrerUser = db.users.find(u => u.referralCode === record.referralCode && !u.deletedAt);
+      referrerUser = db.users.find(u => (u.referralCode === record.referralCode || u.id === record.referralCode) && !u.deletedAt);
     }
 
     const userId = generateId('usr');
@@ -348,28 +349,35 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'An account with this email address already exists.' });
     }
 
-    // Verify OTP code if provided
+    // Verify OTP code
     if (otpCode) {
       const cleanOtp = String(otpCode).trim();
       const record = (db.signupVerifications || []).find(v => v.email === cleanEmail);
-      if (!record || record.otp !== cleanOtp) {
+      if (!record) {
         lockManager.release('signup_lock');
-        return res.status(400).json({ success: false, message: 'Invalid or incorrect email verification code.' });
+        return res.status(400).json({ success: false, message: 'Please tap "Send OTP" first to receive your verification code.' });
+      }
+      if ((record.otpCode || record.otp) !== cleanOtp) {
+        lockManager.release('signup_lock');
+        return res.status(400).json({ success: false, message: 'Invalid or incorrect verification code. Please check your email.' });
       }
       if (new Date(record.expiresAt) < new Date()) {
         lockManager.release('signup_lock');
-        return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+        return res.status(400).json({ success: false, message: 'Verification code has expired. Please tap "Send OTP" to request a new code.' });
       }
+    } else {
+      lockManager.release('signup_lock');
+      return res.status(400).json({ success: false, message: 'Please tap "Send OTP" to verify your email address.' });
     }
 
     // Check referral code if provided
     let referrerUser = null;
     if (referralCode && referralCode.trim()) {
       const code = referralCode.trim().toUpperCase();
-      referrerUser = db.users.find(u => u.referralCode === code && !u.deletedAt);
+      referrerUser = db.users.find(u => (u.referralCode === code || u.id === code) && !u.deletedAt);
       if (!referrerUser) {
         lockManager.release('signup_lock');
-        return res.status(400).json({ success: false, message: 'Invalid referral code provided.' });
+        return res.status(400).json({ success: false, message: 'Invalid referral code or User ID provided.' });
       }
     }
 
@@ -573,7 +581,7 @@ router.post('/google', async (req, res) => {
       // Check referral user if provided
       let referrerUser = null;
       if (referralCode) {
-        referrerUser = db.users.find(u => u.referralCode === referralCode.trim().toUpperCase() && !u.deletedAt);
+        referrerUser = db.users.find(u => (u.referralCode === referralCode.trim().toUpperCase() || u.id === referralCode.trim().toUpperCase()) && !u.deletedAt);
       }
 
       // If user is explicitly signing up with Google -> register them

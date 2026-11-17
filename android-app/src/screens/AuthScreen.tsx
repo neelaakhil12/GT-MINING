@@ -218,6 +218,10 @@ export const AuthScreen: React.FC = () => {
       setErrorMessage('Please enter a valid email address');
       return;
     }
+    if (!otpSent && !otpCode.trim()) {
+      setErrorMessage('Please tap "Send OTP" to receive a verification code first');
+      return;
+    }
     if (!otpCode.trim() || otpCode.trim().length !== 6) {
       setErrorMessage('Please enter the 6-digit verification code sent to your email');
       return;
