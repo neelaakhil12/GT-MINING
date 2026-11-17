@@ -142,11 +142,11 @@ export const LoginPage: React.FC = () => {
             <input type="password" name="fake_password_decoy" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" />
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E5E36]">Email Address</label>
+              <label className="text-xs font-bold text-[#1E5E36]">Email or User ID</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
-                  type="email"
+                  type="text"
                   name="gt_login_usr"
                   autoComplete="off"
                   autoCorrect="off"
@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="name@example.com or user id"
                   className="w-full pl-10 pr-4 py-3 rounded-2xl glass-input text-sm font-medium text-[#0A341B] placeholder:text-[#1E5E36]/40 border border-[#22C55E]/30 bg-white/90"
                 />
               </div>

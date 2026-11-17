@@ -439,12 +439,12 @@ export const SignupPage: React.FC = () => {
             <div className="rounded-2xl border border-[#22C55E]/30 bg-white/90 focus-within:border-[#22C55E] focus-within:ring-2 focus-within:ring-[#22C55E]/20 transition-all px-3.5 py-2 flex items-center gap-2.5">
               <Gift className="w-4 h-4 text-[#16A34A] shrink-0" />
               <div className="flex-1 min-w-0">
-                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Referral Code (Optional)</label>
+                <label className="text-[10px] font-bold text-[#1E5E36] block leading-tight">Referral or User ID (Optional)</label>
                 <input
                   type="text"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. GT88241"
+                  placeholder="Enter referral or user id"
                   className="w-full bg-transparent text-sm font-mono font-bold uppercase text-[#0A341B] placeholder:text-[#1E5E36]/30 outline-none p-0 border-none leading-tight"
                 />
               </div>

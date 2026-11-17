@@ -240,17 +240,14 @@ export const generateId = (prefix = 'id') => {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
 };
 
-// Unique referral code generator (e.g. GT + 6 alphanumeric characters)
+// Unique User ID / Referral code generator: GT + 6 digits (e.g. GT456738)
 export const generateReferralCode = (existingUsers = []) => {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let code = '';
   let unique = false;
   while (!unique) {
-    code = 'GT';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    unique = !existingUsers.some(u => u.referralCode === code);
+    const num = Math.floor(100000 + Math.random() * 900000);
+    code = `GT${num}`;
+    unique = !existingUsers.some(u => (u.referralCode || '').toUpperCase() === code);
   }
   return code;
 };

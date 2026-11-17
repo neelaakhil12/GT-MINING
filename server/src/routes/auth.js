@@ -480,20 +480,31 @@ router.post('/login', async (req, res) => {
   const { email, password, isAdminLogin } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    return res.status(400).json({ success: false, message: 'Email or User ID and password are required.' });
   }
 
-  const cleanEmail = email.trim().toLowerCase();
+  const inputIdentifier = email.trim();
+  const lowerIdentifier = inputIdentifier.toLowerCase();
+  const upperIdentifier = inputIdentifier.toUpperCase();
 
   // Strict check: If attempting to login via admin portal, only gtmining2026@gmail.com is permitted
-  if (isAdminLogin && cleanEmail !== 'gtmining2026@gmail.com') {
+  if (isAdminLogin && lowerIdentifier !== 'gtmining2026@gmail.com') {
     return res.status(403).json({
       success: false,
       message: 'You are not an administrator. Access denied.'
     });
   }
+
   const db = readDB();
-  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt && u.accountStatus !== 'DELETED');
+  const user = db.users.find(u =>
+    !u.deletedAt &&
+    u.accountStatus !== 'DELETED' &&
+    (
+      (u.email && u.email.toLowerCase() === lowerIdentifier) ||
+      (u.referralCode && u.referralCode.toUpperCase() === upperIdentifier) ||
+      (u.id && u.id.toLowerCase() === lowerIdentifier)
+    )
+  );
 
   if (!user) {
     return res.status(404).json({

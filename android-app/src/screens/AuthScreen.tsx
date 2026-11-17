@@ -806,14 +806,14 @@ export const AuthScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
 
-                    {/* Row 6: Referral Code (Optional) */}
+                    {/* Row 6: User/Referral ID (Optional) */}
                     <View style={{ backgroundColor: 'rgba(240, 253, 244, 0.5)', borderWidth: 1.2, borderColor: 'rgba(34, 197, 94, 0.25)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <Gift size={16} color="#16A34A" />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>Referral Code (Optional)</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1E5E36' }}>User/Referral ID (Optional)</Text>
                         <TextInput
                           style={{ height: 26, fontSize: 13, color: '#0A341B', fontWeight: '800', padding: 0 }}
-                          placeholder="e.g. GT88241"
+                          placeholder="Enter referral or user id"
                           placeholderTextColor="#9CA3AF"
                           value={referralCode}
                           onChangeText={setReferralCode}
@@ -862,16 +862,15 @@ export const AuthScreen: React.FC = () => {
                   /* LOGIN FORM */
                   <>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Email Address</Text>
+                      <Text style={styles.inputLabel}>Email or User ID</Text>
                       <View style={styles.inputWrapper}>
                         <Mail size={16} color="#16A34A" style={styles.inputIcon} />
                         <TextInput
                           style={styles.input}
-                          placeholder="you@domain.com"
+                          placeholder="name@example.com or user id"
                           placeholderTextColor="#9CA3AF"
                           value={email}
                           onChangeText={setEmail}
-                          keyboardType="email-address"
                           autoCapitalize="none"
                           autoCorrect={false}
                           autoComplete="off"

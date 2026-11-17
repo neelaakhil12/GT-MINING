@@ -483,9 +483,9 @@ export const ProfileScreen: React.FC = () => {
             {/* 2x2 Account Details Metadata Grid */}
             <View style={styles.metaGrid}>
               <View style={styles.metaCard}>
-                <Text style={styles.metaLabel}>REFERRAL CODE</Text>
+                <Text style={styles.metaLabel}>USER/REFERRAL ID</Text>
                 <Text style={styles.metaValueGreen}>
-                  {user?.referralCode || 'GT88241'}
+                  {user?.referralCode || 'GT882410'}
                 </Text>
               </View>
 
