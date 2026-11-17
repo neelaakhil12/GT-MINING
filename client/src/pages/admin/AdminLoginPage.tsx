@@ -20,7 +20,7 @@ import { api } from '../../services/api';
 const MASTER_ADMIN_EMAIL = 'gtmining2026@gmail.com';
 
 export const AdminLoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -76,12 +76,21 @@ export const AdminLoginPage: React.FC = () => {
       return;
     }
 
+    // Strict validation: Only gtmining2026@gmail.com is authorized as admin
+    if (cleanEmail !== MASTER_ADMIN_EMAIL) {
+      const deniedMsg = 'You are not an administrator. Access denied.';
+      setError(deniedMsg);
+      showToast(deniedMsg, 'error');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await login({ email: cleanEmail, password });
+      const res = await login({ email: cleanEmail, password, isAdminLogin: true });
       const loggedUser = (res as any)?.user;
-      if (loggedUser && loggedUser.role !== 'ADMIN') {
-        throw new Error('Access Denied: This account is not authorized as an administrator.');
+      if (loggedUser && (loggedUser.role !== 'ADMIN' || cleanEmail !== MASTER_ADMIN_EMAIL)) {
+        logout();
+        throw new Error('You are not an administrator. Access denied.');
       }
       showToast('Welcome, Administrator!', 'success');
       navigate('/admin/dashboard', { replace: true });

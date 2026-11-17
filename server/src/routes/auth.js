@@ -477,13 +477,21 @@ router.post('/signup', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, isAdminLogin } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: 'Email and password are required.' });
   }
 
   const cleanEmail = email.trim().toLowerCase();
+
+  // Strict check: If attempting to login via admin portal, only gtmining2026@gmail.com is permitted
+  if (isAdminLogin && cleanEmail !== 'gtmining2026@gmail.com') {
+    return res.status(403).json({
+      success: false,
+      message: 'You are not an administrator. Access denied.'
+    });
+  }
   const db = readDB();
   const user = db.users.find(u => u.email.toLowerCase() === cleanEmail && !u.deletedAt && u.accountStatus !== 'DELETED');
 

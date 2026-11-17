@@ -8,7 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: { email: string; password: string; isAdminLogin?: boolean }) => Promise<any>;
   demoLogin: () => Promise<void>;
   googleLogin: (data?: any) => Promise<void>;
   signup: (userData: { fullName: string; email: string; password: string; confirmPassword?: string; referralCode?: string; otpCode?: string }) => Promise<void>;
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshSession();
   }, []);
 
-  const login = async (credentials: { email: string; password: string }) => {
+  const login = async (credentials: { email: string; password: string; isAdminLogin?: boolean }) => {
     const res = await api.login(credentials);
     if (res.success && res.token) {
       setToken(res.token);
