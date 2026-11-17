@@ -387,7 +387,7 @@ export const ProfilePage: React.FC = () => {
         {/* Account Details Metadata (Matching App's 4-card grid) */}
         <div className="grid grid-cols-2 gap-3 text-xs pt-1">
           <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
-            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">USER/REFERRAL ID</span>
+            <span className="text-[#1E5E36] font-bold block text-[10.5px] uppercase tracking-wider">USER ID</span>
             <span className="font-mono font-black text-sm text-[#15803D]">{user?.referralCode}</span>
           </div>
           <div className="p-3.5 rounded-2xl bg-white/80 border border-white space-y-1 shadow-sm">
