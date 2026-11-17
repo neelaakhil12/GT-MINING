@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle2, Lock, KeyRound, ShieldCheck, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
-import { GtLogo } from '../components/GtLogo';
 import { GlassCard } from '../components/GlassCard';
 
 export const ForgotPasswordPage: React.FC = () => {
@@ -99,7 +98,7 @@ export const ForgotPasswordPage: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-block mb-2">
-            <GtLogo size="lg" animated glow />
+            <img src="/gt-auth-logo.png" alt="GT Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mx-auto" />
           </Link>
           <h2 className="text-3xl font-black text-[#0A341B] tracking-tight">Account Recovery</h2>
           <p className="text-sm font-medium text-[#1E5E36]">
