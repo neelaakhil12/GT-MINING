@@ -461,6 +461,7 @@ export const AuthScreen: React.FC = () => {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            delaysContentTouches={false}
           >
             {/* Header: Logo & Branding */}
             <View style={styles.headerArea}>

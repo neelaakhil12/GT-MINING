@@ -223,6 +223,8 @@ export const DashboardScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* 1. Dashboard Greeting Header matching website mobile */}
           <View style={styles.greetingHeader}>

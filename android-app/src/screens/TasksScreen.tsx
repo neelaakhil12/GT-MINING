@@ -499,6 +499,8 @@ export const TasksScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: stackContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* Breadcrumb Navigation Row matching website */}
           <View style={styles.subHeader}>

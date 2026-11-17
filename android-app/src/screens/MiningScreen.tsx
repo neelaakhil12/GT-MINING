@@ -323,6 +323,8 @@ export const MiningScreen: React.FC = () => {
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* 1. Header Bar: GT NETWORK / ECO LAYER-2 matching website */}
           <View style={styles.networkSubHeader}>

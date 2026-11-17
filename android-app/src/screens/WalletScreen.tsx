@@ -105,6 +105,8 @@ export const WalletScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* 1. Primary Virtual Asset Hero Card (matching screenshot 1) */}
           <View style={styles.heroCard}>

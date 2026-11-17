@@ -321,6 +321,8 @@ export const ReferralsScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* 1. TOP PROTOCOL DIVIDEND BANNER CAROUSEL (Shown ONLY when banners exist) */}
           {slides.length > 0 && currentSlideData && (
@@ -637,7 +639,9 @@ export const ReferralsScreen: React.FC = () => {
                     styles.claimBtnPill,
                     claimableAmount > 0 ? styles.claimBtnPillActive : styles.claimBtnPillDisabled,
                   ]}
-                  activeOpacity={0.85}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  pressRetentionOffset={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
                   <Sparkles size={13} color={claimableAmount > 0 ? "#FDE047" : "#86EFAC"} />
                   <Text style={styles.claimBtnText}>

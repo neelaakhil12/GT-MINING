@@ -303,6 +303,8 @@ export const CommunityScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* Category Filter Pills: ONLY All and Latest */}
           <View style={styles.categoriesRow}>

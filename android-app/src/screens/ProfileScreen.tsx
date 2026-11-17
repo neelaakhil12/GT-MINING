@@ -310,6 +310,8 @@ export const ProfileScreen: React.FC = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: tabContentPaddingBottom + 32 }]}
+          keyboardShouldPersistTaps="handled"
+          delaysContentTouches={false}
         >
           {/* 1. Header Profile Summary Card */}
           <View style={styles.headerProfileCard}>
